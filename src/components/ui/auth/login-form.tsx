@@ -6,14 +6,15 @@ import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
-import Cookies from "js-cookie";
-import { MOCK_LOGIN_DELAY_MS, RIKKEI_LOGO_LOGIN_WIDTH, RIKKEI_LOGO_PATH } from "@/constants/auth.constants";
-import { APP_CONFIG, ROUTES } from "@/constants/app.constants";
+import { TurnstileWidget } from "@/components/common/turnstile-widget";
+import { ROUTES } from "@/constants/app.constants";
+import { RIKKEI_LOGO_LOGIN_WIDTH, RIKKEI_LOGO_PATH } from "@/constants/auth.constants";
 import { LMS_ICONS } from "@/constants/lms-icons.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
-import { AUTH_LOGIN_MOCK } from "@/mocks/auth.mock";
 import { type LoginFormData, loginSchema } from "@/schemas/auth.schema";
+import { login } from "@/services/auth.service";
+import { toast } from "@/services/toast.service";
 import { cx } from "@/utils/cx";
 
 const inputClassName = cx(
@@ -24,6 +25,8 @@ const inputClassName = cx(
 export function LoginForm() {
     const router = useAppRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [recaptchaToken, setRecaptchaToken] = useState<string>("");
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
 
     const {
         control,
@@ -31,20 +34,38 @@ export function LoginForm() {
         formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
-        defaultValues: { ...AUTH_LOGIN_MOCK },
+        defaultValues: {
+            email: "",
+            password: "",
+        },
     });
 
-    const onSubmit = async (_data: LoginFormData) => {
+    const onSubmit = async (data: LoginFormData) => {
+        if (!recaptchaToken) {
+            toast.error(UI_TEXT.auth.login.toasts.captchaRequiredTitle, UI_TEXT.auth.login.toasts.captchaRequiredDesc);
+            return;
+        }
         setIsLoading(true);
+        try {
+            await login({
+                email: data.email,
+                password: data.password,
+                recaptchaToken,
+                clientId: "lms",
+            });
 
-        // UI-phase mock — EP doLogin() only sets entered:true (no API)
-        await new Promise((resolve) => setTimeout(resolve, MOCK_LOGIN_DELAY_MS));
-        
-        // Set mock access token cookie so we are "logged in"
-        Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, "mock_admin_token", { expires: 1 });
+            // Store email for OTP step
+            sessionStorage.setItem("login_email", data.email);
 
-        setIsLoading(false);
-        router.replace(ROUTES.HOME as Route);
+            toast.success(UI_TEXT.auth.login.toasts.otpSentTitle, UI_TEXT.auth.login.toasts.otpSentDesc);
+            router.replace("/login/otp" as Route);
+        } catch (error: unknown) {
+            console.error("Login failed:", error);
+            const msg = error instanceof Error ? error.message : UI_TEXT.auth.login.errors.loginFailed;
+            toast.error(UI_TEXT.auth.login.toasts.errorTitle, msg);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -61,9 +82,7 @@ export function LoginForm() {
                     className="mx-auto mb-3.5 block h-auto w-full max-w-[188px]"
                     priority
                 />
-                <h1 className="font-display text-[22px] font-extrabold tracking-[-0.01em] text-slate-900">
-                    {UI_TEXT.auth.login.title}
-                </h1>
+                <h1 className="font-display text-[22px] font-extrabold tracking-[-0.01em] text-slate-900">{UI_TEXT.auth.login.title}</h1>
                 <p className="mt-0.5 inline-flex items-center justify-center gap-1 text-[13px] text-slate-500">
                     {UI_TEXT.auth.login.welcomeBack}
                     <Image src={LMS_ICONS.WAVE} alt="" width={16} height={16} className="size-4" />
@@ -75,12 +94,7 @@ export function LoginForm() {
                 name="email"
                 control={control}
                 render={({ field }) => (
-                    <input
-                        {...field}
-                        type="email"
-                        autoComplete="email"
-                        className={cx(inputClassName, "mb-3.5", errors.email && "border-error-500")}
-                    />
+                    <input {...field} type="email" autoComplete="email" className={cx(inputClassName, "mb-3.5", errors.email && "border-error-500")} />
                 )}
             />
             {errors.email?.message ? <p className="-mt-2 mb-3 text-xs text-error-500">{errors.email.message}</p> : null}
@@ -90,12 +104,7 @@ export function LoginForm() {
                 name="password"
                 control={control}
                 render={({ field }) => (
-                    <input
-                        {...field}
-                        type="password"
-                        autoComplete="current-password"
-                        className={cx(inputClassName, errors.password && "border-error-500")}
-                    />
+                    <input {...field} type="password" autoComplete="current-password" className={cx(inputClassName, errors.password && "border-error-500")} />
                 )}
             />
             {errors.password?.message ? <p className="mt-1 text-xs text-error-500">{errors.password.message}</p> : null}
@@ -113,6 +122,10 @@ export function LoginForm() {
             >
                 {isLoading ? UI_TEXT.auth.login.submittingButton : UI_TEXT.auth.login.submitButton}
             </button>
+
+            <div className="mt-4">
+                <TurnstileWidget siteKey={turnstileSiteKey} onVerify={(token) => setRecaptchaToken(token)} />
+            </div>
         </form>
     );
 }
