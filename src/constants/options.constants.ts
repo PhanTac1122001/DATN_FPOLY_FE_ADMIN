@@ -1,0 +1,2 @@
+export const DEFAULT_OPTIONS_LIMIT = 20;
+export const OPTIONS_STALE_TIME = 60_000;

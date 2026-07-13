@@ -1,0 +1,344 @@
+@import "tailwindcss";
+@import "./theme.css";
+@import "./typography.css";
+@import "./customStyles.css";
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+@utility scrollbar-hide {
+    /* For Webkit-based browsers (Chrome, Safari and Opera) */
+    &::-webkit-scrollbar {
+        display: none;
+        -webkit-appearance: none;
+    }
+
+    /* For IE, Edge and Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--color-gray-50);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--color-gray-300);
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-gray-400);
+}
+
+html {
+    scrollbar-color: var(--color-gray-300) var(--color-gray-50);
+}
+
+html,
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-cream);
+    color: var(--color-gray-800);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-variant-ligatures: contextual;
+    font-variant-ligatures: contextual;
+    -webkit-font-kerning: normal;
+    font-kerning: normal;
+}
+
+/* Hide the default expand arrow on Safari.  */
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Hide default arrows from number inputs. */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Hide the default clear button (X) from search inputs. */
+input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-display);
+}
+
+@keyframes float {
+    0% {
+        transform: translate(0, 0px);
+    }
+
+    50% {
+        transform: translate(0, -20px);
+    }
+
+    100% {
+        transform: translate(0, -0px);
+    }
+}
+
+@keyframes float-slow {
+    0% {
+        transform: translate(0, 0px);
+    }
+
+    50% {
+        transform: translate(-10px, -20px);
+    }
+
+    100% {
+        transform: translate(0, -0px);
+    }
+}
+
+@keyframes float-reverse {
+    0% {
+        transform: translate(0, 0px);
+    }
+
+    50% {
+        transform: translate(10px, 15px);
+    }
+
+    100% {
+        transform: translate(0, -0px);
+    }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-slow {
+    animation: float-slow 7s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+    animation: float-reverse 6s ease-in-out infinite;
+}
+
+.ai-pr-snippet-viewer .diff {
+    background-color: #0d1117;
+}
+
+.ai-pr-snippet-viewer .diff-gutter:not(.diff-gutter-insert):not(.diff-gutter-delete):not(.diff-gutter-selected),
+.ai-pr-snippet-viewer .diff-code:not(.diff-code-insert):not(.diff-code-delete):not(.diff-code-selected) {
+    background-color: #0d1117;
+}
+
+.ai-pr-snippet-viewer .diff-code {
+    color: #e6edf3;
+    padding-left: 0.8ch;
+}
+
+.ai-pr-snippet-viewer .diff-gutter-col {
+    width: 3.5ch;
+}
+
+.ai-pr-snippet-viewer .diff-gutter {
+    padding: 0.5 1ch;
+}
+
+.ai-pr-snippet-viewer .diff-code::before {
+    display: inline-block;
+    width: 2ch;
+    padding-right: 1ch;
+    color: #6e7681;
+    content: " ";
+}
+
+.ai-pr-snippet-viewer .diff-code-insert::before {
+    color: #7ee787;
+    content: "+";
+}
+
+.ai-pr-snippet-viewer .diff-code-delete::before {
+    color: #ff7b72;
+    content: "-";
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-gutter-selected + td.diff-gutter-selected,
+.ai-pr-snippet-viewer .ai-pr-selected-line .diff-code-selected {
+    position: relative;
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-gutter-selected + td.diff-gutter-selected:not(.diff-gutter-insert):not(.diff-gutter-delete),
+.ai-pr-snippet-viewer .ai-pr-selected-line .diff-code-selected:not(.diff-code-insert):not(.diff-code-delete) {
+    background-color: #231d13;
+    background-color: color-mix(in srgb, #0d1117 92%, #d29922 8%);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-gutter-insert.diff-gutter-selected + td.diff-gutter-insert.diff-gutter-selected,
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-gutter-selected + td.diff-gutter-insert.diff-gutter-selected {
+    background-color: #324c26;
+    background-color: color-mix(in srgb, #1c4428 92%, #d29922 8%);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line .diff-code-insert.diff-code-selected {
+    background-color: #29341e;
+    background-color: color-mix(in srgb, #12261e 92%, #d29922 8%);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line .diff-code-delete.diff-code-selected {
+    background-color: #3a271d;
+    background-color: color-mix(in srgb, #25171c 92%, #d29922 8%);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-gutter-selected + td.diff-gutter-selected {
+    border-left: 1px solid rgba(210, 153, 34, 0.28);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-gutter-selected:first-of-type {
+    border-left: 1px solid rgba(210, 153, 34, 0.28);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-line td.diff-code-selected {
+    border-right: 1px solid rgba(210, 153, 34, 0.28);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-start td.diff-gutter-selected:first-of-type,
+.ai-pr-snippet-viewer .ai-pr-selected-start td.diff-gutter-selected + td.diff-gutter-selected,
+.ai-pr-snippet-viewer .ai-pr-selected-start .diff-code-selected {
+    border-top: 1px solid rgba(210, 153, 34, 0.28);
+}
+
+.ai-pr-snippet-viewer .ai-pr-selected-end td.diff-gutter-selected:first-of-type,
+.ai-pr-snippet-viewer .ai-pr-selected-end td.diff-gutter-selected + td.diff-gutter-selected,
+.ai-pr-snippet-viewer .ai-pr-selected-end .diff-code-selected {
+    border-bottom: 1px solid rgba(210, 153, 34, 0.28);
+}
+
+.ai-pr-snippet-viewer .token.comment,
+.ai-pr-snippet-viewer .token.prolog,
+.ai-pr-snippet-viewer .token.doctype,
+.ai-pr-snippet-viewer .token.cdata {
+    color: #8b949e;
+}
+
+.ai-pr-snippet-viewer .token.keyword,
+.ai-pr-snippet-viewer .token.operator,
+.ai-pr-snippet-viewer .token.atrule {
+    color: #ff938a;
+}
+
+.ai-pr-snippet-viewer .token.function,
+.ai-pr-snippet-viewer .token.method,
+.ai-pr-snippet-viewer .token.selector,
+.ai-pr-snippet-viewer .token.attr-name {
+    color: #8bc5ff;
+}
+
+.ai-pr-snippet-viewer .token.string,
+.ai-pr-snippet-viewer .token.char,
+.ai-pr-snippet-viewer .token.regex,
+.ai-pr-snippet-viewer .token.attr-value,
+.ai-pr-snippet-viewer .token.inserted {
+    color: #a5f3c8;
+}
+
+.ai-pr-snippet-viewer .token.class-name,
+.ai-pr-snippet-viewer .token.builtin,
+.ai-pr-snippet-viewer .token.namespace,
+.ai-pr-snippet-viewer .token.tag {
+    color: #ffb86b;
+}
+
+.ai-pr-snippet-viewer .token.number,
+.ai-pr-snippet-viewer .token.boolean,
+.ai-pr-snippet-viewer .token.constant,
+.ai-pr-snippet-viewer .token.symbol {
+    color: #d2a8ff;
+}
+
+.ai-pr-snippet-viewer .token.property,
+.ai-pr-snippet-viewer .token.parameter,
+.ai-pr-snippet-viewer .token.variable,
+.ai-pr-snippet-viewer .token.punctuation {
+    color: #c9d1d9;
+}
+
+.ai-pr-snippet-viewer .token.function-variable,
+.ai-pr-snippet-viewer .token.maybe-class-name,
+.ai-pr-snippet-viewer .token.interpolation,
+.ai-pr-snippet-viewer .token.interpolation-punctuation {
+    color: #8bc5ff;
+}
+
+.ai-pr-snippet-viewer .token.deleted {
+    color: #ff938a;
+}
+
+/* Hide mobile header fallback title when a page portals its custom title */
+#mobile-header-title:not(:empty) + #mobile-header-title-fallback {
+    display: none;
+}
+
+/* Top Banner Layout Adjustment */
+:root {
+    --top-banner-height: 0px;
+}
+
+html.has-top-banner {
+    --top-banner-height: 48px;
+}
+
+@media (min-width: 768px) {
+    html.has-top-banner {
+        --top-banner-height: 56px;
+    }
+}
+
+/* Adjust fixed sidebars */
+html.has-top-banner [class*="fixed top-0 left-0"] {
+    top: var(--top-banner-height) !important;
+    height: calc(100% - var(--top-banner-height)) !important;
+    height: calc(100dvh - var(--top-banner-height)) !important;
+}
+
+/* Adjust main layout containers */
+html.has-top-banner .relative.flex.h-dvh {
+    height: calc(100dvh - var(--top-banner-height)) !important;
+    margin-top: var(--top-banner-height) !important;
+}
+
+/* Adjust sticky headers */
+html.has-top-banner header.sticky.top-0,
+html.has-top-banner .sticky.top-0 {
+    top: var(--top-banner-height) !important;
+}

@@ -1,0 +1,643 @@
+---
+alwaysApply: true
+---
+
+# LMS Portal Frontend — Development Rules
+
+> Scaffold migrated from IOC (Internship OneConnect). Follow these conventions exactly — ESLint enforces most of them at commit time (`pnpm run lint:check` requires **0 warnings**).
+
+## Golden Rules
+
+1. **Thin routes** — `app/*/page.tsx` only wires layout + view + metadata
+2. **All UI text** → `UI_TEXT` in `src/constants/ui-text.constants.ts` (NOT next-intl)
+3. **No hex in JSX** — use Tailwind theme classes or `COLORS`/`ICON_COLORS` for JS/SVG
+4. **Types in `src/types/`** — never in views, components, services, hooks, stores
+5. **Zod in `src/schemas/`** — never inline in views/components
+6. **API via `services/`** — never call `httpClient` directly from views/components
+7. **pnpm only** — never use npm/yarn
+8. **Reuse before create** — check `base/`, `application/`, existing hooks/utils first
+9. **Mock data in `src/mocks/`** — never hardcode mock arrays/objects inline in views, components, or hooks; put them in `src/mocks/<feature>.mock.ts` (seed from `LMS_AI_SPEC/extracted-portal/logic.js` when building UI)
+10. **UI parity with extracted-portal** — for basic-flow WPs (`docs/ui-implementation/work-packages/`), match `http://localhost:4178/template.html` (via `server.mjs`) at 100%; do not mix in `chi-tiet/` screens until `work-packages-supplemental/`
+
+---
+
+## Tech Stack
+
+| Layer | Choice |
+|-------|--------|
+| Framework | Next.js 16 App Router, TypeScript strict |
+| UI | React 19, Server Components where possible |
+| Styling | TailwindCSS v4 + tokens in `src/styles/theme.css` |
+| Server state | TanStack React Query |
+| Client UI state | Zustand (`src/stores/`) |
+| Forms | React Hook Form + Zod (`@hookform/resolvers`) |
+| HTTP | `fetch` via `src/lib/http-client.ts` (no axios) |
+| Icons | `iconsax-react` wrappers in `src/components/icons/` |
+| Monitoring | Sentry |
+| Package manager | **pnpm** (`pnpm@10.12.1`) |
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js routes — thin layer only
+├── views/                  # Page compositions (*-view.tsx)
+├── components/
+│   ├── base/               # Primitives: Button, Input, Select, Badge…
+│   ├── application/        # Composites: Table, DatePicker, Pagination, Modal…
+│   ├── ui/                 # Feature UI (e.g. ui/auth/, ui/courses/)
+│   ├── layout/             # PublicLayout, header, sidebar, footer
+│   ├── auth/               # PermissionGuard, ProtectedRoute
+│   ├── common/             # Cross-feature helpers (loading-overlay…)
+│   ├── foundations/        # SVG icons (payment-icons…)
+│   └── icons/              # iconsax icon exports
+├── constants/              # UI_TEXT, API_ENDPOINTS, UPPER_CASE values
+├── config/                 # navigation, permissions, toast, payment
+├── hooks/                  # use-*.ts custom hooks
+├── lib/                    # http-client, query-keys, filter-url-params
+├── providers/              # AppProviders, QueryProvider, ToastProvider
+├── schemas/                # Zod schemas + inferred form types
+├── services/               # *.service.ts API calls
+├── stores/                 # Zustand stores
+├── styles/                 # theme.css, globals.css, typography.css
+├── types/                  # All TS interfaces/types/enums for features
+├── mocks/                  # UI/dev mock data only (*.mock.ts) — not in views/components
+└── utils/                  # Pure helper functions
+```
+
+---
+
+## Architecture & Import Boundaries
+
+**Data flow (one direction only):**
+
+```
+app/page.tsx → views/*-view.tsx → components → hooks → services → lib
+```
+
+**Who can import whom (ESLint `boundaries/element-types`):**
+
+| From | Can import |
+|------|------------|
+| `app` | views, components, hooks, services, shared*, constants, config, utils, mocks |
+| `views` | components, hooks, services, shared*, constants, config, utils, mocks |
+| `components` | components, hooks, services, shared*, constants, config, utils |
+| `hooks` | hooks, services, shared*, constants, config, utils, mocks |
+| `services` | services, shared*, constants, config, utils, mocks |
+| `utils` | shared*, constants, config, utils |
+| `config` | shared*, constants, config |
+| `constants` | shared*, constants |
+| `mocks` | shared*, constants, mocks |
+
+*`shared` = `types/`, `lib/`, `providers/`, `stores/`, `styles/`
+
+**Forbidden:**
+- `services` → `components` or `views`
+- `constants` → `services` or `hooks`
+- `views` → `app`
+- Direct `fetch`/`httpClient` in views or components
+- Mock datasets defined inside views/components (use `src/mocks/` instead)
+- `components` → `mocks` (prefer hooks/views to load mock data and pass props)
+
+---
+
+## Component Tier — Where to Put Code
+
+| Tier | Folder | Use when |
+|------|--------|----------|
+| **Base** | `components/base/` | Single-purpose UI atom (Button, Input, Checkbox). No business logic. |
+| **Application** | `components/application/` | Reusable composite widget used across features (Table, DatePicker, Stepper). |
+| **Feature UI** | `components/ui/<feature>/` | Feature-specific forms, cards, panels (e.g. `ui/auth/login-form.tsx`). |
+| **Layout** | `components/layout/` | Shells, header, sidebar, footer. |
+| **View** | `views/` | One file per page; composes layout + feature UI. No API calls — delegate to hooks. |
+
+**Decision tree:**
+1. Exists in `base/` or `application/`? → Reuse it
+2. Used on one feature only? → `components/ui/<feature>/`
+3. Full page composition? → `views/<name>-view.tsx`
+4. Need API data? → `hooks/use-<feature>.ts` + `services/<feature>.service.ts`
+
+---
+
+## File & Folder Naming
+
+- **kebab-case** for all files/folders in `views/`, `components/`, `hooks/`, `services/`
+- Views **must** end with `-view.tsx` (e.g. `courses-view.tsx`, `login-view.tsx`)
+- **Flat only** — no subfolders under `src/views/` (use prefix if needed: `teacher-dashboard-view.tsx`, not `views/teacher/...`)
+- Feature UI still nests under `components/ui/<feature>/`
+- Services end with `.service.ts`
+- Hooks start with `use-` (e.g. `use-courses.ts`)
+- Types: `<feature>.types.ts` or `<component-area>.types.ts` in `src/types/`
+- Schemas: `<feature>.schema.ts` in `src/schemas/`
+- Constants: `<area>.constants.ts` in `src/constants/`
+
+---
+
+## Adding a New Feature — Checklist
+
+Example: "Courses management"
+
+```
+1. src/constants/ui-text.constants.ts     → UI_TEXT.courses.*
+2. src/constants/api-endpoints.constants.ts → API_ENDPOINTS.COURSES.*
+3. src/types/courses.types.ts             → Course, CourseListResponse…
+4. src/schemas/courses.schema.ts          → createCourseSchema (if forms)
+5. src/services/courses.service.ts        → getCourses(), createCourse()…
+6. src/lib/query-keys.ts                  → queryKeys.courses.*
+7. src/hooks/use-courses.ts               → useQuery/useMutation wrappers
+8. src/components/ui/courses/             → course-table.tsx, course-form.tsx
+9. src/views/courses-view.tsx             → page composition
+10. src/app/courses/page.tsx              → metadata + layout + <CoursesView />
+11. src/config/navigation.tsx             → nav item (use Route type + UI_TEXT)
+```
+
+---
+
+## UI_TEXT — All User-Facing Text
+
+**File:** `src/constants/ui-text.constants.ts`
+**Import:** `import { UI_TEXT } from "@/constants/ui-text.constants"`
+
+### Structure convention
+
+```typescript
+export const UI_TEXT = {
+  common: { save, cancel, delete, loading, genericError, pagination, datePicker… },
+  home: { … },
+  auth: { login: { … }, register: { … } },
+  navigation: { … },
+  layout: { … },
+  metadata: { layout, home, login… },  // SEO titles/descriptions
+  // New features:
+  courses: { title, list, form, errors: { … } },
+} as const;
+```
+
+### Key naming
+
+- Feature root: `UI_TEXT.<feature>.<key>`
+- Errors nested: `UI_TEXT.<feature>.errors.<errorKey>`
+- Form labels: `UI_TEXT.<feature>.<field>Label`, `<field>Placeholder`
+- Metadata/SEO: `UI_TEXT.metadata.<page>.title` / `.description`
+
+### ESLint blocks (will fail lint:check)
+
+- Any Vietnamese/English string in JSX text nodes
+- Hardcoded `label`, `placeholder`, `title`, `description`, `hint`, `alt`
+- Strings in object props (`columns`, `message`, `tooltip`, `empty`…)
+- Toast messages as string literals
+- Arbitrary Tailwind colors: `bg-[#BC2228]` → use `bg-brand-500`
+
+### Correct patterns
+
+```tsx
+// JSX text
+<Button>{UI_TEXT.common.save}</Button>
+
+// Props
+<Input label={UI_TEXT.auth.login.emailLabel} placeholder={UI_TEXT.auth.login.emailPlaceholder} />
+
+// Metadata (app/page.tsx)
+export const metadata: Metadata = {
+  title: UI_TEXT.metadata.login.title,
+  description: UI_TEXT.metadata.login.description,
+};
+
+// Navigation config
+{ label: UI_TEXT.navigation.courses, href: "/courses" as Route }
+```
+
+---
+
+## Colors & Styling
+
+### In JSX / className → Tailwind theme tokens
+
+Design tokens live in `src/styles/theme.css`. Use semantic Tailwind classes:
+
+| Purpose | Examples |
+|---------|----------|
+| Brand | `bg-brand-500`, `text-brand-600`, `border-brand-200` |
+| Neutral | `text-slate-600`, `bg-slate-50`, `border-slate-200` |
+| Semantic | `text-success-500`, `bg-error-50`, `text-warning-700` |
+| Typography | `font-display` (headings), `font-sans` (body) |
+
+**Never:** `#BC2228`, `rgb(188,34,40)`, `bg-[#...]`, inline `style={{ color: '...' }}`
+
+### In JS / SVG / chart props → Constants
+
+```typescript
+import { ICON_COLORS, COLORS } from "@/constants/app.constants";
+// COLORS is alias for ICON_COLORS
+
+<Lock color={ICON_COLORS.GRAY_500} />
+fill={ICON_COLORS.BRAND_500}
+```
+
+| Constant file | Use for |
+|---------------|---------|
+| `ICON_COLORS` / `COLORS` (`app.constants.ts`) | Icons, charts, dynamic JS colors |
+| `BADGE_*_COLORS` (`badge.constants.ts`) | Badge component variants |
+| `PAYMENT_COLORS` (`colors.constants.ts`) | Payment SVG icons |
+| `theme.css` CSS variables | Source of truth for Tailwind tokens |
+
+### Utility helper
+
+```typescript
+import { cx } from "@/utils/cx";           // conditional classes
+import { cn } from "@/lib/utils";          // tailwind-merge wrapper
+```
+
+---
+
+## Constants Organization
+
+| File | Contents |
+|------|----------|
+| `ui-text.constants.ts` | All display strings |
+| `api-endpoints.constants.ts` | `API_ENDPOINTS`, `API_PREFIX` |
+| `app.constants.ts` | `APP_CONFIG`, `ROUTES`, `ICON_COLORS`, `ICON_SIZES` |
+| `http.constants.ts` | HTTP status codes |
+| `*-components.constants.ts` | Component-specific numeric/size config |
+| `password-validation.constants.ts` | Validation limits |
+
+**Rules:**
+- UPPER_CASE `const` only in `src/constants/` (not in views/components/utils)
+- Constants files = static data only (no functions)
+- Status codes, magic numbers → named constants (ESLint warns on magic numbers)
+
+---
+
+## Mock Data
+
+**Location:** `src/mocks/<feature>.mock.ts` (e.g. `home.mock.ts`, `auth.mock.ts`)
+
+```typescript
+// src/mocks/home.mock.ts
+import type { HomeDashboardData } from "@/types/home.types";
+
+export const HOME_DASHBOARD_MOCK: HomeDashboardData = {
+  // seeded from LMS_AI_SPEC/extracted-portal/logic.js
+};
+```
+
+**Rules:**
+- UI-phase / stub data lives **only** in `src/mocks/`
+- Prefer hooks or views to import mocks and pass data into components as props
+- Do **not** define large mock arrays/objects inside views, components, or hooks
+- When replacing mocks with API: keep the same types; swap mock import for `services/` in the hook
+- Seed student UI mocks from `extracted-portal/logic.js` when implementing basic-flow WPs
+
+---
+
+## Types Organization
+
+**All interfaces/types/enums** → `src/types/<feature>.types.ts`
+
+```typescript
+// src/types/courses.types.ts
+export interface Course {
+  id: string;
+  title: string;
+}
+
+export interface CourseListResponse {
+  items: Course[];
+  total: number;
+}
+```
+
+**Forbidden locations:** views, components, services, hooks, stores, providers
+
+**Exception:** `z.infer<typeof schema>` type aliases live in `schemas/` alongside the schema.
+
+---
+
+## Schemas (Zod)
+
+**File:** `src/schemas/<feature>.schema.ts`
+
+```typescript
+import { z } from "zod";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+
+export const createCourseSchema = z.object({
+  title: z.string().min(1, UI_TEXT.courses.errors.titleRequired),
+});
+
+export type CreateCourseFormData = z.infer<typeof createCourseSchema>;
+```
+
+- Validation messages **must** use `UI_TEXT`
+- Shared validators → `src/utils/password-validation.ts` etc.
+- Never define `z.object()` in views or components
+
+---
+
+## Services Pattern
+
+**File:** `src/services/<feature>.service.ts`
+
+```typescript
+import { API_ENDPOINTS } from "@/constants/api-endpoints.constants";
+import { httpClient } from "@/lib/http-client";
+import { HttpMethod } from "@/types/api-types";
+import type { Course, CourseListResponse } from "@/types/courses.types";
+
+export async function getCourses(): Promise<CourseListResponse> {
+  return httpClient<CourseListResponse>(API_ENDPOINTS.COURSES.LIST, {
+    requireAuth: true,
+  });
+}
+
+export async function createCourse(data: CreateCourseRequest): Promise<Course> {
+  return httpClient<Course>(API_ENDPOINTS.COURSES.CREATE, {
+    method: HttpMethod.POST,
+    body: JSON.stringify(data),
+    requireAuth: true,
+  });
+}
+```
+
+- Add endpoints to `API_ENDPOINTS` first — never hardcode URLs
+- Use `HttpMethod` enum from `src/types/api-types.ts`
+- `requireAuth: false` only for public endpoints (login, register)
+- Catch `HttpError` in hooks/components for typed error handling
+
+---
+
+## React Query
+
+**Query keys:** `src/lib/query-keys.ts`
+
+```typescript
+export const queryKeys = {
+  courses: {
+    all: () => ["courses"] as const,
+    list: (filter?: CourseFilter) => ["courses", "list", filter] as const,
+    detail: (id: string) => ["courses", "detail", id] as const,
+  },
+} as const;
+```
+
+**Hook pattern:** `src/hooks/use-courses.ts`
+
+```typescript
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import { getCourses } from "@/services/courses.service";
+
+export function useCourses(filter?: CourseFilter) {
+  return useQuery({
+    queryKey: queryKeys.courses.list(filter),
+    queryFn: () => getCourses(filter),
+  });
+}
+```
+
+- Mutations: `useMutation` in hooks, call service fn, `invalidateQueries` on success
+- Cache times → `src/constants/query-cache.constants.ts`
+
+---
+
+## Forms Pattern
+
+```tsx
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import { Input } from "@/components/base/input/input";
+import { Button } from "@/components/base/buttons/button";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { type CreateCourseFormData, createCourseSchema } from "@/schemas/courses.schema";
+
+export function CourseForm() {
+  const { control, handleSubmit, formState: { errors } } = useForm<CreateCourseFormData>({
+    resolver: zodResolver(createCourseSchema),
+    defaultValues: { title: "" },
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Controller
+        name="title"
+        control={control}
+        render={({ field }) => (
+          <Input
+            {...field}
+            isInvalid={!!errors.title}
+            hint={errors.title?.message}
+            label={UI_TEXT.courses.titleLabel}
+            placeholder={UI_TEXT.courses.titlePlaceholder}
+          />
+        )}
+      />
+      <Button type="submit">{UI_TEXT.common.save}</Button>
+    </form>
+  );
+}
+```
+
+- Use `Controller` for base `Input`/`Select` (not `{...register()}`)
+- Form components go in `components/ui/<feature>/`
+- Submit logic can call service directly or via mutation hook
+
+---
+
+## Routing & Navigation
+
+**Routes:** `src/constants/app.constants.ts` → `ROUTES`
+
+```typescript
+export const ROUTES = {
+  HOME: "/",
+  LOGIN: "/login",
+  COURSES: "/courses",
+} as const;
+```
+
+**Typed routes:** import `Route` from `next` for Link/nav href:
+
+```typescript
+import type { Route } from "next";
+href={ROUTES.COURSES as Route}  // or literal "/courses" as Route
+```
+
+**Navigation config:** `src/config/navigation.tsx`
+
+```typescript
+import type { Route } from "next";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+
+export const DASHBOARD_NAV_CONFIG: NavConfigItem[] = [
+  { label: UI_TEXT.navigation.courses, href: "/courses" as Route },
+];
+```
+
+---
+
+## Auth & Permissions
+
+- Profile: `useAuth()` hook → `src/hooks/use-auth.ts`
+- Permissions enum: `src/config/permissions.ts` → `PermissionCode`
+- Route guard: `<ProtectedRoute>` / `<PermissionGuard>` in `components/auth/`
+- Token key: `APP_CONFIG.ACCESS_TOKEN_KEY` (`lms_access_token`)
+- Logout: `useLogout()` hook
+
+```tsx
+import { PermissionCode } from "@/config/permissions";
+import { PermissionGuard } from "@/components/auth/permission-guard";
+
+<PermissionGuard permission={PermissionCode.MANAGE_USERS}>
+  <AdminPanel />
+</PermissionGuard>
+```
+
+---
+
+## State Management
+
+| Need | Solution |
+|------|----------|
+| API data, caching | React Query + `queryKeys` |
+| Sidebar open/close | `useSidebarStore` (Zustand) |
+| Modal notifications | `useNotificationStore` |
+| Unsaved form warning | `useUnsavedChangesStore` |
+| Ephemeral UI (tabs, filters in URL) | `useFilterWithParams`, `useTableStateWithParams` |
+
+**Do not** put API response data in Zustand — use React Query.
+
+---
+
+## Server vs Client Components
+
+| Server Component (default) | Client Component (`"use client"`) |
+|---------------------------|-------------------------------------|
+| `app/page.tsx` (metadata) | Forms, interactive UI |
+| Static views without hooks | Anything using `useState`, `useEffect` |
+| | React Query hooks, Zustand |
+| | Event handlers, browser APIs |
+
+Put `"use client"` at top of: forms, modals, interactive tables, layout with sidebar toggle.
+
+---
+
+## Error Handling
+
+```typescript
+import { HttpError } from "@/lib/http-client";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+
+try {
+  await someService();
+} catch (err) {
+  if (err instanceof HttpError) {
+    const payload = err.payload as { message?: string } | undefined;
+    setError(payload?.message ?? UI_TEXT.common.genericError);
+  } else {
+    setError(UI_TEXT.common.genericError);
+  }
+}
+```
+
+---
+
+## Import Conventions
+
+```typescript
+// Constants & config
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { API_ENDPOINTS } from "@/constants/api-endpoints.constants";
+import { APP_CONFIG, ROUTES, ICON_COLORS } from "@/constants/app.constants";
+
+// Infrastructure
+import { httpClient, HttpError } from "@/lib/http-client";
+import { queryKeys } from "@/lib/query-keys";
+import { cx } from "@/utils/cx";
+
+// Feature
+import { CoursesView } from "@/views/courses-view";
+import { useCourses } from "@/hooks/use-courses";
+import type { Course } from "@/types/courses.types";
+```
+
+- Always use `@/*` alias (maps to `./src/*`)
+- Prefer named exports
+- Remove unused imports (ESLint error)
+
+---
+
+## Anti-Patterns — Never Do
+
+```tsx
+// ❌ Hardcoded text
+<Button>Lưu</Button>
+
+// ❌ Hardcoded color
+<div className="bg-[#BC2228]" />
+<Icon color="#64748b" />
+
+// ❌ Inline schema
+const schema = z.object({ … });  // in component file
+
+// ❌ Type in component
+interface Props { … }  // in component file → src/types/
+
+// ❌ API call in view
+const data = await httpClient(…);  // in *-view.tsx
+
+// ❌ Magic status string
+if (status === "ACTIVE")  // → use enum/constant
+
+// ❌ Helper function in component file
+function formatDate(d: Date) { … }  // → src/utils/
+
+// ❌ Mock data inline in view/component
+const courses = [{ id: "1", title: "…" }];  // → src/mocks/courses.mock.ts
+
+// ❌ npm install
+npm install foo  // → pnpm add foo
+```
+
+---
+
+## Before Committing
+
+```bash
+pnpm run type-check    # must pass
+pnpm run lint:check    # 0 errors, 0 warnings
+pnpm run build         # verify production build (recommended)
+```
+
+**Self-check:**
+- [ ] New text added to `UI_TEXT`
+- [ ] New endpoints in `API_ENDPOINTS`
+- [ ] New types in `src/types/`
+- [ ] New schemas in `src/schemas/`
+- [ ] Mock data in `src/mocks/` (not inline)
+- [ ] Query keys in `src/lib/query-keys.ts`
+- [ ] Files/folders are kebab-case
+- [ ] Views end with `-view.tsx`
+- [ ] No hex colors, no magic strings
+- [ ] Basic-flow UI matches `localhost:4178/template.html` when applicable
+
+---
+
+## Commands
+
+```bash
+pnpm install              # install deps
+pnpm dev                  # dev server (Turbopack)
+pnpm run dev:clean        # clean .next + dev
+pnpm run build            # production build
+pnpm run start            # start production server
+pnpm run lint             # eslint --fix
+pnpm run lint:check       # eslint strict (CI/pre-commit)
+pnpm run type-check       # tsc --noEmit
+pnpm run format           # prettier --write
+pnpm add <pkg>            # add dependency
+pnpm add -D <pkg>         # add devDependency
+```
