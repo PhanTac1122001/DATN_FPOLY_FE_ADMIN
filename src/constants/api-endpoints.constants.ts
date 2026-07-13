@@ -2,16 +2,17 @@ export const API_PREFIX = "/api";
 
 export const API_ENDPOINTS = {
     AUTH: {
-        LOGIN: `${API_PREFIX}/auth/login`,
+        LOGIN: "/v1/auth/login/staff",
+        VERIFY_OTP: "/v1/auth/login/staff/verify-otp",
         REGISTER: `${API_PREFIX}/auth/register`,
         VERIFY_EMAIL: `${API_PREFIX}/auth/verify-email`,
-        LOGOUT: `${API_PREFIX}/auth/logout`,
-        REFRESH: `${API_PREFIX}/auth/refresh`,
+        LOGOUT: `${API_PREFIX}/auth/staff/logout`,
+        REFRESH: `${API_PREFIX}/auth/staff/refresh`,
         FORGOT_PASSWORD: `${API_PREFIX}/auth/forgot-password`,
         RESET_PASSWORD: `${API_PREFIX}/auth/reset-password`,
-        PROFILE: `${API_PREFIX}/auth/me`,
-        UPDATE_PROFILE: `${API_PREFIX}/auth/me`,
-        CHANGE_PASSWORD: `${API_PREFIX}/auth/change-password`,
+        PROFILE: `${API_PREFIX}/staff/profile/me`,
+        UPDATE_PROFILE: `${API_PREFIX}/staff/profile/me`,
+        CHANGE_PASSWORD: `${API_PREFIX}/staff/password/change`,
         GOOGLE_LOGIN: `${API_PREFIX}/auth/google-login`,
         GOOGLE_REGISTER: `${API_PREFIX}/auth/google-register`,
     },

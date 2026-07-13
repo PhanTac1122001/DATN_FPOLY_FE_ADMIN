@@ -1,7 +1,13 @@
 export interface LoginRequest {
     email: string;
     password: string;
-    turnstileToken?: string;
+    recaptchaToken: string;
+    clientId: string;
+}
+
+export interface VerifyOtpRequest {
+    email: string;
+    otp: string;
 }
 
 export interface LoginResponse {
@@ -13,8 +19,8 @@ export interface LoginResponse {
         role: string;
         permissions: string[];
     };
-    accessTokenExpiresAt: string;
-    refreshTokenExpiresAt: string;
+    accessToken: string;
+    refreshToken: string;
 }
 
 export type RegisterResponse = (LoginResponse & { requiresVerification?: never }) | { requiresVerification: true; message: string };
@@ -66,8 +72,7 @@ export interface GoogleLoginRequest {
 }
 
 export type GoogleLoginResponse =
-    | { isNewUser: false; user: LoginResponse["user"]; accessTokenExpiresAt: string; refreshTokenExpiresAt: string }
-    | { isNewUser: true; email: string; fullName: string };
+    { isNewUser: false; user: LoginResponse["user"]; accessToken: string; refreshToken: string } | { isNewUser: true; email: string; fullName: string };
 
 export interface GoogleRegisterRequest {
     googleToken: string;

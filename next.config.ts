@@ -42,6 +42,11 @@ const nextConfig: NextConfig = {
                 port: "5000",
             },
             {
+                protocol: "http",
+                hostname: "103.118.29.137",
+                port: "65432",
+            },
+            {
                 protocol: "https",
                 hostname: "phenika-storage.s3.ap-southeast-2.amazonaws.com",
             },
@@ -56,6 +61,10 @@ const nextConfig: NextConfig = {
             {
                 source: "/api/:path*",
                 destination: `${process.env.API_URL || "http://backend:3000"}/api/:path*`,
+            },
+            {
+                source: "/v1/:path*",
+                destination: `${process.env.API_URL || "http://backend:3000"}/v1/:path*`,
             },
         ];
     },

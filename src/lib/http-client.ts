@@ -1,7 +1,7 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import * as Sentry from "@sentry/nextjs";
 import Cookies from "js-cookie";
-import { API_PREFIX } from "@/constants/api-endpoints.constants";
+import { API_ENDPOINTS } from "@/constants/api-endpoints.constants";
 import { APP_CONFIG } from "@/constants/app.constants";
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_UNAUTHORIZED } from "@/constants/http.constants";
 import { HttpMethod } from "@/types/api-types";
@@ -38,7 +38,7 @@ async function resolveAccessToken(): Promise<string | undefined> {
 }
 
 function resolveBaseUrl() {
-    return typeof window === "undefined" ? process.env.API_URL || "http://backend:3000" : process.env.NEXT_PUBLIC_API_URL || "";
+    return typeof window === "undefined" ? process.env.API_URL || "http://backend:3000" : "";
 }
 
 async function buildRequestHeaders(headers: HeadersInit | undefined, body: BodyInit | null | undefined, requireAuth: boolean) {
@@ -63,15 +63,32 @@ async function buildRequestHeaders(headers: HeadersInit | undefined, body: BodyI
 }
 
 async function refreshAccessToken(baseUrl: string): Promise<boolean> {
-    const refreshResponse = await fetch(`${baseUrl}${API_PREFIX}/auth/refresh`, {
-        method: HttpMethod.POST,
-        headers: {
-            "Content-Type": "application/json",
-        },
-        credentials: "include",
-    });
+    const refreshToken = Cookies.get(APP_CONFIG.REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+        return false;
+    }
 
-    return refreshResponse.ok;
+    try {
+        const refreshResponse = await fetch(`${baseUrl}${API_ENDPOINTS.AUTH.REFRESH}`, {
+            method: HttpMethod.POST,
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshResponse.ok) {
+            const data = await refreshResponse.json();
+            if (data.accessToken && data.refreshToken) {
+                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, data.accessToken, { expires: 1 });
+                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, data.refreshToken, { expires: 7 });
+                return true;
+            }
+        }
+    } catch (e) {
+        console.error("Refresh token failed:", e);
+    }
+    return false;
 }
 
 function isAbortError(error: unknown) {
