@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import { TurnstileWidget } from "@/components/common/turnstile-widget";
+import { Eye, EyeSlash } from "@/components/icons";
 import { ROUTES } from "@/constants/app.constants";
 import { RIKKEI_LOGO_LOGIN_WIDTH, RIKKEI_LOGO_PATH } from "@/constants/auth.constants";
 import { LMS_ICONS } from "@/constants/lms-icons.constants";
@@ -25,6 +26,7 @@ const inputClassName = cx(
 export function LoginForm() {
     const router = useAppRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
     const turnstileSiteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
 
@@ -34,6 +36,7 @@ export function LoginForm() {
         formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
+        mode: "onTouched",
         defaultValues: {
             email: "",
             password: "",
@@ -89,22 +92,48 @@ export function LoginForm() {
                 </p>
             </div>
 
-            <label className="mb-1.5 block text-xs font-bold text-slate-500">{UI_TEXT.auth.login.emailLabel}</label>
+            <label className="mb-1.5 block text-xs font-bold text-slate-500">
+                {UI_TEXT.auth.login.emailLabel} <span className="text-error-500">{"*"}</span>
+            </label>
             <Controller
                 name="email"
                 control={control}
                 render={({ field }) => (
-                    <input {...field} type="email" autoComplete="email" className={cx(inputClassName, "mb-3.5", errors.email && "border-error-500")} />
+                    <input
+                        {...field}
+                        type="email"
+                        placeholder={UI_TEXT.auth.login.emailPlaceholder}
+                        autoComplete="email"
+                        className={cx(inputClassName, "mb-3.5", errors.email && "border-error-500")}
+                    />
                 )}
             />
             {errors.email?.message ? <p className="-mt-2 mb-3 text-xs text-error-500">{errors.email.message}</p> : null}
 
-            <label className="mb-1.5 block text-xs font-bold text-slate-500">{UI_TEXT.auth.login.passwordLabel}</label>
+            <label className="mb-1.5 block text-xs font-bold text-slate-500">
+                {UI_TEXT.auth.login.passwordLabel} <span className="text-error-500">{"*"}</span>
+            </label>
             <Controller
                 name="password"
                 control={control}
                 render={({ field }) => (
-                    <input {...field} type="password" autoComplete="current-password" className={cx(inputClassName, errors.password && "border-error-500")} />
+                    <div className="relative w-full">
+                        <input
+                            {...field}
+                            type={showPassword ? "text" : "password"}
+                            placeholder={UI_TEXT.auth.login.passwordPlaceholder}
+                            autoComplete="current-password"
+                            className={cx(inputClassName, "pr-10", errors.password && "border-error-500")}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            className="absolute top-1/2 right-3.5 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                            aria-label={showPassword ? UI_TEXT.auth.login.hidePassword : UI_TEXT.auth.login.showPassword}
+                        >
+                            {showPassword ? <EyeSlash size={16} className="size-4" /> : <Eye size={16} className="size-4" />}
+                        </button>
+                    </div>
                 )}
             />
             {errors.password?.message ? <p className="mt-1 text-xs text-error-500">{errors.password.message}</p> : null}
