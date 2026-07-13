@@ -12,3 +12,12 @@ export interface TurnstileWidgetProps {
 export interface TurnstileWidgetRef {
     reset: () => void;
 }
+
+export interface ReCAPTCHAWidgetProps {
+    onVerify: (token: string) => void;
+    siteKey: string;
+}
+
+export interface ReCAPTCHAWidgetRef {
+    reset: () => void;
+}
