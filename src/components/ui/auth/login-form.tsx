@@ -147,7 +147,7 @@ export function LoginForm() {
             <button
                 type="submit"
                 disabled={isLoading}
-                className="mt-2 w-full rounded-[14px] bg-linear-to-br from-brand-400 to-brand-500 p-3.5 text-left text-[15px] font-extrabold text-white shadow-[0_14px_28px_-12px_rgba(60,66,150,0.6)] transition hover:brightness-110 disabled:opacity-70"
+                className="mt-2 w-full rounded-[14px] bg-linear-to-br from-brand-400 to-brand-500 p-3.5 text-center text-[15px] font-extrabold text-white shadow-[0_14px_28px_-12px_rgba(60,66,150,0.6)] transition hover:brightness-110 disabled:opacity-70"
             >
                 {isLoading ? UI_TEXT.auth.login.submittingButton : UI_TEXT.auth.login.submitButton}
             </button>
