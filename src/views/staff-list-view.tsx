@@ -262,7 +262,7 @@ export function StaffListView() {
                                     <th className="w-24 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thGender}</th>
                                     <th className="w-24 px-6 py-4">{UI_TEXT.staff.thAddress}</th>
                                     <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thRole}</th>
-                                    <th className="px-6 py-4">{UI_TEXT.staff.thSystem}</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thStatus}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thActions}</th>
                                 </tr>
