@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { Heading } from "react-aria-components";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
@@ -142,7 +143,9 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                 <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
                     <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
-                        <h2 className="text-xl font-bold text-slate-900">{staff ? UI_TEXT.staff.editTitle : UI_TEXT.staff.addTitle}</h2>
+                        <Heading slot="title" className="text-xl font-bold text-slate-900">
+                            {staff ? UI_TEXT.staff.editTitle : UI_TEXT.staff.addTitle}
+                        </Heading>
                         <p className="mt-1 text-xs text-slate-500">{staff ? UI_TEXT.staff.editSubtitle : UI_TEXT.staff.addSubtitle}</p>
                         <button
                             type="button"
@@ -239,6 +242,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                         control={control}
                                         render={({ field }) => (
                                             <Select
+                                                aria-label={UI_TEXT.staff.labelGender}
                                                 selectedKey={field.value || null}
                                                 onSelectionChange={(key) => {
                                                     field.onChange(key as GenderEnum);
@@ -271,6 +275,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                     control={control}
                                     render={({ field }) => (
                                         <Select.MultiComboBox
+                                            aria-label={UI_TEXT.staff.labelRoles.replace(" *", "")}
                                             placeholder={UI_TEXT.staff.placeholderRoles}
                                             selectedKeys={field.value || []}
                                             onSelectionChange={(keys) => {
