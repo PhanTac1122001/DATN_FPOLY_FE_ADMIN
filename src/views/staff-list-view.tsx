@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, BookOpen, Edit, Lock, Mail, MapPin, Phone, Plus, Search, ShieldAlert, Trash2, Unlock, UserCheck, Users } from "lucide-react";
+import { AlertTriangle, Edit, Lock, Mail, MapPin, Phone, Plus, Search, Trash2, Unlock } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { StaffModal } from "@/components/application/modals/staff-modal";
 import { Badge } from "@/components/base/badges/badges";
@@ -121,61 +121,8 @@ export function StaffListView() {
         return matchesSearch && matchesRole && matchesStatus;
     });
 
-    // KPI Metrics calculation
-    const totalStaff = staffs.length;
-    const activeStaff = staffs.filter((s) => s.status === StatusEnum.ACTIVE).length;
-    const teachersCount = staffs.filter((s) => s.roles.some((r) => r.name === RoleEnum.TEACHER || r.name === RoleEnum.TEACHER_ASSISTANT)).length;
-    const adminsCount = staffs.filter((s) => s.roles.some((r) => r.name === RoleEnum.ADMIN)).length;
-
     return (
         <div className="flex w-full flex-col gap-8">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Card 1: Total Staff */}
-                <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs transition duration-200 hover:shadow-md">
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-wine-soft text-wine-deep">
-                        <Users className="size-6" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-500">{UI_TEXT.staff.kpiTotal}</p>
-                        <p className="font-display text-2xl font-black text-slate-900">{totalStaff}</p>
-                    </div>
-                </div>
-
-                {/* Card 2: Teachers/TAs */}
-                <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs transition duration-200 hover:shadow-md">
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                        <BookOpen className="size-6" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-500">{UI_TEXT.staff.kpiTeachers}</p>
-                        <p className="font-display text-2xl font-black text-slate-900">{teachersCount}</p>
-                    </div>
-                </div>
-
-                {/* Card 3: Active Staff */}
-                <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs transition duration-200 hover:shadow-md">
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                        <UserCheck className="size-6" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-500">{UI_TEXT.staff.kpiActive}</p>
-                        <p className="font-display text-2xl font-black text-slate-900">{activeStaff}</p>
-                    </div>
-                </div>
-
-                {/* Card 4: Admins */}
-                <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs transition duration-200 hover:shadow-md">
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                        <ShieldAlert className="size-6" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-500">{UI_TEXT.staff.kpiAdmins}</p>
-                        <p className="font-display text-2xl font-black text-slate-900">{adminsCount}</p>
-                    </div>
-                </div>
-            </div>
-
             {/* Filter Bar & Table Area */}
             <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {/* Filters */}
