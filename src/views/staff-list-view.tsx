@@ -265,9 +265,7 @@ export function StaffListView() {
                                     <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thStatus}</th>
-                                    <th className="sticky right-0 z-20 w-28 bg-slate-50 px-6 py-4 text-center whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">
-                                        {UI_TEXT.staff.thActions}
-                                    </th>
+                                    <th className="sticky right-0 z-20 w-16 border-l border-slate-200 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
                                 </tr>
                             </thead>
                             <tbody>
@@ -328,7 +326,7 @@ export function StaffListView() {
                                         <td className="border-b border-slate-100 px-6 py-4">
                                             {staff.systemIds && staff.systemIds.length > 0 ? (
                                                 <Tooltip
-                                                    placement="top"
+                                                    placement="top start"
                                                     title={
                                                         <div className="flex flex-col gap-1 py-0.5 text-left">
                                                             {staff.systemIds.map((id) => {
@@ -357,7 +355,7 @@ export function StaffListView() {
                                                 {staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.statusActiveLabel : UI_TEXT.staff.statusDisableLabel}
                                             </Badge>
                                         </td>
-                                        <td className="sticky right-0 z-10 border-b border-slate-100 bg-white px-6 py-4 text-center shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] transition-colors group-hover:bg-slate-50/40">
+                                        <td className="sticky right-0 z-10 border-b border-l border-slate-100 border-slate-200 bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50/40">
                                             <div className="flex justify-center">
                                                 <Dropdown.Root>
                                                     <Dropdown.DotsButton className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" />
