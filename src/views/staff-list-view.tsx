@@ -7,12 +7,12 @@ import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { StaffModal } from "@/components/application/modals/staff-modal";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
+import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteStaff, getStaffList, getSystemsList, updateStaff } from "@/services/staff.service";
 import { toast } from "@/services/toast.service";
 import { GenderEnum, RoleEnum, type Staff, StatusEnum, type UpdateStaffRequest } from "@/types/staff.types";
-import { cx } from "@/utils/cx";
 
 const filterAll = "ALL";
 
@@ -265,12 +265,14 @@ export function StaffListView() {
                                     <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thStatus}</th>
-                                    <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thActions}</th>
+                                    <th className="sticky right-0 z-20 w-28 bg-slate-50 px-6 py-4 text-center whitespace-nowrap shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">
+                                        {UI_TEXT.staff.thActions}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredStaffs.map((staff, index) => (
-                                    <tr key={staff.id} className="border-b border-slate-50 transition duration-150 hover:bg-slate-50/40">
+                                    <tr key={staff.id} className="group border-b border-slate-50 transition duration-150 hover:bg-slate-50/40">
                                         <td className="px-6 py-4 text-center font-semibold text-slate-400">{index + 1}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-[14.5px] font-bold text-slate-900">{staff.fullName}</div>
@@ -355,39 +357,36 @@ export function StaffListView() {
                                                 {staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.statusActiveLabel : UI_TEXT.staff.statusDisableLabel}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center gap-2">
-                                                {/* Edit Button */}
-                                                <button
-                                                    onClick={() => handleOpenEdit(staff)}
-                                                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-wine-soft/30 hover:text-wine"
-                                                    title={UI_TEXT.staff.editTooltip}
-                                                >
-                                                    <Edit className="size-4" />
-                                                </button>
-
-                                                {/* Lock/Unlock Toggle */}
-                                                <button
-                                                    onClick={() => handleToggleStatus(staff)}
-                                                    className={cx(
-                                                        "rounded-lg p-1.5 transition",
-                                                        staff.status === StatusEnum.ACTIVE
-                                                            ? "text-slate-400 hover:bg-amber-50 hover:text-amber-600"
-                                                            : "text-amber-600 hover:bg-emerald-50 hover:text-emerald-600",
-                                                    )}
-                                                    title={staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.lockTooltip : UI_TEXT.staff.unlockTooltip}
-                                                >
-                                                    {staff.status === StatusEnum.ACTIVE ? <Lock className="size-4" /> : <Unlock className="size-4" />}
-                                                </button>
-
-                                                {/* Delete Button */}
-                                                <button
-                                                    onClick={() => handleOpenDelete(staff)}
-                                                    className="rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                                                    title={UI_TEXT.staff.deleteTooltip}
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </button>
+                                        <td className="sticky right-0 z-10 bg-white px-6 py-4 text-center shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] transition-colors group-hover:bg-slate-50/40">
+                                            <div className="flex justify-center">
+                                                <Dropdown.Root>
+                                                    <Dropdown.DotsButton className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" />
+                                                    <Dropdown.Popover className="z-50 w-48 rounded-xl border border-slate-100 bg-white shadow-xl ring-1 ring-slate-100">
+                                                        <Dropdown.Menu>
+                                                            <Dropdown.Item icon={Edit} onAction={() => handleOpenEdit(staff)}>
+                                                                <span>{UI_TEXT.staff.editTooltip}</span>
+                                                            </Dropdown.Item>
+                                                            <Dropdown.Item
+                                                                icon={staff.status === StatusEnum.ACTIVE ? Lock : Unlock}
+                                                                onAction={() => handleToggleStatus(staff)}
+                                                            >
+                                                                <span>
+                                                                    {staff.status === StatusEnum.ACTIVE
+                                                                        ? UI_TEXT.staff.lockTooltip
+                                                                        : UI_TEXT.staff.unlockTooltip}
+                                                                </span>
+                                                            </Dropdown.Item>
+                                                            <Dropdown.Separator className="my-1 bg-slate-100" />
+                                                            <Dropdown.Item
+                                                                icon={Trash2}
+                                                                onAction={() => handleOpenDelete(staff)}
+                                                                className="text-red-600 hover:bg-red-50"
+                                                            >
+                                                                <span>{UI_TEXT.staff.deleteTooltip}</span>
+                                                            </Dropdown.Item>
+                                                        </Dropdown.Menu>
+                                                    </Dropdown.Popover>
+                                                </Dropdown.Root>
                                             </div>
                                         </td>
                                     </tr>
