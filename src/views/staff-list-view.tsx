@@ -259,9 +259,9 @@ export function StaffListView() {
                                     <th className="w-12 px-6 py-4 text-center">{UI_TEXT.staff.thStt}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thName}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thContact}</th>
-                                    <th className="w-24 px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thGender}</th>
+                                    <th className="w-24 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thGender}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thAddress}</th>
-                                    <th className="w-24 px-6 py-4">{UI_TEXT.staff.thRole}</th>
+                                    <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thStatus}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thActions}</th>
@@ -280,11 +280,13 @@ export function StaffListView() {
                                                 <span>{staff.phone || UI_TEXT.common.noData}</span>
                                             </div>
                                             <div className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-slate-500">
-                                                <Mail className="size-3.5 text-slate-400" />
-                                                <span>{staff.email}</span>
+                                                <Mail className="size-3.5 shrink-0 text-slate-400" />
+                                                <span className="max-w-[130px] truncate xl:max-w-[150px] 2xl:max-w-[180px]" title={staff.email}>
+                                                    {staff.email}
+                                                </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-xs font-semibold whitespace-nowrap text-slate-500">
+                                        <td className="px-6 py-4 text-center text-xs font-semibold whitespace-nowrap text-slate-500">
                                             {staff.gender === GenderEnum.MALE
                                                 ? UI_TEXT.staff.genderMale
                                                 : staff.gender === GenderEnum.FEMALE
@@ -294,13 +296,13 @@ export function StaffListView() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-1 text-[13px] text-slate-600">
                                                 <MapPin className="size-3.5 shrink-0 text-slate-400" />
-                                                <span className="max-w-[90px] truncate xl:max-w-[120px] 2xl:max-w-[150px]">
+                                                <span className="max-w-[70px] truncate xl:max-w-[100px] 2xl:max-w-[130px]">
                                                     {staff.address || UI_TEXT.common.noData}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex max-w-[90px] flex-wrap gap-1 xl:max-w-[110px] 2xl:max-w-[130px]">
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="mx-auto flex max-w-[90px] flex-wrap justify-center gap-1 xl:max-w-[110px] 2xl:max-w-[130px]">
                                                 {staff.roles.map((role) => (
                                                     <Badge
                                                         key={role.name}
@@ -321,7 +323,10 @@ export function StaffListView() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-[13px] font-semibold break-words text-slate-600" title={getSystemCodes(staff.systemIds)}>
+                                            <div
+                                                className="line-clamp-2 max-w-[160px] text-[13px] font-semibold break-words text-slate-600"
+                                                title={getSystemCodes(staff.systemIds)}
+                                            >
                                                 {getSystemCodes(staff.systemIds)}
                                             </div>
                                         </td>
