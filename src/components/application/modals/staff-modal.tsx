@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { type StaffSchemaType, staffSchema } from "@/schemas/staff.schema";
@@ -137,7 +138,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <CustomModal.Content className="max-w-xl !overflow-visible !rounded-[24px]">
+            <CustomModal.Content className="max-w-2xl !overflow-visible !rounded-[24px]">
                 <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
                     <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
@@ -156,97 +157,121 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                     {/* Scrollable Form Body */}
                     <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
                         <div className="custom-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-                            <Input
-                                label={UI_TEXT.staff.labelFullName}
-                                placeholder={UI_TEXT.staff.placeholderFullName}
-                                hint={errors.fullName?.message}
-                                isInvalid={!!errors.fullName}
-                                {...registerInput(register("fullName", { onChange: () => clearErrors("fullName") }))}
-                            />
+                            {/* Họ tên & Email cùng hàng */}
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                <Input
+                                    label={
+                                        <span>
+                                            {UI_TEXT.staff.labelFullName.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                        </span>
+                                    }
+                                    placeholder={UI_TEXT.staff.placeholderFullName}
+                                    hint={errors.fullName?.message}
+                                    isInvalid={!!errors.fullName}
+                                    {...registerInput(register("fullName", { onChange: () => clearErrors("fullName") }))}
+                                />
 
-                            <Input
-                                label={UI_TEXT.staff.labelEmail}
-                                placeholder={UI_TEXT.staff.placeholderEmail}
-                                type="email"
-                                hint={errors.email?.message}
-                                isInvalid={!!errors.email}
-                                {...registerInput(register("email", { onChange: () => clearErrors("email") }))}
-                            />
-
-                            <Input
-                                label={UI_TEXT.staff.labelPhone}
-                                placeholder={UI_TEXT.staff.placeholderPhone}
-                                hint={errors.phone?.message}
-                                isInvalid={!!errors.phone}
-                                {...registerInput(register("phone", { onChange: () => clearErrors("phone") }))}
-                            />
-
-                            <Input
-                                label={UI_TEXT.staff.labelAddress}
-                                placeholder={UI_TEXT.staff.placeholderAddress}
-                                hint={errors.address?.message}
-                                isInvalid={!!errors.address}
-                                {...registerInput(register("address", { onChange: () => clearErrors("address") }))}
-                            />
-
-                            <Input
-                                label={staff ? UI_TEXT.staff.labelPasswordEdit : UI_TEXT.staff.labelPassword}
-                                placeholder={staff ? UI_TEXT.staff.placeholderPasswordEdit : UI_TEXT.staff.placeholderPassword}
-                                type="password"
-                                hint={errors.password?.message}
-                                isInvalid={!!errors.password}
-                                {...registerInput(register("password", { onChange: () => clearErrors("password") }))}
-                            />
-
-                            {/* Gender Select */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-semibold text-slate-700">{UI_TEXT.staff.labelGender}</label>
-                                <Controller
-                                    name="gender"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <select
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition outline-none focus:border-wine focus:ring-2 focus:ring-wine/25"
-                                        >
-                                            <option value={GenderEnum.MALE}>{UI_TEXT.staff.genderMale}</option>
-                                            <option value={GenderEnum.FEMALE}>{UI_TEXT.staff.genderFemale}</option>
-                                            <option value={GenderEnum.OTHER}>{UI_TEXT.staff.genderOther}</option>
-                                        </select>
-                                    )}
+                                <Input
+                                    label={
+                                        <span>
+                                            {UI_TEXT.staff.labelEmail.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                        </span>
+                                    }
+                                    placeholder={UI_TEXT.staff.placeholderEmail}
+                                    type="email"
+                                    hint={errors.email?.message}
+                                    isInvalid={!!errors.email}
+                                    {...registerInput(register("email", { onChange: () => clearErrors("email") }))}
                                 />
                             </div>
 
+                            {/* Số điện thoại & Địa chỉ cùng hàng */}
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                <Input
+                                    label={
+                                        <span>
+                                            {UI_TEXT.staff.labelPhone.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                        </span>
+                                    }
+                                    placeholder={UI_TEXT.staff.placeholderPhone}
+                                    hint={errors.phone?.message}
+                                    isInvalid={!!errors.phone}
+                                    {...registerInput(register("phone", { onChange: () => clearErrors("phone") }))}
+                                />
+
+                                <Input
+                                    label={
+                                        <span>
+                                            {UI_TEXT.staff.labelAddress.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                        </span>
+                                    }
+                                    placeholder={UI_TEXT.staff.placeholderAddress}
+                                    hint={errors.address?.message}
+                                    isInvalid={!!errors.address}
+                                    {...registerInput(register("address", { onChange: () => clearErrors("address") }))}
+                                />
+                            </div>
+
+                            {/* Mật khẩu & Giới tính cùng hàng */}
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                                <Input
+                                    label={
+                                        staff ? (
+                                            UI_TEXT.staff.labelPasswordEdit
+                                        ) : (
+                                            <span>
+                                                {UI_TEXT.staff.labelPassword.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                            </span>
+                                        )
+                                    }
+                                    placeholder={staff ? UI_TEXT.staff.placeholderPasswordEdit : UI_TEXT.staff.placeholderPassword}
+                                    type="password"
+                                    hint={errors.password?.message}
+                                    isInvalid={!!errors.password}
+                                    {...registerInput(register("password", { onChange: () => clearErrors("password") }))}
+                                />
+
+                                {/* Gender Select */}
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-semibold text-slate-700">{UI_TEXT.staff.labelGender}</label>
+                                    <Controller
+                                        name="gender"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <select
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition outline-none focus:border-wine focus:ring-2 focus:ring-wine/25"
+                                            >
+                                                <option value={GenderEnum.MALE}>{UI_TEXT.staff.genderMale}</option>
+                                                <option value={GenderEnum.FEMALE}>{UI_TEXT.staff.genderFemale}</option>
+                                                <option value={GenderEnum.OTHER}>{UI_TEXT.staff.genderOther}</option>
+                                            </select>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
                             {/* Roles Selection */}
-                            <div className="flex flex-col gap-2">
-                                <label className="text-sm font-semibold text-slate-700">{UI_TEXT.staff.labelRoles}</label>
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-sm font-semibold text-slate-700">
+                                    {UI_TEXT.staff.labelRoles.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                </label>
                                 <Controller
                                     name="roles"
                                     control={control}
                                     render={({ field }) => (
-                                        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                                            {roleOptions.map((opt) => {
-                                                const isChecked = field.value?.includes(opt.id);
-                                                return (
-                                                    <label key={opt.id} className="flex cursor-pointer items-center gap-2 py-1 text-sm text-slate-700">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            onChange={() => {
-                                                                const newValue = isChecked
-                                                                    ? field.value.filter((k) => k !== opt.id)
-                                                                    : [...(field.value || []), opt.id];
-                                                                field.onChange(newValue);
-                                                                clearErrors("roles");
-                                                            }}
-                                                            className="size-4 rounded accent-wine"
-                                                        />
-                                                        <span>{opt.label}</span>
-                                                    </label>
-                                                );
-                                            })}
-                                        </div>
+                                        <Select.MultiComboBox
+                                            placeholder={UI_TEXT.staff.placeholderRoles}
+                                            selectedKeys={field.value || []}
+                                            onSelectionChange={(keys) => {
+                                                field.onChange(keys);
+                                                clearErrors("roles");
+                                            }}
+                                            items={roleOptions}
+                                            size="sm"
+                                            isInvalid={!!errors.roles}
+                                        />
                                     )}
                                 />
                                 {errors.roles && <p className="text-xs font-medium text-red-500">{errors.roles.message}</p>}

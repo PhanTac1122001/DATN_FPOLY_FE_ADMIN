@@ -423,6 +423,7 @@ export const UI_TEXT = {
         placeholderAddress: "Nhập địa chỉ liên hệ",
         labelPassword: "Mật khẩu *",
         placeholderPassword: "Tạo mật khẩu đăng nhập",
+        placeholderRoles: "Chọn vai trò...",
         labelGender: "Giới tính",
         labelRoles: "Vai trò (Chọn nhiều) *",
         labelSystems: "Hệ đào tạo quản lý (Chọn nhiều)",
