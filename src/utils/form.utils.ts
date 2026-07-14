@@ -1,17 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { UseFormRegisterReturn } from "react-hook-form";
 
 /**
  * Strips 'min' and 'max' from React Hook Form's register return value
  * to avoid type incompatibility with custom Input component props.
  */
-export function registerInput<T extends string>(registerResult: UseFormRegisterReturn<T>): any {
+export function registerInput<T extends string>(
+    registerResult: UseFormRegisterReturn<T>,
+): Omit<UseFormRegisterReturn<T>, "min" | "max"> & {
+    onChange: (e: unknown) => Promise<boolean | void>;
+} {
     const { min: _min, max: _max, onChange, ...rest } = registerResult;
     return {
         ...rest,
-        onChange: (e: any) => {
+        onChange: (e: unknown) => {
             if (e && typeof e === "object" && "target" in e) {
-                return onChange(e);
+                return onChange(e as Parameters<typeof onChange>[0]);
             }
             return onChange({
                 target: {
@@ -19,7 +22,7 @@ export function registerInput<T extends string>(registerResult: UseFormRegisterR
                     value: e,
                 },
                 type: "change",
-            } as any);
+            } as Parameters<typeof onChange>[0]);
         },
     };
 }

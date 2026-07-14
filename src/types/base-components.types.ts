@@ -345,7 +345,7 @@ export type IconsaxIconProps = {
 
 export interface InputBasePropsInternal {
     /** Label text for the input */
-    label?: string;
+    label?: ReactNode;
     /** Helper text displayed below the input */
     hint?: ReactNode;
 }
@@ -903,18 +903,7 @@ export type BadgeTypes = "pill-color" | "color" | "modern";
 // Badge color type - generic type for badge component color prop
 // Note: This references internal badge color mappings
 export type GenericBadgeColor =
-    | "gray"
-    | "brand"
-    | "error"
-    | "warning"
-    | "success"
-    | "gray-blue"
-    | "blue-light"
-    | "blue"
-    | "indigo"
-    | "purple"
-    | "pink"
-    | "orange";
+    "gray" | "brand" | "error" | "warning" | "success" | "gray-blue" | "blue-light" | "blue" | "indigo" | "purple" | "pink" | "orange";
 
 // Badge Component Props
 export interface BadgeProps<T extends BadgeTypes> {

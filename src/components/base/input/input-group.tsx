@@ -57,7 +57,7 @@ export const InputGroup = ({ size = "sm", prefix, leadingAddon, trailingAddon, l
     return (
         <TextField
             size={size}
-            aria-label={label || undefined}
+            aria-label={typeof label === "string" ? label : undefined}
             inputClassName={cx(paddings[size].input)}
             tooltipClassName={cx(hasTrailing && !hasLeading && "group-has-[&>select]:right-0")}
             wrapperClassName={cx(
