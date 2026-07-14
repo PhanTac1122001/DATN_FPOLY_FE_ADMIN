@@ -8,6 +8,7 @@ import { StaffModal } from "@/components/application/modals/staff-modal";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
+import { Select } from "@/components/base/select/select";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteStaff, getStaffList, getSystemsList, updateStaff } from "@/services/staff.service";
@@ -127,7 +128,7 @@ export function StaffListView() {
             <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {/* Filters */}
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                         {/* Search Input */}
                         <div className="relative w-full max-w-xs">
                             <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
@@ -144,31 +145,37 @@ export function StaffListView() {
 
                         {/* Role Filter */}
                         <div className="w-full sm:w-48">
-                            <select
-                                value={roleFilter}
-                                onChange={(e) => setRoleFilter(e.target.value)}
-                                className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition outline-none focus:border-wine"
+                            <Select
+                                selectedKey={roleFilter}
+                                onSelectionChange={(key) => setRoleFilter(key as string)}
+                                placeholder={UI_TEXT.staff.roleFilterAll}
+                                size="sm"
+                                isClearable={false}
+                                aria-label="Lọc theo vai trò"
                             >
-                                <option value={filterAll}>{UI_TEXT.staff.roleFilterAll}</option>
-                                <option value={RoleEnum.ADMIN}>{UI_TEXT.staff.roleAdmin}</option>
-                                <option value={RoleEnum.MANAGER}>{UI_TEXT.staff.roleManager}</option>
-                                <option value={RoleEnum.TEACHER}>{UI_TEXT.staff.roleTeacher}</option>
-                                <option value={RoleEnum.TEACHER_ASSISTANT}>{UI_TEXT.staff.roleTeacherAssistant}</option>
-                                <option value={RoleEnum.ASSISTANT}>{UI_TEXT.staff.roleAssistant}</option>
-                            </select>
+                                <Select.Item id={filterAll} label={UI_TEXT.staff.roleFilterAll} />
+                                <Select.Item id={RoleEnum.ADMIN} label={UI_TEXT.staff.roleAdmin} />
+                                <Select.Item id={RoleEnum.MANAGER} label={UI_TEXT.staff.roleManager} />
+                                <Select.Item id={RoleEnum.TEACHER} label={UI_TEXT.staff.roleTeacher} />
+                                <Select.Item id={RoleEnum.TEACHER_ASSISTANT} label={UI_TEXT.staff.roleTeacherAssistant} />
+                                <Select.Item id={RoleEnum.ASSISTANT} label={UI_TEXT.staff.roleAssistant} />
+                            </Select>
                         </div>
 
                         {/* Status Filter */}
                         <div className="w-full sm:w-48">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition outline-none focus:border-wine"
+                            <Select
+                                selectedKey={statusFilter}
+                                onSelectionChange={(key) => setStatusFilter(key as string)}
+                                placeholder={UI_TEXT.staff.statusFilterAll}
+                                size="sm"
+                                isClearable={false}
+                                aria-label="Lọc theo trạng thái"
                             >
-                                <option value={filterAll}>{UI_TEXT.staff.statusFilterAll}</option>
-                                <option value={StatusEnum.ACTIVE}>{UI_TEXT.staff.statusActive}</option>
-                                <option value={StatusEnum.DISABLE}>{UI_TEXT.staff.statusDisable}</option>
-                            </select>
+                                <Select.Item id={filterAll} label={UI_TEXT.staff.statusFilterAll} />
+                                <Select.Item id={StatusEnum.ACTIVE} label={UI_TEXT.staff.statusActive} />
+                                <Select.Item id={StatusEnum.DISABLE} label={UI_TEXT.staff.statusDisable} />
+                            </Select>
                         </div>
                     </div>
 
