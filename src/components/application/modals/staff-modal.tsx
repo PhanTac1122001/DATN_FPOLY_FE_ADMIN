@@ -238,15 +238,18 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                         name="gender"
                                         control={control}
                                         render={({ field }) => (
-                                            <select
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                                className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 transition outline-none focus:border-wine focus:ring-2 focus:ring-wine/25"
+                                            <Select
+                                                selectedKey={field.value}
+                                                onSelectionChange={(key) => field.onChange(key as GenderEnum)}
+                                                items={[
+                                                    { id: GenderEnum.MALE, label: UI_TEXT.staff.genderMale },
+                                                    { id: GenderEnum.FEMALE, label: UI_TEXT.staff.genderFemale },
+                                                    { id: GenderEnum.OTHER, label: UI_TEXT.staff.genderOther },
+                                                ]}
+                                                size="sm"
                                             >
-                                                <option value={GenderEnum.MALE}>{UI_TEXT.staff.genderMale}</option>
-                                                <option value={GenderEnum.FEMALE}>{UI_TEXT.staff.genderFemale}</option>
-                                                <option value={GenderEnum.OTHER}>{UI_TEXT.staff.genderOther}</option>
-                                            </select>
+                                                {(item) => <Select.Item id={item.id} label={item.label} />}
+                                            </Select>
                                         )}
                                     />
                                 </div>
