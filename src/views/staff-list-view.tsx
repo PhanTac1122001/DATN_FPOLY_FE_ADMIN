@@ -261,7 +261,7 @@ export function StaffListView() {
                                     <th className="px-6 py-4">{UI_TEXT.staff.thContact}</th>
                                     <th className="w-24 px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thGender}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thAddress}</th>
-                                    <th className="w-32 px-6 py-4">{UI_TEXT.staff.thRole}</th>
+                                    <th className="w-24 px-6 py-4">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thStatus}</th>
                                     <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thActions}</th>
@@ -271,7 +271,7 @@ export function StaffListView() {
                                 {filteredStaffs.map((staff, index) => (
                                     <tr key={staff.id} className="border-b border-slate-50 transition duration-150 hover:bg-slate-50/40">
                                         <td className="px-6 py-4 text-center font-semibold text-slate-400">{index + 1}</td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-[14.5px] font-bold text-slate-900">{staff.fullName}</div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -294,11 +294,13 @@ export function StaffListView() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-1 text-[13px] text-slate-600">
                                                 <MapPin className="size-3.5 shrink-0 text-slate-400" />
-                                                <span className="max-w-[150px] truncate">{staff.address || UI_TEXT.common.noData}</span>
+                                                <span className="max-w-[90px] truncate xl:max-w-[120px] 2xl:max-w-[150px]">
+                                                    {staff.address || UI_TEXT.common.noData}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex flex-wrap gap-1">
+                                            <div className="flex max-w-[90px] flex-wrap gap-1 xl:max-w-[110px] 2xl:max-w-[130px]">
                                                 {staff.roles.map((role) => (
                                                     <Badge
                                                         key={role.name}
@@ -319,10 +321,7 @@ export function StaffListView() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div
-                                                className="max-w-[180px] truncate text-[13px] font-semibold text-slate-600"
-                                                title={getSystemCodes(staff.systemIds)}
-                                            >
+                                            <div className="text-[13px] font-semibold break-words text-slate-600" title={getSystemCodes(staff.systemIds)}>
                                                 {getSystemCodes(staff.systemIds)}
                                             </div>
                                         </td>
