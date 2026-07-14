@@ -425,6 +425,8 @@ export const UI_TEXT = {
         placeholderPassword: "Tạo mật khẩu đăng nhập",
         placeholderRoles: "Chọn vai trò...",
         labelGender: "Giới tính",
+        placeholderGender: "Chọn giới tính",
+        validationGender: "Vui lòng chọn giới tính",
         labelRoles: "Vai trò (Chọn nhiều) *",
         labelSystems: "Hệ đào tạo quản lý (Chọn nhiều)",
         labelWhitelist: "Miễn đăng nhập OTP (Whitelist)",

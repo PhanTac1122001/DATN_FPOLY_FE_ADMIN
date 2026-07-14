@@ -54,7 +54,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
             phone: "",
             address: "",
             password: "",
-            gender: GenderEnum.MALE,
+            gender: undefined as unknown as GenderEnum,
             status: StatusEnum.ACTIVE,
             whitelist: false,
             systemIds: [],
@@ -72,7 +72,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                     phone: staff.phone || "",
                     address: staff.address || "",
                     password: "", // Password is optional on edit
-                    gender: staff.gender || GenderEnum.MALE,
+                    gender: staff.gender,
                     status: staff.status,
                     whitelist: staff.whitelist || false,
                     systemIds: staff.systemIds || [],
@@ -85,7 +85,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                     phone: "",
                     address: "",
                     password: "",
-                    gender: GenderEnum.MALE,
+                    gender: undefined as unknown as GenderEnum,
                     status: StatusEnum.ACTIVE,
                     whitelist: false,
                     systemIds: [],
@@ -240,13 +240,19 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                         render={({ field }) => (
                                             <Select
                                                 selectedKey={field.value}
-                                                onSelectionChange={(key) => field.onChange(key as GenderEnum)}
+                                                onSelectionChange={(key) => {
+                                                    field.onChange(key as GenderEnum);
+                                                    clearErrors("gender");
+                                                }}
                                                 items={[
                                                     { id: GenderEnum.MALE, label: UI_TEXT.staff.genderMale },
                                                     { id: GenderEnum.FEMALE, label: UI_TEXT.staff.genderFemale },
                                                     { id: GenderEnum.OTHER, label: UI_TEXT.staff.genderOther },
                                                 ]}
                                                 size="sm"
+                                                placeholder={UI_TEXT.staff.placeholderGender}
+                                                isInvalid={!!errors.gender}
+                                                hint={errors.gender?.message}
                                             >
                                                 {(item) => <Select.Item id={item.id} label={item.label} />}
                                             </Select>
@@ -339,7 +345,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
 
                         {/* Footer */}
                         <div className="flex justify-end gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
-                            <Button color="secondary-gray" size="md" onClick={onClose} isDisabled={isPending}>
+                            <Button type="button" color="secondary-gray" size="md" onPress={onClose} isDisabled={isPending}>
                                 {UI_TEXT.staff.btnCancel}
                             </Button>
                             <Button
