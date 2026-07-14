@@ -7,6 +7,7 @@ import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { StaffModal } from "@/components/application/modals/staff-modal";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteStaff, getStaffList, getSystemsList, updateStaff } from "@/services/staff.service";
 import { toast } from "@/services/toast.service";
@@ -323,12 +324,31 @@ export function StaffListView() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div
-                                                className="line-clamp-2 max-w-[160px] text-[13px] font-semibold break-words text-slate-600"
-                                                title={getSystemCodes(staff.systemIds)}
-                                            >
-                                                {getSystemCodes(staff.systemIds)}
-                                            </div>
+                                            {staff.systemIds && staff.systemIds.length > 0 ? (
+                                                <Tooltip
+                                                    placement="top"
+                                                    title={
+                                                        <div className="flex flex-col gap-1 py-0.5 text-left">
+                                                            {staff.systemIds.map((id) => {
+                                                                const sys = systems.find((s) => s.id === id);
+                                                                return (
+                                                                    <div key={id} className="whitespace-nowrap">
+                                                                        {sys?.name ? `${sys.systemCode} (${sys.name})` : sys?.systemCode || id}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    }
+                                                >
+                                                    <TooltipTrigger>
+                                                        <div className="max-w-[180px] cursor-pointer truncate text-[13px] font-semibold text-slate-600">
+                                                            {getSystemCodes(staff.systemIds)}
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                </Tooltip>
+                                            ) : (
+                                                <div className="text-[13px] font-semibold text-slate-600">{UI_TEXT.staff.systemNone}</div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <Badge color={staff.status === StatusEnum.ACTIVE ? "success" : "gray"} size="sm">
