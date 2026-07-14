@@ -272,12 +272,12 @@ export function StaffListView() {
                             </thead>
                             <tbody>
                                 {filteredStaffs.map((staff, index) => (
-                                    <tr key={staff.id} className="group border-b border-slate-50 transition duration-150 hover:bg-slate-50/40">
-                                        <td className="px-6 py-4 text-center font-semibold text-slate-400">{index + 1}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                    <tr key={staff.id} className="group transition duration-150 hover:bg-slate-50/40">
+                                        <td className="border-b border-slate-100 px-6 py-4 text-center font-semibold text-slate-400">{index + 1}</td>
+                                        <td className="border-b border-slate-100 px-6 py-4 whitespace-nowrap">
                                             <div className="text-[14.5px] font-bold text-slate-900">{staff.fullName}</div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="border-b border-slate-100 px-6 py-4">
                                             <div className="flex items-center gap-1.5 text-[13px] font-medium text-slate-600">
                                                 <Phone className="size-3.5 text-slate-400" />
                                                 <span>{staff.phone || UI_TEXT.common.noData}</span>
@@ -289,14 +289,14 @@ export function StaffListView() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center text-xs font-semibold whitespace-nowrap text-slate-500">
+                                        <td className="border-b border-slate-100 px-6 py-4 text-center text-xs font-semibold whitespace-nowrap text-slate-500">
                                             {staff.gender === GenderEnum.MALE
                                                 ? UI_TEXT.staff.genderMale
                                                 : staff.gender === GenderEnum.FEMALE
                                                   ? UI_TEXT.staff.genderFemale
                                                   : UI_TEXT.staff.genderOther}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="border-b border-slate-100 px-6 py-4">
                                             <div className="flex items-center gap-1 text-[13px] text-slate-600">
                                                 <MapPin className="size-3.5 shrink-0 text-slate-400" />
                                                 <span className="max-w-[70px] truncate xl:max-w-[100px] 2xl:max-w-[130px]">
@@ -304,7 +304,7 @@ export function StaffListView() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="border-b border-slate-100 px-6 py-4 text-center">
                                             <div className="mx-auto flex max-w-[90px] flex-wrap justify-center gap-1 xl:max-w-[110px] 2xl:max-w-[130px]">
                                                 {staff.roles.map((role) => (
                                                     <Badge
@@ -325,7 +325,7 @@ export function StaffListView() {
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="border-b border-slate-100 px-6 py-4">
                                             {staff.systemIds && staff.systemIds.length > 0 ? (
                                                 <Tooltip
                                                     placement="top"
@@ -352,12 +352,12 @@ export function StaffListView() {
                                                 <div className="text-[13px] font-semibold text-slate-600">{UI_TEXT.staff.systemNone}</div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="border-b border-slate-100 px-6 py-4 text-center">
                                             <Badge color={staff.status === StatusEnum.ACTIVE ? "success" : "gray"} size="sm">
                                                 {staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.statusActiveLabel : UI_TEXT.staff.statusDisableLabel}
                                             </Badge>
                                         </td>
-                                        <td className="sticky right-0 z-10 bg-white px-6 py-4 text-center shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] transition-colors group-hover:bg-slate-50/40">
+                                        <td className="sticky right-0 z-10 border-b border-slate-100 bg-white px-6 py-4 text-center shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)] transition-colors group-hover:bg-slate-50/40">
                                             <div className="flex justify-center">
                                                 <Dropdown.Root>
                                                     <Dropdown.DotsButton className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" />
