@@ -345,14 +345,9 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
 
                         {/* Footer */}
                         <div className="flex justify-end gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                disabled={isPending}
-                                className="rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:ring-2 focus:ring-slate-500/25 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                            >
+                            <Button type="button" color="secondary-gray" size="md" onClick={onClose} isDisabled={isPending}>
                                 {UI_TEXT.staff.btnCancel}
-                            </button>
+                            </Button>
                             <Button
                                 color="primary"
                                 size="md"
