@@ -239,7 +239,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                         control={control}
                                         render={({ field }) => (
                                             <Select
-                                                selectedKey={field.value}
+                                                selectedKey={field.value || null}
                                                 onSelectionChange={(key) => {
                                                     field.onChange(key as GenderEnum);
                                                     clearErrors("gender");
