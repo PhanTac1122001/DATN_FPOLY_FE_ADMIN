@@ -41,6 +41,8 @@ export interface AdvancedFilterProps {
     maxConditions?: number;
     /** Trigger button element */
     trigger: React.ReactNode;
+    /** Hide operator selector */
+    hideOperator?: boolean;
 }
 
 // ============================================================================
@@ -57,6 +59,22 @@ export interface SearchFiltersProps {
     filterFields: FilterFieldDefinition[];
     searchPlaceholder?: string;
     filterButtonText?: string;
+}
+
+export interface SearchFilterBarProps {
+    /** Current search query string */
+    search: string;
+    /** Callback when search query changes */
+    onSearchChange: (value: string) => void;
+    /** Custom placeholder text for search input */
+    searchPlaceholder?: string;
+
+    /** Optional: Fields config for the advanced filter */
+    filterFields?: FilterFieldDefinition[];
+    /** Optional: Current state of advanced filter */
+    advancedFilterState?: FilterState;
+    /** Optional: Callback when advanced filter changes */
+    onAdvancedFilterChange?: (state: FilterState) => void;
 }
 
 // ============================================================================

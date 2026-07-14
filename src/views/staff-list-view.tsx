@@ -2,26 +2,27 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Edit, Lock, Mail, MapPin, Phone, Plus, Search, Trash2, Unlock } from "lucide-react";
+import { AlertTriangle, Edit, Lock, Mail, MapPin, Phone, Plus, Trash2, Unlock } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { StaffModal } from "@/components/application/modals/staff-modal";
+import { SearchFilterBar } from "@/components/application/search-filters/search-filter-bar";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
-import { Select } from "@/components/base/select/select";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
+import { STAFF_FILTER_FIELDS } from "@/constants/staff.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteStaff, getStaffList, getSystemsList, updateStaff } from "@/services/staff.service";
 import { toast } from "@/services/toast.service";
+import { type FilterState } from "@/types/filter.types";
 import { GenderEnum, RoleEnum, type Staff, StatusEnum, type UpdateStaffRequest } from "@/types/staff.types";
-
-const filterAll = "ALL";
 
 export function StaffListView() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
-    const [roleFilter, setRoleFilter] = useState<string>(filterAll);
-    const [statusFilter, setStatusFilter] = useState<string>(filterAll);
+    const [advancedFilterState, setAdvancedFilterState] = useState<FilterState>({
+        conditions: [],
+    });
 
     // Modal States
     const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
@@ -115,11 +116,25 @@ export function StaffListView() {
             staff.email.toLowerCase().includes(search.toLowerCase()) ||
             (staff.phone && staff.phone.includes(search));
 
-        const matchesRole = roleFilter === filterAll || staff.roles.some((r) => r.name === roleFilter);
+        let matchesAdvanced = true;
+        for (const condition of advancedFilterState.conditions) {
+            if (!condition.fieldKey || condition.value === null || condition.value === "") continue;
 
-        const matchesStatus = statusFilter === filterAll || staff.status === statusFilter;
+            if (condition.fieldKey === "role") {
+                const hasRole = staff.roles.some((r) => r.name === condition.value);
+                if (!hasRole) {
+                    matchesAdvanced = false;
+                    break;
+                }
+            } else if (condition.fieldKey === "status") {
+                if (staff.status !== condition.value) {
+                    matchesAdvanced = false;
+                    break;
+                }
+            }
+        }
 
-        return matchesSearch && matchesRole && matchesStatus;
+        return matchesSearch && matchesAdvanced;
     });
 
     return (
@@ -128,56 +143,14 @@ export function StaffListView() {
             <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {/* Filters */}
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-                        {/* Search Input */}
-                        <div className="relative w-full max-w-xs">
-                            <span className="absolute inset-y-0 left-3 flex items-center text-slate-400">
-                                <Search className="size-4" />
-                            </span>
-                            <input
-                                type="text"
-                                placeholder={UI_TEXT.staff.searchPlaceholder}
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full rounded-full border border-slate-200 bg-slate-50/50 py-2 pr-4 pl-9 text-sm text-slate-900 placeholder-slate-400 transition outline-none focus:border-wine focus:bg-white focus:ring-1 focus:ring-wine"
-                            />
-                        </div>
-
-                        {/* Role Filter */}
-                        <div className="w-full sm:w-48">
-                            <Select
-                                selectedKey={roleFilter}
-                                onSelectionChange={(key) => setRoleFilter(key as string)}
-                                placeholder={UI_TEXT.staff.roleFilterAll}
-                                size="sm"
-                                isClearable={false}
-                                aria-label="Lọc theo vai trò"
-                            >
-                                <Select.Item id={filterAll} label={UI_TEXT.staff.roleFilterAll} />
-                                <Select.Item id={RoleEnum.ADMIN} label={UI_TEXT.staff.roleAdmin} />
-                                <Select.Item id={RoleEnum.MANAGER} label={UI_TEXT.staff.roleManager} />
-                                <Select.Item id={RoleEnum.TEACHER} label={UI_TEXT.staff.roleTeacher} />
-                                <Select.Item id={RoleEnum.TEACHER_ASSISTANT} label={UI_TEXT.staff.roleTeacherAssistant} />
-                                <Select.Item id={RoleEnum.ASSISTANT} label={UI_TEXT.staff.roleAssistant} />
-                            </Select>
-                        </div>
-
-                        {/* Status Filter */}
-                        <div className="w-full sm:w-48">
-                            <Select
-                                selectedKey={statusFilter}
-                                onSelectionChange={(key) => setStatusFilter(key as string)}
-                                placeholder={UI_TEXT.staff.statusFilterAll}
-                                size="sm"
-                                isClearable={false}
-                                aria-label="Lọc theo trạng thái"
-                            >
-                                <Select.Item id={filterAll} label={UI_TEXT.staff.statusFilterAll} />
-                                <Select.Item id={StatusEnum.ACTIVE} label={UI_TEXT.staff.statusActive} />
-                                <Select.Item id={StatusEnum.DISABLE} label={UI_TEXT.staff.statusDisable} />
-                            </Select>
-                        </div>
-                    </div>
+                    <SearchFilterBar
+                        search={search}
+                        onSearchChange={setSearch}
+                        searchPlaceholder={UI_TEXT.staff.searchPlaceholder}
+                        filterFields={STAFF_FILTER_FIELDS}
+                        advancedFilterState={advancedFilterState}
+                        onAdvancedFilterChange={setAdvancedFilterState}
+                    />
 
                     {/* Add Staff Trigger */}
                     <Button
@@ -188,7 +161,7 @@ export function StaffListView() {
                             setIsStaffModalOpen(true);
                         }}
                         className="gap-2 border-none bg-wine px-5 font-bold text-white shadow-md shadow-wine/20 hover:bg-wine-deep"
-                        iconLeading={Plus}
+                        iconLeading={<Plus className="pointer-events-none size-5 shrink-0 transition-inherit-all" />}
                     >
                         {UI_TEXT.staff.addStaff}
                     </Button>
@@ -218,7 +191,7 @@ export function StaffListView() {
                                     <th className="w-24 px-6 py-4">{UI_TEXT.staff.thAddress}</th>
                                     <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thSystem}</th>
-                                    <th className="w-28 px-6 py-4 text-center">{UI_TEXT.staff.thStatus}</th>
+                                    <th className="w-28 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thStatus}</th>
                                     <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
                                 </tr>
                             </thead>
@@ -304,8 +277,8 @@ export function StaffListView() {
                                                 <div className="text-[13px] font-semibold text-slate-600">{UI_TEXT.staff.systemNone}</div>
                                             )}
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4 text-center">
-                                            <Badge color={staff.status === StatusEnum.ACTIVE ? "success" : "gray"} size="sm">
+                                        <td className="border-b border-slate-100 px-6 py-4 text-center whitespace-nowrap">
+                                            <Badge color={staff.status === StatusEnum.ACTIVE ? "success" : "error"} size="sm">
                                                 {staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.statusActiveLabel : UI_TEXT.staff.statusDisableLabel}
                                             </Badge>
                                         </td>
@@ -315,12 +288,23 @@ export function StaffListView() {
                                                     <Dropdown.DotsButton className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" />
                                                     <Dropdown.Popover className="z-50 w-48 rounded-xl border border-slate-100 bg-white shadow-xl ring-1 ring-slate-100">
                                                         <Dropdown.Menu>
-                                                            <Dropdown.Item icon={Edit} onAction={() => handleOpenEdit(staff)}>
+                                                            <Dropdown.Item
+                                                                icon={Edit}
+                                                                onAction={() => handleOpenEdit(staff)}
+                                                                className={(state) =>
+                                                                    "text-blue-600 [&_svg]:text-current " +
+                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-blue-50" : "")
+                                                                }
+                                                            >
                                                                 <span>{UI_TEXT.staff.editTooltip}</span>
                                                             </Dropdown.Item>
                                                             <Dropdown.Item
                                                                 icon={staff.status === StatusEnum.ACTIVE ? Lock : Unlock}
                                                                 onAction={() => handleToggleStatus(staff)}
+                                                                className={(state) =>
+                                                                    "text-amber-600 [&_svg]:text-current " +
+                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-amber-50" : "")
+                                                                }
                                                             >
                                                                 <span>
                                                                     {staff.status === StatusEnum.ACTIVE
@@ -332,7 +316,10 @@ export function StaffListView() {
                                                             <Dropdown.Item
                                                                 icon={Trash2}
                                                                 onAction={() => handleOpenDelete(staff)}
-                                                                className="text-red-600 hover:bg-red-50"
+                                                                className={(state) =>
+                                                                    "text-red-600 [&_svg]:text-current " +
+                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-red-50" : "")
+                                                                }
                                                             >
                                                                 <span>{UI_TEXT.staff.deleteTooltip}</span>
                                                             </Dropdown.Item>

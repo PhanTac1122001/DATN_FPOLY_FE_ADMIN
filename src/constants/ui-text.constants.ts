@@ -111,6 +111,10 @@ export const UI_TEXT = {
             splitCells: "Tách ô",
             deleteTable: "Xóa bảng",
         },
+        filter: "Bộ lọc",
+        search: "Tìm kiếm...",
+        role: "Vai trò",
+        status: "Trạng thái",
     },
     metadata: {
         layout: {
@@ -402,7 +406,7 @@ export const UI_TEXT = {
         roleDefault: "Nhân viên",
         systemNone: "Không có",
         statusActiveLabel: "Hoạt động",
-        statusDisableLabel: "Tắt",
+        statusDisableLabel: "Khóa",
 
         // Actions tooltips
         editTooltip: "Sửa thông tin",
@@ -456,5 +460,58 @@ export const UI_TEXT = {
         toastUpdateError: "Không thể cập nhật nhân viên.",
         toastDeleteSuccess: "Đã xóa tài khoản nhân viên.",
         toastDeleteError: "Không thể xóa nhân viên.",
+    },
+    trainingSystem: {
+        title: "Quản lý Hệ đào tạo",
+        subtitle: "Danh sách hệ đào tạo trong hệ thống lms",
+        searchPlaceholder: "Tìm kiếm mã hệ, tên hệ...",
+        addSystem: "Thêm hệ đào tạo",
+        editSystem: "Sửa hệ đào tạo",
+        deleteSystem: "Xóa hệ đào tạo",
+        loading: "Đang tải danh sách hệ đào tạo...",
+        noDataTitle: "Không tìm thấy hệ đào tạo nào",
+        noDataDesc: "Thử thay đổi bộ lọc tìm kiếm hoặc thêm hệ đào tạo mới.",
+
+        // Table headers
+        thStt: "STT",
+        thId: "Id hệ",
+        thName: "Tên hệ",
+        thCode: "Mã hệ",
+        thCreatedAt: "Ngày tạo",
+        thActions: "Hành động",
+
+        // Actions/buttons
+        viewDetails: "Xem chi tiết",
+        learningPath: "Lộ trình học",
+        deleteTooltip: "Xóa hệ đào tạo",
+
+        // Add/Edit Modal
+        addTitle: "Thêm hệ đào tạo mới",
+        addSubtitle: "Tạo hệ đào tạo mới cho hệ thống quản lý.",
+        editTitle: "Cập nhật hệ đào tạo",
+        editSubtitle: "Chỉnh sửa mã và tên hệ đào tạo hiện tại.",
+        labelCode: "Mã hệ đào tạo *",
+        placeholderCode: "Nhập mã hệ đào tạo (VD: DT, EL, PK)",
+        labelName: "Tên hệ đào tạo *",
+        placeholderName: "Nhập tên hệ đào tạo đầy đủ",
+        btnCancel: "Hủy bỏ",
+        btnSave: "Lưu hệ đào tạo",
+        btnUpdate: "Cập nhật",
+
+        // Confirm Delete Modal
+        confirmDeleteTitle: "Xóa hệ đào tạo?",
+        confirmDeleteMessage: "Bạn có chắc chắn muốn xóa vĩnh viễn hệ đào tạo này? Hành động này không thể hoàn tác.",
+        confirmDeleteBtn: "Xóa vĩnh viễn",
+        confirmCancelBtn: "Hủy bỏ",
+
+        // Toasts
+        toastSuccess: "Thành công",
+        toastError: "Lỗi",
+        toastAddSuccess: "Đã thêm hệ đào tạo mới thành công.",
+        toastAddError: "Không thể thêm hệ đào tạo.",
+        toastUpdateSuccess: "Đã cập nhật hệ đào tạo thành công.",
+        toastUpdateError: "Không thể cập nhật hệ đào tạo.",
+        toastDeleteSuccess: "Đã xóa hệ đào tạo thành công.",
+        toastDeleteError: "Không thể xóa hệ đào tạo.",
     },
 } as const;
