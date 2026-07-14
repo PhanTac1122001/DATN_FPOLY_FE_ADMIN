@@ -254,7 +254,7 @@ export function StaffListView() {
                             <p className="text-sm text-slate-500">{UI_TEXT.staff.noDataDesc}</p>
                         </div>
                     ) : (
-                        <table className="w-full min-w-[1000px] table-auto border-collapse text-left text-sm text-slate-700">
+                        <table className="w-full min-w-[1200px] table-auto border-collapse text-left text-sm text-slate-700">
                             <thead>
                                 <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 uppercase">
                                     <th className="w-12 px-6 py-4 text-center">{UI_TEXT.staff.thStt}</th>
@@ -333,7 +333,7 @@ export function StaffListView() {
                                                                 const sys = systems.find((s) => s.id === id);
                                                                 return (
                                                                     <div key={id} className="whitespace-nowrap">
-                                                                        {sys?.name ? `${sys.systemCode} (${sys.name})` : sys?.systemCode || id}
+                                                                        {sys?.name ? `${sys.systemCode} ` : sys?.systemCode || id}
                                                                     </div>
                                                                 );
                                                             })}
