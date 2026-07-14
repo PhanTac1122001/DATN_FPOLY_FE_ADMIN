@@ -54,17 +54,44 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "rikkeiedu-storage.s3.ap-southeast-2.amazonaws.com",
             },
+            {
+                protocol: "https",
+                hostname: "firebasestorage.googleapis.com",
+            },
         ],
     },
     async rewrites() {
+        const apiUrl = process.env.API_URL || "http://backend:3000";
+
+        let authDest = apiUrl;
+        let apiDest = apiUrl;
+
+        // Route dynamically to the correct ports if using the staging IP
+        if (apiUrl.includes("103.118.29.137")) {
+            authDest = "http://103.118.29.137:65432";
+            apiDest = "http://103.118.29.137:6789";
+
+            return [
+                {
+                    source: "/api/:path*",
+                    destination: `${apiDest}/v1/:path*`,
+                },
+                {
+                    source: "/v1/:path*",
+                    destination: `${authDest}/v1/:path*`,
+                },
+            ];
+        }
+
+        // Default fallback behavior
         return [
             {
                 source: "/api/:path*",
-                destination: `${process.env.API_URL || "http://backend:3000"}/api/:path*`,
+                destination: `${apiUrl}/api/:path*`,
             },
             {
                 source: "/v1/:path*",
-                destination: `${process.env.API_URL || "http://backend:3000"}/v1/:path*`,
+                destination: `${apiUrl}/v1/:path*`,
             },
         ];
     },
