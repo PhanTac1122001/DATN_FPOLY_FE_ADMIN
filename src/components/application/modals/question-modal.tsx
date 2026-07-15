@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Circle, X } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { TiptapEditor } from "@/components/base/editor";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
@@ -199,8 +199,8 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                             className={cx(
                                                 "relative flex cursor-pointer flex-col gap-3.5 rounded-2xl border p-4.5 transition duration-150",
                                                 opt.isCorrect
-                                                    ? "border-emerald-500 bg-emerald-50/20 shadow-xs shadow-emerald-50"
-                                                    : "border-slate-250 bg-white hover:border-slate-300",
+                                                    ? "border-emerald-650 bg-emerald-50/30 shadow-xs shadow-emerald-50/10"
+                                                    : "border-slate-200/60 bg-slate-50/30 hover:border-slate-300",
                                             )}
                                             onClick={() => handleSelectCorrect(index)}
                                         >
@@ -209,29 +209,38 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                                 <div className="flex items-center gap-2">
                                                     <div className="relative flex items-center justify-center">
                                                         {opt.isCorrect ? (
-                                                            <div className="flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-                                                                <CheckCircle2 className="size-5 text-emerald-500" />
+                                                            <div className="border-emerald-650 flex size-5 items-center justify-center rounded-full border-2 bg-white">
+                                                                <div className="bg-emerald-650 size-2.5 rounded-full" />
                                                             </div>
                                                         ) : (
-                                                            <Circle className="size-5 text-slate-400" />
+                                                            <div className="size-5 rounded-full border-2 border-slate-400 bg-white" />
                                                         )}
                                                     </div>
                                                 </div>
-                                                <span className={cx("text-xs font-bold", opt.isCorrect ? "text-emerald-700" : "text-slate-400")}>
+                                                <span className={cx("text-xs font-bold", opt.isCorrect ? "text-emerald-700" : "text-amber-700/80")}>
                                                     {opt.isCorrect ? UI_TEXT.examsSetsEl.labelCorrect : UI_TEXT.examsSetsEl.labelIncorrect}
                                                 </span>
                                             </div>
 
-                                            {/* Choice Card Input */}
-                                            <textarea
-                                                rows={2}
-                                                value={opt.text}
-                                                onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                                                onClick={(e) => e.stopPropagation()} // Avoid triggering correct-selection click when typing
-                                                placeholder={UI_TEXT.examsSetsEl.placeholderAnswer}
-                                                className="w-full resize-none border-none bg-transparent p-0 text-[13px] leading-relaxed font-semibold text-slate-700 placeholder-slate-400 focus:outline-none"
-                                                required
-                                            />
+                                            {/* Choice Card Input Box */}
+                                            <div
+                                                className={cx(
+                                                    "w-full rounded-xl border bg-white px-4 py-2.5 transition duration-150 focus-within:ring-1",
+                                                    opt.isCorrect
+                                                        ? "focus-within:border-emerald-550 focus-within:ring-emerald-550 border-emerald-100"
+                                                        : "focus-within:border-slate-350 focus-within:ring-slate-350 border-slate-100",
+                                                )}
+                                            >
+                                                <textarea
+                                                    rows={2}
+                                                    value={opt.text}
+                                                    onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()} // Avoid triggering correct-selection click when typing
+                                                    placeholder={UI_TEXT.examsSetsEl.placeholderAnswer}
+                                                    className="w-full resize-none border-none bg-transparent p-0 text-[13px] leading-relaxed font-semibold text-slate-700 placeholder-slate-400 focus:outline-none"
+                                                    required
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
