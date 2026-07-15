@@ -1,17 +1,4 @@
-export interface SemesterMock {
-    id: string;
-    semesterName: string;
-    badgeColor: "warning" | "orange" | "error" | "info" | "success";
-}
-
-export interface TrainingTypeMock {
-    id: string;
-    code: string;
-    name: string;
-    majors: string;
-    createdAt: string;
-    semesters: SemesterMock[];
-}
+import type { TrainingTypeMock } from "@/types/type.types";
 
 export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
     {
@@ -24,7 +11,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
             { id: "1", semesterName: "Hướng dẫn", badgeColor: "warning" },
             { id: "2", semesterName: "Kỳ III", badgeColor: "orange" },
             { id: "3", semesterName: "Kỳ IV", badgeColor: "error" },
-            { id: "4", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "4", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "5", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -37,7 +24,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         semesters: [
             { id: "1", semesterName: "Hướng dẫn", badgeColor: "warning" },
             { id: "2", semesterName: "Kỳ III", badgeColor: "orange" },
-            { id: "3", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "3", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "4", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -48,7 +35,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Khoa học dữ liệu, Phân tích kinh doanh",
         createdAt: "23/09/2025",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -59,7 +46,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Power BI, Excel Advanced",
         createdAt: "09/01/2026",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -70,7 +57,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Hệ thống nhúng, Thiết kế vi mạch",
         createdAt: "26/01/2026",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -81,7 +68,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Lập trình Web",
         createdAt: "04/03/2026",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -92,7 +79,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Tiếng Nhật CNTT, Quản trị dự án...",
         createdAt: "10/04/2026",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -103,7 +90,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Phân tích nghiệp vụ",
         createdAt: "08/05/2026",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
@@ -114,7 +101,7 @@ export const TRAINING_TYPES_MOCK: TrainingTypeMock[] = [
         majors: "Kiểm thử phần mềm",
         createdAt: "11/05/2026",
         semesters: [
-            { id: "1", semesterName: "Kỳ I", badgeColor: "info" },
+            { id: "1", semesterName: "Kỳ I", badgeColor: "blue" },
             { id: "2", semesterName: "Kỳ II", badgeColor: "success" },
         ],
     },
