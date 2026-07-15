@@ -4,17 +4,47 @@ import { useState } from "react";
 import { Calendar, CheckCircle2, ChevronRight, Circle, Edit, FileText, Folder, HelpCircle, Info, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
+import { QuestionModal } from "@/components/application/modals/question-modal";
 import { Button } from "@/components/base/buttons/button";
 import { EXAM_SETS_MOCK } from "@/constants/exam-set-mock.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { toast } from "@/services/toast.service";
-import type { ExamSetDetailViewProps } from "@/types/exam-set.types";
+import type { ExamSetDetailViewProps, QuestionMock } from "@/types/exam-set.types";
 import { cx } from "@/utils/cx";
 
 export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
     const selectedSet = EXAM_SETS_MOCK.find((item) => item.id === id);
 
     const [activeTab, setActiveTab] = useState<"quiz" | "essay">("quiz");
+    const [questions, setQuestions] = useState<QuestionMock[]>(selectedSet?.questions || []);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedQuestion, setSelectedQuestion] = useState<QuestionMock | null>(null);
+
+    const handleCreateQuestion = () => {
+        setSelectedQuestion(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditQuestion = (q: QuestionMock) => {
+        setSelectedQuestion(q);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteQuestion = (qId: string) => {
+        setQuestions((prev) => prev.filter((q) => q.id !== qId));
+        toast.success(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.deleteSet);
+    };
+
+    const handleSaveQuestion = (q: QuestionMock) => {
+        setQuestions((prev) => {
+            const exists = prev.some((item) => item.id === q.id);
+            if (exists) {
+                return prev.map((item) => (item.id === q.id ? q : item));
+            } else {
+                return [...prev, q];
+            }
+        });
+    };
 
     if (!selectedSet) {
         return (
@@ -91,7 +121,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                         <div className="flex flex-col">
                             <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{UI_TEXT.examsSetsEl.labelQuestionCount}</span>
                             <span className="mt-1 text-[13px] font-extrabold text-slate-800">
-                                {selectedSet.questionCount}
+                                {questions.length}
                                 {UI_TEXT.examsSetsEl.questionsCountSuffix}
                             </span>
                         </div>
@@ -133,7 +163,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                             <Button
                                 color="primary"
                                 size="md"
-                                onClick={() => toast.success(UI_TEXT.examsSetsEl.btnCreateQuestion, UI_TEXT.examsSetsEl.btnCreateQuestion)}
+                                onClick={handleCreateQuestion}
                                 className="gap-2 border-none bg-wine px-5 font-bold text-white shadow-md shadow-wine/20 hover:bg-wine-deep"
                                 iconLeading={<Plus className="size-4 shrink-0" />}
                             >
@@ -143,13 +173,13 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
 
                         {/* Questions list */}
                         <div className="flex flex-col gap-6 p-6">
-                            {selectedSet.questions.length === 0 ? (
+                            {questions.length === 0 ? (
                                 <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center text-slate-400">
                                     <HelpCircle className="size-8 text-slate-300" />
                                     <p className="text-sm font-semibold">{UI_TEXT.examsSetsEl.noData}</p>
                                 </div>
                             ) : (
-                                selectedSet.questions.map((q, index) => (
+                                questions.map((q, index) => (
                                     <div key={q.id} className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
                                         {/* Question header row */}
                                         <div className="flex items-start justify-between gap-4">
@@ -161,7 +191,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                                             <div className="flex shrink-0 items-center gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => toast.success(UI_TEXT.examsSetsEl.editSet, `${UI_TEXT.examsSetsEl.editSet}: ${q.id}`)}
+                                                    onClick={() => handleEditQuestion(q)}
                                                     className="inline-flex items-center justify-center rounded-lg border border-sky-100 bg-white p-2 text-sky-500 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50 hover:text-sky-600"
                                                     title={UI_TEXT.examsSetsEl.editSet}
                                                 >
@@ -169,7 +199,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => toast.error(UI_TEXT.examsSetsEl.deleteSet, `${UI_TEXT.examsSetsEl.deleteSet}: ${q.id}`)}
+                                                    onClick={() => handleDeleteQuestion(q.id)}
                                                     className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-white p-2 text-rose-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600"
                                                     title={UI_TEXT.examsSetsEl.deleteSet}
                                                 >
@@ -225,6 +255,16 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                     </div>
                 )}
             </div>
+
+            <QuestionModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setSelectedQuestion(null);
+                }}
+                question={selectedQuestion}
+                onSave={handleSaveQuestion}
+            />
         </div>
     );
 }
