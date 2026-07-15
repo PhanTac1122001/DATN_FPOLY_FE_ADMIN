@@ -28,3 +28,10 @@ export interface ExamSetDetailViewProps {
 export interface ExamSetDetailClientViewProps {
     id: string;
 }
+
+export interface QuestionModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (question: QuestionMock) => void;
+    question?: QuestionMock | null;
+}
