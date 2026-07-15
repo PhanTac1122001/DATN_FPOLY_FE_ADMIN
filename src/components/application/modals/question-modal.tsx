@@ -2,8 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bold, CheckCircle2, ChevronDown, Circle, FileText, Italic, Link, Redo2, Underline, Undo2, X } from "lucide-react";
+import { CheckCircle2, Circle, X } from "lucide-react";
 import { Heading } from "react-aria-components";
+import { TiptapEditor } from "@/components/base/editor";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { toast } from "@/services/toast.service";
@@ -181,66 +182,10 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                 </div>
                             </div>
 
-                            {/* Rich Editor Description Mock */}
+                            {/* Rich Editor Description */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[12.5px] font-bold text-slate-700">{UI_TEXT.examsSetsEl.labelQuestionDesc}</label>
-                                <div className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-50/20">
-                                    {/* Mock Editor Toolbar */}
-                                    <div className="flex items-center gap-1.5 overflow-x-auto border-b border-slate-200 bg-slate-50/50 p-2 text-slate-500">
-                                        <button type="button" className="rounded p-1.5 hover:bg-slate-100" title="Undo">
-                                            <Undo2 className="size-4" />
-                                        </button>
-                                        <button type="button" className="rounded p-1.5 hover:bg-slate-100" title="Redo">
-                                            <Redo2 className="size-4" />
-                                        </button>
-                                        <div className="bg-slate-250 mx-1 h-4 w-px shrink-0" />
-
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold shadow-xs hover:bg-slate-100"
-                                        >
-                                            <FileText className="size-3.5 text-slate-400" />
-                                            <span>{UI_TEXT.examsSetsEl.richTextSource}</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold shadow-xs hover:bg-slate-100"
-                                        >
-                                            <span>{UI_TEXT.examsSetsEl.richTextParagraph}</span>
-                                            <ChevronDown className="size-3" />
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            className="flex items-center gap-1 rounded border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold shadow-xs hover:bg-slate-100"
-                                        >
-                                            <span>{UI_TEXT.examsSetsEl.richTextAi}</span>
-                                            <ChevronDown className="size-3" />
-                                        </button>
-
-                                        <div className="bg-slate-250 mx-1 h-4 w-px shrink-0" />
-                                        <button type="button" className="rounded p-1.5 hover:bg-slate-100" title="Bold">
-                                            <Bold className="size-4" />
-                                        </button>
-                                        <button type="button" className="rounded p-1.5 hover:bg-slate-100" title="Italic">
-                                            <Italic className="size-4" />
-                                        </button>
-                                        <button type="button" className="rounded p-1.5 hover:bg-slate-100" title="Underline">
-                                            <Underline className="size-4" />
-                                        </button>
-                                        <button type="button" className="rounded p-1.5 hover:bg-slate-100" title="Link">
-                                            <Link className="size-4" />
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        rows={3}
-                                        value={explanation}
-                                        onChange={(e) => setExplanation(e.target.value)}
-                                        placeholder={UI_TEXT.examsSetsEl.placeholderQuestionDesc}
-                                        className="min-h-[100px] w-full resize-y bg-white px-4 py-3 text-[13.5px] font-medium text-slate-800 placeholder-slate-400 focus:outline-none"
-                                    />
-                                </div>
+                                <TiptapEditor value={explanation} onChange={setExplanation} placeholder={UI_TEXT.examsSetsEl.placeholderQuestionDesc} />
                             </div>
 
                             {/* Answers List Section */}
