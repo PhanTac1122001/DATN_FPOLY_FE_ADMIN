@@ -111,10 +111,6 @@ export const UI_TEXT = {
             splitCells: "Tách ô",
             deleteTable: "Xóa bảng",
         },
-        filter: "Bộ lọc",
-        search: "Tìm kiếm...",
-        role: "Vai trò",
-        status: "Trạng thái",
     },
     metadata: {
         layout: {
@@ -513,5 +509,6 @@ export const UI_TEXT = {
         toastUpdateError: "Không thể cập nhật hệ đào tạo.",
         toastDeleteSuccess: "Đã xóa hệ đào tạo thành công.",
         toastDeleteError: "Không thể xóa hệ đào tạo.",
+        toastLearningPathPrefix: "Hệ đào tạo: ",
     },
 } as const;

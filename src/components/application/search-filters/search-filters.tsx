@@ -28,26 +28,28 @@ export function SearchFilters({
             </div>
 
             {/* Advanced Filter */}
-            <AdvancedFilter
-                fields={filterFields}
-                value={advancedFilterState}
-                onChange={setAdvancedFilterState}
-                hideOperator={true}
-                trigger={
-                    <button
-                        type="button"
-                        className="flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                        <Filter className="size-4" />
-                        <span>{UI_TEXT.filter.title}</span>
-                        {advancedFilterState.conditions.length > 0 && (
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-wine text-xs font-bold text-white">
-                                {advancedFilterState.conditions.length}
-                            </span>
-                        )}
-                    </button>
-                }
-            />
+            {advancedFilterState && setAdvancedFilterState && filterFields && (
+                <AdvancedFilter
+                    fields={filterFields}
+                    value={advancedFilterState}
+                    onChange={setAdvancedFilterState}
+                    hideOperator={true}
+                    trigger={
+                        <button
+                            type="button"
+                            className="flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                        >
+                            <Filter className="size-4" />
+                            <span>{UI_TEXT.filter.title}</span>
+                            {advancedFilterState.conditions.length > 0 && (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-wine text-xs font-bold text-white">
+                                    {advancedFilterState.conditions.length}
+                                </span>
+                            )}
+                        </button>
+                    }
+                />
+            )}
         </div>
     );
 }

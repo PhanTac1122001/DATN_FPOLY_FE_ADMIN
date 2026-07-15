@@ -52,9 +52,9 @@ export interface AdvancedFilterProps {
 export interface SearchFiltersProps {
     search: string;
     onSearchChange: (value: string) => void;
-    advancedFilterState: FilterState;
-    setAdvancedFilterState: (filter: FilterState) => void;
-    filterFields: FilterFieldDefinition[];
+    advancedFilterState?: FilterState;
+    setAdvancedFilterState?: (filter: FilterState) => void;
+    filterFields?: FilterFieldDefinition[];
     searchPlaceholder?: string;
 }
 
