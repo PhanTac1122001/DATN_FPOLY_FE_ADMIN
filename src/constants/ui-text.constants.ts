@@ -12,12 +12,12 @@ export const UI_TEXT = {
         password: {
             errors: {
                 required: "Mật khẩu không được để trống",
-                minLength: "Mật khẩu phải có ít nhất 8 ký tự",
+                minLength: "Mật khẩu phải có ít nhất 6 ký tự",
                 confirmRequired: "Xác nhận mật khẩu không được để trống",
                 mismatch: "Mật khẩu xác nhận không khớp",
                 weak: "Mật khẩu quá yếu",
             },
-            hint: "Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và số",
+            hint: "Tối thiểu 6 ký tự, gồm chữ hoa, chữ thường và số",
         },
         closeModalWarning: {
             title: "Đóng form?",
@@ -219,7 +219,7 @@ export const UI_TEXT = {
                 phoneNumberFormat: "Số điện thoại không hợp lệ",
                 phoneNumberLength: "Số điện thoại phải có 10 chữ số",
                 confirmPasswordRequired: "Xác nhận mật khẩu không được để trống",
-                passwordMinLength: "Mật khẩu phải có ít nhất 8 ký tự",
+                passwordMinLength: "Mật khẩu phải có ít nhất 6 ký tự",
                 passwordsDoNotMatch: "Mật khẩu xác nhận không khớp",
             },
             successMessage: "Đăng ký thành công",

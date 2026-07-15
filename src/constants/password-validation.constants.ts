@@ -1,2 +1,2 @@
 /** Minimum password length */
-export const MIN_PASSWORD_LENGTH = 8;
+export const MIN_PASSWORD_LENGTH = 6;
