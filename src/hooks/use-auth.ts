@@ -1,41 +1,37 @@
-import { useQuery } from "@tanstack/react-query";
-import { PermissionCode } from "@/config/permissions";
-import { PROFILE_CACHE_TIME } from "@/constants/query-cache.constants";
-import { queryKeys } from "@/lib/query-keys";
-import { getProfile } from "@/services/auth.service";
+import type { PermissionCode } from "@/config/permissions";
 
 export function useAuth() {
-    const {
-        data: user,
-        isLoading,
-        error,
-    } = useQuery({
-        queryKey: queryKeys.profile(),
-        queryFn: getProfile,
-        retry: false,
-        staleTime: PROFILE_CACHE_TIME,
-    });
+    const user = {
+        id: "mock-id",
+        fullName: "Nguyễn Minh Anh (Admin)",
+        email: "admin@mock.local",
+        avatarUrl: null as string | null,
+        phoneNumber: null as string | null,
+        role: "ADMIN",
+        roles: ["ADMIN"],
+        permissions: [] as string[],
+        createdAt: new Date().toISOString(),
+    };
+    const isLoading = false;
+    const error = null;
 
-    const hasPermission = (permission: PermissionCode) => {
-        if (!user?.permissions) return false;
-        return user.permissions.includes(permission);
+    const hasPermission = (_permission: PermissionCode) => {
+        return true;
     };
 
-    const hasAnyPermission = (permissions: PermissionCode[]) => {
-        if (!user?.permissions) return false;
-        return permissions.some((p) => user.permissions.includes(p));
+    const hasAnyPermission = (_permissions: PermissionCode[]) => {
+        return true;
     };
 
-    const hasAllPermissions = (permissions: PermissionCode[]) => {
-        if (!user?.permissions) return false;
-        return permissions.every((p) => user.permissions.includes(p));
+    const hasAllPermissions = (_permissions: PermissionCode[]) => {
+        return true;
     };
 
     return {
         user,
         isLoading,
         error,
-        isAuthenticated: !!user,
+        isAuthenticated: true,
         hasPermission,
         hasAnyPermission,
         hasAllPermissions,
