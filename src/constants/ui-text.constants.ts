@@ -573,5 +573,8 @@ export const UI_TEXT = {
         btnCreateQuestion: "Tạo câu hỏi mới",
         pointsSuffix: " điểm",
         essayMockContent: "Giao diện soạn bài tự luận của bộ đề",
+        labelIdPrefix: "ID: ",
+        separator: " | ",
+        dotSeparator: ". ",
     },
 } as const;
