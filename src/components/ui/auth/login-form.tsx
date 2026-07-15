@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
+import Cookies from "js-cookie";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import ReCAPTCHA from "react-google-recaptcha";
 import { Controller, useForm } from "react-hook-form";
-import { TurnstileWidget } from "@/components/common/turnstile-widget";
 import { Eye, EyeSlash } from "@/components/icons";
-import { ROUTES } from "@/constants/app.constants";
+import { APP_CONFIG, ROUTES } from "@/constants/app.constants";
 import { RIKKEI_LOGO_LOGIN_WIDTH, RIKKEI_LOGO_PATH } from "@/constants/auth.constants";
 import { LMS_ICONS } from "@/constants/lms-icons.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -25,10 +27,11 @@ const inputClassName = cx(
 
 export function LoginForm() {
     const router = useAppRouter();
+    const queryClient = useQueryClient();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
-    const turnstileSiteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+    const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
 
     const {
         control,
@@ -44,24 +47,36 @@ export function LoginForm() {
     });
 
     const onSubmit = async (data: LoginFormData) => {
-        if (!recaptchaToken) {
+        if (recaptchaSiteKey && !recaptchaToken) {
             toast.error(UI_TEXT.auth.login.toasts.captchaRequiredTitle, UI_TEXT.auth.login.toasts.captchaRequiredDesc);
             return;
         }
         setIsLoading(true);
         try {
-            await login({
+            const response = await login({
                 email: data.email,
                 password: data.password,
                 recaptchaToken,
-                clientId: "lms",
+                clientId: "admin",
             });
 
-            // Store email for OTP step
-            sessionStorage.setItem("login_email", data.email);
+            // Check if response contains direct login tokens (Local/Dev environment)
+            if (response && response.accessToken && response.refreshToken) {
+                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, response.accessToken, { expires: 1 });
+                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, response.refreshToken, { expires: 7 });
 
-            toast.success(UI_TEXT.auth.login.toasts.otpSentTitle, UI_TEXT.auth.login.toasts.otpSentDesc);
-            router.replace("/login/otp" as Route);
+                queryClient.removeQueries({ queryKey: ["profile"] });
+                queryClient.clear();
+
+                toast.success(UI_TEXT.auth.login.toasts.successTitle, UI_TEXT.auth.login.toasts.successDescription);
+                router.replace(ROUTES.HOME as Route);
+            } else {
+                // Store email for OTP step (Production environment)
+                sessionStorage.setItem("login_email", data.email);
+
+                toast.success(UI_TEXT.auth.login.toasts.otpSentTitle, UI_TEXT.auth.login.toasts.otpSentDesc);
+                router.replace("/login/otp" as Route);
+            }
         } catch (error: unknown) {
             console.error("Login failed:", error);
             const msg = error instanceof Error ? error.message : UI_TEXT.auth.login.errors.loginFailed;
@@ -152,9 +167,11 @@ export function LoginForm() {
                 {isLoading ? UI_TEXT.auth.login.submittingButton : UI_TEXT.auth.login.submitButton}
             </button>
 
-            <div className="mt-4">
-                <TurnstileWidget siteKey={turnstileSiteKey} onVerify={(token) => setRecaptchaToken(token)} />
-            </div>
+            {recaptchaSiteKey ? (
+                <div className="mt-4 flex justify-center">
+                    <ReCAPTCHA sitekey={recaptchaSiteKey} onChange={(token) => setRecaptchaToken(token || "")} />
+                </div>
+            ) : null}
         </form>
     );
 }
