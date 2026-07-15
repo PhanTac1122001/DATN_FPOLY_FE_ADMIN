@@ -52,29 +52,10 @@ export interface AdvancedFilterProps {
 export interface SearchFiltersProps {
     search: string;
     onSearchChange: (value: string) => void;
-    isMobileSearchVisible: boolean;
-    setIsMobileSearchVisible: (visible: boolean) => void;
     advancedFilterState: FilterState;
     setAdvancedFilterState: (filter: FilterState) => void;
     filterFields: FilterFieldDefinition[];
     searchPlaceholder?: string;
-    filterButtonText?: string;
-}
-
-export interface SearchFilterBarProps {
-    /** Current search query string */
-    search: string;
-    /** Callback when search query changes */
-    onSearchChange: (value: string) => void;
-    /** Custom placeholder text for search input */
-    searchPlaceholder?: string;
-
-    /** Optional: Fields config for the advanced filter */
-    filterFields?: FilterFieldDefinition[];
-    /** Optional: Current state of advanced filter */
-    advancedFilterState?: FilterState;
-    /** Optional: Callback when advanced filter changes */
-    onAdvancedFilterChange?: (state: FilterState) => void;
 }
 
 // ============================================================================

@@ -5,7 +5,7 @@ import { RoleEnum, StatusEnum } from "@/types/staff.types";
 export const STAFF_FILTER_FIELDS = [
     {
         key: "role",
-        label: UI_TEXT.common.role,
+        label: UI_TEXT.staff.thRole,
         type: FilterFieldType.ENUM,
         options: [
             { id: RoleEnum.ADMIN, label: UI_TEXT.staff.roleAdmin },
@@ -17,7 +17,7 @@ export const STAFF_FILTER_FIELDS = [
     },
     {
         key: "status",
-        label: UI_TEXT.common.status,
+        label: UI_TEXT.staff.thStatus,
         type: FilterFieldType.ENUM,
         options: [
             { id: StatusEnum.ACTIVE, label: UI_TEXT.staff.statusActive },

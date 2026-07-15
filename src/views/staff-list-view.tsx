@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Edit, Lock, Mail, MapPin, Phone, Plus, Trash2, Unlock } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { StaffModal } from "@/components/application/modals/staff-modal";
-import { SearchFilterBar } from "@/components/application/search-filters/search-filter-bar";
+import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
@@ -143,14 +143,16 @@ export function StaffListView() {
             <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {/* Filters */}
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-                    <SearchFilterBar
-                        search={search}
-                        onSearchChange={setSearch}
-                        searchPlaceholder={UI_TEXT.staff.searchPlaceholder}
-                        filterFields={STAFF_FILTER_FIELDS}
-                        advancedFilterState={advancedFilterState}
-                        onAdvancedFilterChange={setAdvancedFilterState}
-                    />
+                    <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+                        <SearchFilters
+                            search={search}
+                            onSearchChange={setSearch}
+                            advancedFilterState={advancedFilterState}
+                            setAdvancedFilterState={setAdvancedFilterState}
+                            filterFields={STAFF_FILTER_FIELDS}
+                            searchPlaceholder={UI_TEXT.staff.searchPlaceholder}
+                        />
+                    </div>
 
                     {/* Add Staff Trigger */}
                     <Button
