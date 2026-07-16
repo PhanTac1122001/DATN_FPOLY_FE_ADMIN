@@ -44,6 +44,14 @@ export function LoginForm() {
         }
     }, [shouldResetCaptcha]);
 
+    useEffect(() => {
+        const sessionExpired = Cookies.get("session_expired");
+        if (sessionExpired) {
+            toast.error(UI_TEXT.auth.login.toasts.sessionExpired);
+            Cookies.remove("session_expired", { path: "/" });
+        }
+    }, []);
+
     const {
         control,
         handleSubmit,
@@ -73,8 +81,8 @@ export function LoginForm() {
 
             // Check if response contains direct login tokens (Local/Dev environment)
             if (response && response.accessToken && response.refreshToken) {
-                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, response.accessToken, { expires: 1, path: "/" });
-                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, response.refreshToken, { expires: 7, path: "/" });
+                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, response.accessToken, { expires: 1 });
+                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, response.refreshToken, { expires: 7 });
 
                 queryClient.removeQueries({ queryKey: ["profile"] });
                 queryClient.clear();
