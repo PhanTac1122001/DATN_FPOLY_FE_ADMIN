@@ -549,6 +549,9 @@ export const UI_TEXT = {
         thSemester: "Kỳ học",
         btnSubjectList: "Danh sách môn học",
         toastViewing: "Đang xem danh sách môn học của: ",
+        modalTitle: "Danh sách môn học",
+        noCourses: "Không có môn học nào trong kỳ học này",
+        hours: "giờ",
     },
     examsSetsEl: {
         title: "Quản lý Bộ đề trắc nghiệm",
