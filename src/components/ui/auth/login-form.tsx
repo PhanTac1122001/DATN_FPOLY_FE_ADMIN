@@ -7,14 +7,16 @@ import Cookies from "js-cookie";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import { Controller, useForm } from "react-hook-form";
 import { Eye, EyeSlash } from "@/components/icons";
 import { APP_CONFIG, ROUTES } from "@/constants/app.constants";
 import { RIKKEI_LOGO_LOGIN_WIDTH, RIKKEI_LOGO_PATH } from "@/constants/auth.constants";
-import { LMS_ICONS } from "@/constants/lms-icons.constants";
+import { HTTP_STATUS_TOO_MANY_REQUESTS } from "@/constants/http.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
+import { HttpError } from "@/lib/http-client";
 import { type LoginFormData, loginSchema } from "@/schemas/auth.schema";
 import { login } from "@/services/auth.service";
 import { toast } from "@/services/toast.service";
@@ -28,6 +30,8 @@ const inputClassName = cx(
 export function LoginForm() {
     const router = useAppRouter();
     const queryClient = useQueryClient();
+    const searchParams = useSearchParams();
+    const redirectUrl = searchParams.get("redirect");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
@@ -57,7 +61,7 @@ export function LoginForm() {
                 email: data.email,
                 password: data.password,
                 recaptchaToken,
-                clientId: "admin",
+                clientId: "lms",
             });
 
             // Check if response contains direct login tokens (Local/Dev environment)
@@ -69,7 +73,8 @@ export function LoginForm() {
                 queryClient.clear();
 
                 toast.success(UI_TEXT.auth.login.toasts.successTitle, UI_TEXT.auth.login.toasts.successDescription);
-                router.replace(ROUTES.HOME as Route);
+                const targetRoute = redirectUrl ? (decodeURIComponent(redirectUrl) as Route) : (ROUTES.HOME as Route);
+                router.replace(targetRoute);
             } else {
                 // Store email for OTP step (Production environment)
                 sessionStorage.setItem("login_email", data.email);
@@ -79,7 +84,10 @@ export function LoginForm() {
             }
         } catch (error: unknown) {
             console.error("Login failed:", error);
-            const msg = error instanceof Error ? error.message : UI_TEXT.auth.login.errors.loginFailed;
+            let msg = error instanceof Error ? error.message : UI_TEXT.auth.login.errors.loginFailed;
+            if (error instanceof HttpError && error.status === HTTP_STATUS_TOO_MANY_REQUESTS) {
+                msg = UI_TEXT.auth.login.errors.tooManyRequests;
+            }
             toast.error(UI_TEXT.auth.login.toasts.errorTitle, msg);
         } finally {
             setIsLoading(false);
@@ -101,10 +109,7 @@ export function LoginForm() {
                     priority
                 />
                 <h1 className="font-display text-[22px] font-extrabold tracking-[-0.01em] text-slate-900">{UI_TEXT.auth.login.title}</h1>
-                <p className="mt-0.5 inline-flex items-center justify-center gap-1 text-[13px] text-slate-500">
-                    {UI_TEXT.auth.login.welcomeBack}
-                    <Image src={LMS_ICONS.WAVE} alt="" width={16} height={16} className="size-4" />
-                </p>
+                <p className="mt-0.5 inline-flex items-center justify-center gap-1 text-[13px] text-slate-500">{UI_TEXT.auth.login.welcomeBack}</p>
             </div>
 
             <label className="mb-1.5 block text-xs font-bold text-slate-500">
