@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import Cookies from "js-cookie";
@@ -13,7 +13,7 @@ import { Controller, useForm } from "react-hook-form";
 import { Eye, EyeSlash } from "@/components/icons";
 import { APP_CONFIG, ROUTES } from "@/constants/app.constants";
 import { RIKKEI_LOGO_LOGIN_WIDTH, RIKKEI_LOGO_PATH } from "@/constants/auth.constants";
-import { HTTP_STATUS_TOO_MANY_REQUESTS } from "@/constants/http.constants";
+import { HTTP_STATUS_FORBIDDEN, HTTP_STATUS_TOO_MANY_REQUESTS } from "@/constants/http.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { HttpError } from "@/lib/http-client";
@@ -36,6 +36,16 @@ export function LoginForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
     const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
+    const [shouldResetCaptcha, setShouldResetCaptcha] = useState(false);
+
+    useEffect(() => {
+        if (shouldResetCaptcha) {
+            recaptchaRef.current?.reset();
+            setRecaptchaToken("");
+            setShouldResetCaptcha(false);
+        }
+    }, [shouldResetCaptcha]);
 
     const {
         control,
@@ -85,10 +95,17 @@ export function LoginForm() {
         } catch (error: unknown) {
             console.error("Login failed:", error);
             let msg = error instanceof Error ? error.message : UI_TEXT.auth.login.errors.loginFailed;
-            if (error instanceof HttpError && error.status === HTTP_STATUS_TOO_MANY_REQUESTS) {
-                msg = UI_TEXT.auth.login.errors.tooManyRequests;
+            if (error instanceof HttpError) {
+                if (error.status === HTTP_STATUS_TOO_MANY_REQUESTS) {
+                    msg = UI_TEXT.auth.login.errors.tooManyRequests;
+                } else if (error.status === HTTP_STATUS_FORBIDDEN && (error.message.includes("Captcha") || error.message.includes("captcha"))) {
+                    msg = UI_TEXT.auth.login.errors.captchaFailed;
+                }
             }
             toast.error(UI_TEXT.auth.login.toasts.errorTitle, msg);
+
+            // Trigger recaptcha reset on login failure
+            setShouldResetCaptcha(true);
         } finally {
             setIsLoading(false);
         }
@@ -174,7 +191,7 @@ export function LoginForm() {
 
             {recaptchaSiteKey ? (
                 <div className="mt-4 flex justify-center">
-                    <ReCAPTCHA sitekey={recaptchaSiteKey} onChange={(token) => setRecaptchaToken(token || "")} />
+                    <ReCAPTCHA ref={recaptchaRef} sitekey={recaptchaSiteKey} onChange={(token) => setRecaptchaToken(token || "")} />
                 </div>
             ) : null}
         </form>

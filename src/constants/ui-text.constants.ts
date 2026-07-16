@@ -195,7 +195,8 @@ export const UI_TEXT = {
                 emailRequired: "Email không được để trống",
                 emailInvalid: "Email không hợp lệ",
                 loginFailed: "Email hoặc mật khẩu không đúng. Vui lòng thử lại.",
-                tooManyRequests: "Tài khoản của bạn đang bị khóa do spam",
+                tooManyRequests: "Số lần đăng nhập quá nhiều, vui lòng thử lại sau 15 phút",
+                captchaFailed: "Xác minh Captcha thất bại",
             },
         },
         register: {
