@@ -98,8 +98,8 @@ async function refreshAccessToken(baseUrl: string): Promise<boolean> {
         if (refreshResponse.ok) {
             const data = await refreshResponse.json();
             if (data.accessToken && data.refreshToken) {
-                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, data.accessToken, { expires: 1 });
-                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, data.refreshToken, { expires: 7 });
+                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, data.accessToken, { expires: 1, path: "/" });
+                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, data.refreshToken, { expires: 7, path: "/" });
                 return true;
             }
         }

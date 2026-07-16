@@ -73,8 +73,8 @@ export function LoginForm() {
 
             // Check if response contains direct login tokens (Local/Dev environment)
             if (response && response.accessToken && response.refreshToken) {
-                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, response.accessToken, { expires: 1 });
-                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, response.refreshToken, { expires: 7 });
+                Cookies.set(APP_CONFIG.ACCESS_TOKEN_KEY, response.accessToken, { expires: 1, path: "/" });
+                Cookies.set(APP_CONFIG.REFRESH_TOKEN_KEY, response.refreshToken, { expires: 7, path: "/" });
 
                 queryClient.removeQueries({ queryKey: ["profile"] });
                 queryClient.clear();
