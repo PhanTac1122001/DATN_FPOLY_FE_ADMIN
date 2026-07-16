@@ -62,7 +62,25 @@ async function buildRequestHeaders(headers: HeadersInit | undefined, body: BodyI
     return finalHeaders;
 }
 
+function handleAuthFailure() {
+    if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (path === "/login" || path === "/login/otp") {
+            return;
+        }
+        Cookies.remove(APP_CONFIG.ACCESS_TOKEN_KEY, { path: "/" });
+        Cookies.remove(APP_CONFIG.ACCESS_TOKEN_KEY);
+        Cookies.remove(APP_CONFIG.REFRESH_TOKEN_KEY, { path: "/" });
+        Cookies.remove(APP_CONFIG.REFRESH_TOKEN_KEY);
+
+        window.location.href = "/login";
+    }
+}
+
 async function refreshAccessToken(baseUrl: string): Promise<boolean> {
+    if (typeof window === "undefined") {
+        return false;
+    }
     const refreshToken = Cookies.get(APP_CONFIG.REFRESH_TOKEN_KEY);
     if (!refreshToken) {
         return false;
@@ -167,7 +185,7 @@ export async function httpClient<TResponse = unknown>(path: string, options?: Ht
         return JSON.parse(text) as TResponse;
     } catch (error) {
         if (error instanceof HttpError && error.status === HTTP_STATUS_UNAUTHORIZED) {
-            if (path.includes("/auth/refresh") || path.includes("/auth/login")) {
+            if (path.includes("/auth/refresh") || path.includes("/auth/refresh-token") || path.includes("/auth/login")) {
                 throw error;
             }
 
@@ -195,10 +213,12 @@ export async function httpClient<TResponse = unknown>(path: string, options?: Ht
 
                 const refreshError = new HttpError(HTTP_STATUS_UNAUTHORIZED, "Token refresh failed");
                 processQueue(refreshError);
+                handleAuthFailure();
                 throw refreshError;
             } catch (refreshError) {
                 processQueue(refreshError as Error);
                 Sentry.captureException(refreshError);
+                handleAuthFailure();
                 throw refreshError;
             } finally {
                 isRefreshing = false;
@@ -248,11 +268,14 @@ async function runEventStream(path: string, options: EventStreamClientOptions, c
                     response.status === HTTP_STATUS_UNAUTHORIZED &&
                     !hasRetriedUnauthorized &&
                     !path.includes("/auth/refresh") &&
+                    !path.includes("/auth/refresh-token") &&
                     !path.includes("/auth/login")
                 ) {
                     const refreshed = await refreshAccessToken(baseUrl);
                     if (refreshed) {
                         throw new StreamUnauthorizedRetryError();
+                    } else {
+                        handleAuthFailure();
                     }
                 }
 
@@ -292,6 +315,10 @@ async function runEventStream(path: string, options: EventStreamClientOptions, c
 
         if (controller.signal.aborted || isAbortError(error)) {
             return;
+        }
+
+        if (error instanceof HttpError && error.status === HTTP_STATUS_UNAUTHORIZED) {
+            handleAuthFailure();
         }
 
         if (!errorHandled) {

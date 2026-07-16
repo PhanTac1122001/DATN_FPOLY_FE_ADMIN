@@ -7,7 +7,6 @@ import Cookies from "js-cookie";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import { Controller, useForm } from "react-hook-form";
 import { Eye, EyeSlash } from "@/components/icons";
@@ -30,8 +29,6 @@ const inputClassName = cx(
 export function LoginForm() {
     const router = useAppRouter();
     const queryClient = useQueryClient();
-    const searchParams = useSearchParams();
-    const redirectUrl = searchParams.get("redirect");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [recaptchaToken, setRecaptchaToken] = useState<string>("");
@@ -83,8 +80,7 @@ export function LoginForm() {
                 queryClient.clear();
 
                 toast.success(UI_TEXT.auth.login.toasts.successTitle, UI_TEXT.auth.login.toasts.successDescription);
-                const targetRoute = redirectUrl ? (decodeURIComponent(redirectUrl) as Route) : (ROUTES.HOME as Route);
-                router.replace(targetRoute);
+                router.replace(ROUTES.HOME as Route);
             } else {
                 // Store email for OTP step (Production environment)
                 sessionStorage.setItem("login_email", data.email);
