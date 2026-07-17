@@ -729,13 +729,22 @@ function VideoConfigTab({
 
         let player: any;
         let isDestroyed = false;
+        let ytDiv: HTMLDivElement | null = null;
+
+        const container = document.getElementById("youtube-container");
+        if (container) {
+            ytDiv = document.createElement("div");
+            ytDiv.id = "youtube-preview-player";
+            ytDiv.className = "w-full h-full";
+            container.appendChild(ytDiv);
+        }
 
         const initPlayer = () => {
-            if (isDestroyed) return;
+            if (isDestroyed || !ytDiv) return;
             const YT = (window as any).YT;
             if (YT && YT.Player) {
                 try {
-                    player = new YT.Player("youtube-preview-player", {
+                    player = new YT.Player(ytDiv, {
                         height: "100%",
                         width: "100%",
                         videoId: youtubeId,
@@ -783,6 +792,11 @@ function VideoConfigTab({
                     player.destroy();
                 } catch (e) { }
             }
+            if (ytDiv && ytDiv.parentNode) {
+                try {
+                    ytDiv.parentNode.removeChild(ytDiv);
+                } catch (e) { }
+            }
         };
     }, [youtubeId, setDuration]);
 
@@ -825,7 +839,7 @@ function VideoConfigTab({
                     <div className="flex flex-col gap-3">
                         <div className="rounded-xl overflow-hidden bg-slate-950 shadow-inner w-full aspect-video flex flex-col justify-center relative">
                             {youtubeId ? (
-                                <div id="youtube-preview-player" className="w-full h-full" />
+                                <div id="youtube-container" className="w-full h-full" />
                             ) : videoSrc ? (
                                 <video
                                     src={videoSrc}
