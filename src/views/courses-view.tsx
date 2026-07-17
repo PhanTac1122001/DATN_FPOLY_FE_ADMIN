@@ -4,7 +4,8 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, ChevronRight, File, FileText, FolderPlus, HelpCircle, Plus, Video } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import type { Route } from "next";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LessonMaterialModal } from "@/components/application/modals/lesson-material-modal";
 import { Button } from "@/components/base/buttons/button";
 import { useAppRouter } from "@/hooks/use-app-router";
@@ -17,6 +18,7 @@ export function CoursesView() {
     const queryClient = useQueryClient();
     const searchParams = useSearchParams();
     const router = useAppRouter();
+    const pathname = usePathname();
 
     const systemIdParam = searchParams.get("systemId") || "";
     const courseIdParam = searchParams.get("courseId") || "";
@@ -83,7 +85,7 @@ export function CoursesView() {
             params.delete("systemId");
         }
         params.delete("courseId");
-        router.replace(`/courses?${params.toString()}`);
+        router.replace(`${pathname}?${params.toString()}` as Route);
     };
 
     const handleCourseChange = (courseId: string) => {
@@ -94,7 +96,7 @@ export function CoursesView() {
         } else {
             params.delete("courseId");
         }
-        router.replace(`/courses?${params.toString()}`);
+        router.replace(`${pathname}?${params.toString()}` as Route);
     };
 
     const handleAddSession = () => {
