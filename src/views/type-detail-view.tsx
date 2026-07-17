@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowUpDown, ChevronRight, Search } from "lucide-react";
+import { ArrowUpDown, ChevronRight, Eye, Search } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { Button } from "@/components/base/buttons/button";
@@ -153,12 +153,13 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
                                 <th className="px-6 py-4">{UI_TEXT.trainingTypesEl.thCourseName}</th>
                                 <th className="w-36 px-6 py-4 text-center">{UI_TEXT.trainingTypesEl.thHours}</th>
                                 <th className="px-6 py-4">{UI_TEXT.trainingTypesEl.thDescription}</th>
+                                <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thActions}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sortedCourses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                                         {UI_TEXT.trainingTypesEl.noCoursesData}
                                     </td>
                                 </tr>
@@ -176,6 +177,15 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
                                             title={course.description}
                                         >
                                             {course.description || "-"}
+                                        </td>
+                                        <td className="border-b border-slate-100 px-6 py-5.5 text-center">
+                                            <Link
+                                                href={`/courses?systemId=${detail.system.id}&courseId=${course.id}` as Route}
+                                                className="shadow-xxs inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-wine hover:bg-wine/5 hover:text-wine"
+                                                title={UI_TEXT.trainingTypesEl.viewDetails}
+                                            >
+                                                <Eye className="size-4" />
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))
