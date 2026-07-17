@@ -103,3 +103,19 @@ export async function deleteCourseClass(id: string): Promise<void> {
 export async function deleteLesson(id: string): Promise<void> {
     await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.DELETE });
 }
+
+export async function updateSession(id: string, body: Partial<{ name: string; position: number }>): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${id}`, {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(body),
+    });
+    return res.data || res;
+}
+
+export async function updateLesson(id: string, body: Partial<{ name: string; position: number }>): Promise<Lesson> {
+    const res = await httpClient<any>(`/api/staff/lessons/${id}`, {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(body),
+    });
+    return res.data || res;
+}

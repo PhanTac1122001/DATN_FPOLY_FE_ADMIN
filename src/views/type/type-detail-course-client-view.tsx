@@ -32,7 +32,11 @@ export function TypeDetailCourseClientView({ id, courseId }: TypeDetailCourseCli
     if (!user) return null;
 
     return (
-        <AdminLayout title="Quản lý Học liệu" subtitle="Cấu hình chương trình học, buổi học, bài học và đính kèm học liệu">
+        <AdminLayout 
+            title="Quản lý Học liệu" 
+            subtitle="Cấu hình chương trình học, buổi học, bài học và đính kèm học liệu"
+            disableScroll={true}
+        >
             <Suspense
                 fallback={
                     <div className="flex h-[300px] items-center justify-center">

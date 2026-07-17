@@ -26,7 +26,14 @@ import { SelectFilterInput } from "./select-filter-input";
 
 const t = UI_TEXT.filter;
 
-export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAULT_MAX_CONDITIONS, trigger }: AdvancedFilterProps) {
+export function AdvancedFilter({
+    fields,
+    value,
+    onChange,
+    maxConditions = DEFAULT_MAX_CONDITIONS,
+    trigger,
+    hideOperator = false,
+}: AdvancedFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [position, setPosition] = useState({ top: 0, left: 0 });
 
@@ -72,7 +79,7 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
         const newCondition: FilterCondition = {
             id: `condition-${Date.now()}`,
             fieldKey: "",
-            operator: FilterOperator.CONTAINS,
+            operator: hideOperator ? FilterOperator.EQUALS : FilterOperator.CONTAINS,
             value: null,
         };
 
@@ -126,7 +133,7 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
                 // Check viewport boundaries
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
-                const dropdownWidth = 600; // Approximate width
+                const dropdownWidth = hideOperator ? 400 : 600; // Approximate width
 
                 // Ensure dropdown doesn't go beyond right edge
                 if (left + dropdownWidth > viewportWidth) {
@@ -182,7 +189,7 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
                 <>
                     <div className="fixed inset-0 z-10" onClick={handleCloseMenu} />
                     <div
-                        className="fixed z-20 w-[calc(100vw-32px)] max-w-[640px] rounded-2xl border border-slate-200 bg-white p-4 shadow-lg"
+                        className={`fixed z-20 w-[calc(100vw-32px)] ${hideOperator ? "max-w-[400px]" : "max-w-[640px]"} rounded-2xl border border-slate-200 bg-white p-4 shadow-lg`}
                         style={{
                             top: `${position.top}px`,
                             left: `${position.left}px`,
@@ -231,7 +238,7 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
                                                 </div>
 
                                                 {/* Field Selector */}
-                                                <div className="w-full md:w-[200px]">
+                                                <div className={hideOperator ? "w-full md:flex-1" : "w-full md:w-[200px]"}>
                                                     <Select
                                                         placeholder={t.selectField}
                                                         selectedKey={condition.fieldKey || null}
@@ -241,8 +248,14 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
                                                                 const newOperators = getOperatorsForFieldType(newField.type);
                                                                 handleConditionChange(condition.id, {
                                                                     fieldKey: key as string,
-                                                                    operator: newOperators[0],
+                                                                    operator: hideOperator ? FilterOperator.EQUALS : newOperators[0],
                                                                     value: newField.type === FilterFieldType.STRING ? "" : null,
+                                                                });
+                                                            } else {
+                                                                handleConditionChange(condition.id, {
+                                                                    fieldKey: "",
+                                                                    operator: hideOperator ? FilterOperator.EQUALS : FilterOperator.CONTAINS,
+                                                                    value: null,
                                                                 });
                                                             }
                                                         }}
@@ -254,28 +267,30 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
                                                 </div>
 
                                                 {/* Operator Selector */}
-                                                <div className="w-full md:w-[150px]">
-                                                    <Select
-                                                        placeholder={t.selectOperator}
-                                                        selectedKey={condition.operator || null}
-                                                        onSelectionChange={(key) => {
-                                                            handleConditionChange(condition.id, {
-                                                                operator: key as FilterOperator,
-                                                                value: field?.type === FilterFieldType.STRING ? "" : null,
-                                                            });
-                                                        }}
-                                                        items={operatorOptions}
-                                                        size="md"
-                                                    >
-                                                        {(item) => <Select.Item id={item.id} label={item.label} />}
-                                                    </Select>
-                                                </div>
+                                                {!hideOperator && (
+                                                    <div className="w-full md:w-[150px]">
+                                                        <Select
+                                                            placeholder={t.selectOperator}
+                                                            selectedKey={condition.operator || null}
+                                                            onSelectionChange={(key) => {
+                                                                handleConditionChange(condition.id, {
+                                                                    operator: key as FilterOperator,
+                                                                    value: field?.type === FilterFieldType.STRING ? "" : null,
+                                                                });
+                                                            }}
+                                                            items={operatorOptions}
+                                                            size="md"
+                                                        >
+                                                            {(item) => <Select.Item id={item.id} label={item.label} />}
+                                                        </Select>
+                                                    </div>
+                                                )}
 
                                                 {/* Value Input */}
                                                 {requiresValue && (
                                                     <div className="w-full md:flex-1">
                                                         {field?.type === FilterFieldType.ENUM && !supportsMultiple ? (
-                                                            <Select.ComboBox
+                                                            <Select
                                                                 placeholder={t.enterValue}
                                                                 selectedKey={condition.value ? String(condition.value) : null}
                                                                 onSelectionChange={(key) => {
@@ -287,7 +302,7 @@ export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAUL
                                                                 size="md"
                                                             >
                                                                 {(item) => <Select.Item id={item.id} label={item.label} />}
-                                                            </Select.ComboBox>
+                                                            </Select>
                                                         ) : field?.type === FilterFieldType.ENUM && supportsMultiple ? (
                                                             <Select.MultiComboBox
                                                                 placeholder={t.enterValue}

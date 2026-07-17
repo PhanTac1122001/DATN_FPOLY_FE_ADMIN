@@ -113,17 +113,47 @@ button {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(148, 163, 184, 0.4);
     border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(148, 163, 184, 0.6);
 }
 
 /* Firefox support */
 .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
 }
 
+/* Hide sidebar on course detail page at 1440px or smaller screen widths */
+@media (max-width: 1440px) {
+    .course-detail-sidebar {
+        display: none !important;
+    }
+}
+
+/* Custom scrollbar for light backgrounds (dropdown menus/modals) */
+.custom-scrollbar-gray::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar-gray::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar-gray::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 9999px;
+}
+
+.custom-scrollbar-gray::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.6);
+}
+
+.custom-scrollbar-gray {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}

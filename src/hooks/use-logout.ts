@@ -22,6 +22,8 @@ export function useLogout() {
         // Xóa token và cache ngay lập tức ở client
         Cookies.remove(APP_CONFIG.ACCESS_TOKEN_KEY, { path: "/" });
         Cookies.remove(APP_CONFIG.ACCESS_TOKEN_KEY);
+        Cookies.remove(APP_CONFIG.REFRESH_TOKEN_KEY, { path: "/" });
+        Cookies.remove(APP_CONFIG.REFRESH_TOKEN_KEY);
 
         // Clear queries
         queryClient.removeQueries({ queryKey: ["profile"] });

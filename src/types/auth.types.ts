@@ -50,6 +50,7 @@ export interface UserProfile {
     avatarUrl?: string | null;
     phoneNumber?: string | null;
     role: string;
+    roles?: string[];
     permissions: string[];
     createdAt?: string | Date;
     lastLoginAt?: string | Date | null;
@@ -107,4 +108,8 @@ export interface GoogleWindow extends Window {
             };
         };
     };
+}
+
+export interface OtpFormProps {
+    email: string;
 }

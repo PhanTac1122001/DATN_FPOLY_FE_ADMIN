@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Book, ChevronRight, ChevronDown, File, FileText, Film, HelpCircle, Eye, Play, Plus, ScrollText, Video, Trash2, GripVertical, X, Search, CheckCircle2, Circle } from "lucide-react";
+import { ChevronRight, ChevronDown, File, FileText, HelpCircle, Play, Plus, ScrollText, Video, Trash2, GripVertical, Search, CheckCircle2, Circle } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { Button } from "@/components/base/buttons/button";
@@ -700,6 +700,7 @@ function VideoConfigTab({
     const [videoType, setVideoType] = useState<"link" | "file" | "">("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+    const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
     const [tempLink, setTempLink] = useState("");
     const [expandedQuestionIndices, setExpandedQuestionIndices] = useState<number[]>([0]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -858,63 +859,24 @@ function VideoConfigTab({
                         </div>
                     </div>
                 ) : (
-                    /* Dropdown Select to choose video input method (Image 3) */
-                    <div className="relative">
+                    /* Centered Empty State View for Video (Image 2 style) */
+                    <div className="flex flex-col items-center justify-center p-8 py-14 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 animate-fadeIn">
+                        <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-white text-slate-400">
+                            <Video className="size-6 text-slate-400" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-sm font-black text-slate-800">{"Video bài học hiện tại đang trống"}</h4>
+                            <p className="text-xs text-slate-400 font-semibold max-w-[320px] leading-relaxed">
+                                {"Vui lòng chọn hoặc tải lên video cho bài học này để tiếp tục cấu hình học liệu."}
+                            </p>
+                        </div>
                         <button
                             type="button"
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full flex items-center justify-between rounded-lg border border-slate-200 px-3.5 py-2 text-xs bg-white text-slate-700 hover:border-slate-300 transition duration-150 cursor-pointer shadow-xxs font-semibold"
+                            onClick={() => setIsSelectModalOpen(true)}
+                            className="flex items-center gap-1.5 bg-[#A14747] hover:bg-[#8e3e3e] active:scale-[0.98] text-white text-xs font-black py-2 px-6 rounded-full shadow-md shadow-[#A14747]/20 transition duration-150 cursor-pointer"
                         >
-                            <span>Chọn</span>
-                            <ChevronDown className="size-4 text-slate-400" />
+                            {"+ Thêm video"}
                         </button>
-
-                        {isDropdownOpen && (
-                            <>
-                                {/* Transparent backdrop to close dropdown on click outside */}
-                                <div
-                                    className="fixed inset-0 z-20 cursor-default"
-                                    onClick={() => setIsDropdownOpen(false)}
-                                />
-                                <div className="absolute top-full left-0 right-0 mt-1 z-30 rounded-xl border border-slate-100 bg-white p-1 shadow-md flex flex-col gap-0.5 animate-fadeIn">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setVideoType("link");
-                                            setIsDropdownOpen(false);
-                                            setTempLink(url);
-                                            setIsLinkModalOpen(true);
-                                        }}
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50 transition cursor-pointer relative z-30"
-                                    >
-                                        <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
-                                            <Play className="size-3 fill-current ml-0.5" />
-                                        </span>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800">Video</span>
-                                            <span className="text-[10px] text-slate-400 font-semibold">Nhập liên kết bài học</span>
-                                        </div>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setVideoType("file");
-                                            setIsDropdownOpen(false);
-                                            fileInputRef.current?.click();
-                                        }}
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50 transition cursor-pointer relative z-30"
-                                    >
-                                        <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
-                                            <FileText className="size-3.5" />
-                                        </span>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800">Tải tệp lên</span>
-                                            <span className="text-[10px] text-slate-400 font-semibold">Chọn file từ máy tính</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </>
-                        )}
                     </div>
                 )}
             </div>
@@ -940,12 +902,12 @@ function VideoConfigTab({
                     <CustomModal.Content className="max-w-md !rounded-[20px] w-full">
                         <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
                             <div>
-                                <h3 className="text-sm font-black text-slate-800">Nhập liên kết bài học</h3>
-                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">Nhập liên kết video từ YouTube, S3 hoặc nguồn trực tiếp khác</p>
+                                <h3 className="text-sm font-black text-slate-800">{"Nhập liên kết bài học"}</h3>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{"Nhập liên kết video từ YouTube, S3 hoặc nguồn trực tiếp khác"}</p>
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Đường dẫn liên kết (Link Video)</label>
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">{"Đường dẫn liên kết (Link Video)"}</label>
                                 <input
                                     type="text"
                                     value={tempLink}
@@ -961,7 +923,7 @@ function VideoConfigTab({
                                     onClick={() => setIsLinkModalOpen(false)}
                                     className="bg-slate-50 border-slate-200 text-slate-600 px-4 py-2 text-xs font-bold"
                                 >
-                                    Hủy
+                                    {"Hủy"}
                                 </Button>
                                 <Button
                                     onClick={() => {
@@ -970,7 +932,68 @@ function VideoConfigTab({
                                     }}
                                     className="bg-blue-600 hover:bg-blue-700 text-white border-none px-4 py-2 text-xs font-black rounded-xl"
                                 >
-                                    Xác nhận
+                                    {"Xác nhận"}
+                                </Button>
+                            </div>
+                        </Dialog>
+                    </CustomModal.Content>
+                </CustomModal.Root>
+            )}
+
+            {/* Custom Modal to choose video source method */}
+            {isSelectModalOpen && (
+                <CustomModal.Root open={isSelectModalOpen} onOpenChange={setIsSelectModalOpen}>
+                    <CustomModal.Content className="max-w-md !rounded-[20px] w-full">
+                        <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-800">{"Chọn nguồn video"}</h3>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{"Chọn cách thức bạn muốn thêm video vào bài học này"}</p>
+                            </div>
+
+                            <div className="flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSelectModalOpen(false);
+                                        setVideoType("link");
+                                        setTempLink(url);
+                                        setIsLinkModalOpen(true);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left text-xs hover:bg-slate-50 transition duration-150 cursor-pointer"
+                                >
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
+                                        <Play className="size-3 fill-current ml-0.5" />
+                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-slate-800">{"Nhập liên kết bài học"}</span>
+                                        <span className="text-[10px] text-slate-400 font-semibold">{"Nhập liên kết video từ YouTube, S3..."}</span>
+                                    </div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSelectModalOpen(false);
+                                        setVideoType("file");
+                                        fileInputRef.current?.click();
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left text-xs hover:bg-slate-50 transition duration-150 cursor-pointer"
+                                >
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
+                                        <FileText className="size-4" />
+                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-slate-800">{"Tải tệp lên"}</span>
+                                        <span className="text-[10px] text-slate-400 font-semibold">{"Chọn file từ máy tính"}</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <div className="flex justify-end mt-1">
+                                <Button
+                                    onClick={() => setIsSelectModalOpen(false)}
+                                    className="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 text-xs font-bold rounded-xl"
+                                >
+                                    {"Hủy"}
                                 </Button>
                             </div>
                         </Dialog>

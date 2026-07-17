@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { Check, CheckCircle2, Circle, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { TiptapEditor } from "@/components/base/editor";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
@@ -19,7 +19,6 @@ const defaultOptions = (): OptionMock[] => [
 ];
 
 export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionModalProps) {
-    const [text, setText] = useState("");
     const [points, setPoints] = useState(10);
     const [explanation, setExplanation] = useState("");
     const [options, setOptions] = useState<OptionMock[]>(defaultOptions());
@@ -28,7 +27,6 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
     useEffect(() => {
         if (isOpen) {
             if (question) {
-                setText(question.text);
                 setPoints(question.points);
                 setExplanation(question.explanation);
 
@@ -49,7 +47,6 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                 const correctCount = loadedOpts.filter((o) => o.isCorrect).length;
                 setIsMulti(correctCount > 1);
             } else {
-                setText("");
                 setPoints(10);
                 setExplanation("");
                 setOptions(defaultOptions());
@@ -100,8 +97,9 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!text.trim()) {
-            toast.error(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.labelQuestionTitle);
+        const plainText = explanation.replace(/<\/?[^>]+(>|$)/g, "").trim();
+        if (!plainText) {
+            toast.error(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.labelQuestionDesc);
             return;
         }
 
@@ -111,9 +109,11 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
             return;
         }
 
+        const questionText = plainText.length > 120 ? plainText.slice(0, 120) + "..." : plainText;
+
         const newQuestion: QuestionMock = {
             id: question?.id || `q_${Date.now()}`,
-            text: text.trim(),
+            text: questionText,
             explanation: explanation.trim(),
             points: Number(points) || 10,
             options: options.map((opt) => ({
@@ -156,30 +156,17 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                     {/* Form Body */}
                     <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         <div className="custom-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto p-6">
-                            {/* Question Title & Points Row */}
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
-                                <div className="flex flex-col gap-1.5 md:col-span-3">
-                                    <label className="text-[12.5px] font-bold text-slate-700">{UI_TEXT.examsSetsEl.labelQuestionTitle}</label>
-                                    <input
-                                        type="text"
-                                        value={text}
-                                        onChange={(e) => setText(e.target.value)}
-                                        placeholder={UI_TEXT.examsSetsEl.placeholderQuestionTitle}
-                                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[13.5px] font-medium text-slate-800 placeholder-slate-400 focus:border-wine focus:ring-1 focus:ring-wine focus:outline-none"
-                                        required
-                                    />
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                    <label className="text-[12.5px] font-bold text-slate-700">{UI_TEXT.examsSetsEl.labelPoints}</label>
-                                    <input
-                                        type="number"
-                                        value={points}
-                                        onChange={(e) => setPoints(Number(e.target.value))}
-                                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[13.5px] font-medium text-slate-800 focus:border-wine focus:ring-1 focus:ring-wine focus:outline-none"
-                                        required
-                                        min={1}
-                                    />
-                                </div>
+                            {/* Points Input Row */}
+                            <div className="flex flex-col gap-1.5 max-w-[200px]">
+                                <label className="text-[12.5px] font-bold text-slate-700">{UI_TEXT.examsSetsEl.labelPoints}</label>
+                                <input
+                                    type="number"
+                                    value={points}
+                                    onChange={(e) => setPoints(Number(e.target.value))}
+                                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-[13.5px] font-medium text-slate-800 focus:border-wine focus:ring-1 focus:ring-wine focus:outline-none"
+                                    required
+                                    min={1}
+                                />
                             </div>
 
                             {/* Rich Editor Description */}
@@ -197,10 +184,10 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                         <div
                                             key={opt.id}
                                             className={cx(
-                                                "relative flex cursor-pointer flex-col gap-3.5 rounded-2xl border p-4.5 transition duration-150",
+                                                "relative flex cursor-pointer flex-col gap-3.5 rounded-2xl border p-4.5 transition duration-150 focus-within:ring-1",
                                                 opt.isCorrect
-                                                    ? "border-emerald-650 bg-emerald-50/30 shadow-xs shadow-emerald-50/10"
-                                                    : "border-slate-200/60 bg-slate-50/30 hover:border-slate-300",
+                                                    ? "border-emerald-500 bg-emerald-50/20 shadow-xs shadow-emerald-50 focus-within:border-emerald-500 focus-within:ring-emerald-500"
+                                                    : "border-slate-200 bg-white hover:border-slate-800 focus-within:border-wine focus-within:ring-wine",
                                             )}
                                             onClick={() => handleSelectCorrect(index)}
                                         >
@@ -209,38 +196,29 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                                 <div className="flex items-center gap-2">
                                                     <div className="relative flex items-center justify-center">
                                                         {opt.isCorrect ? (
-                                                            <div className="border-emerald-650 flex size-5 items-center justify-center rounded-full border-2 bg-white">
-                                                                <div className="bg-emerald-650 size-2.5 rounded-full" />
+                                                            <div className="flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white">
+                                                                <Check className="size-3.5 text-white stroke-[3]" />
                                                             </div>
                                                         ) : (
-                                                            <div className="size-5 rounded-full border-2 border-slate-400 bg-white" />
+                                                            <Circle className="size-5 text-slate-400" />
                                                         )}
                                                     </div>
                                                 </div>
-                                                <span className={cx("text-xs font-bold", opt.isCorrect ? "text-emerald-700" : "text-amber-700/80")}>
+                                                <span className={cx("text-xs font-bold", opt.isCorrect ? "text-emerald-700" : "text-slate-400")}>
                                                     {opt.isCorrect ? UI_TEXT.examsSetsEl.labelCorrect : UI_TEXT.examsSetsEl.labelIncorrect}
                                                 </span>
                                             </div>
 
-                                            {/* Choice Card Input Box */}
-                                            <div
-                                                className={cx(
-                                                    "w-full rounded-xl border bg-white px-4 py-2.5 transition duration-150 focus-within:ring-1",
-                                                    opt.isCorrect
-                                                        ? "focus-within:border-emerald-550 focus-within:ring-emerald-550 border-emerald-100"
-                                                        : "focus-within:border-slate-350 focus-within:ring-slate-350 border-slate-100",
-                                                )}
-                                            >
-                                                <textarea
-                                                    rows={2}
-                                                    value={opt.text}
-                                                    onChange={(e) => handleOptionTextChange(index, e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()} // Avoid triggering correct-selection click when typing
-                                                    placeholder={UI_TEXT.examsSetsEl.placeholderAnswer}
-                                                    className="w-full resize-none border-none bg-transparent p-0 text-[13px] leading-relaxed font-semibold text-slate-700 placeholder-slate-400 focus:outline-none"
-                                                    required
-                                                />
-                                            </div>
+                                            {/* Choice Card Input */}
+                                            <textarea
+                                                rows={2}
+                                                value={opt.text}
+                                                onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                                                onClick={(e) => e.stopPropagation()} // Avoid triggering correct-selection click when typing
+                                                placeholder={UI_TEXT.examsSetsEl.placeholderAnswer}
+                                                className="w-full resize-none border-none bg-transparent p-0 text-[13px] leading-relaxed font-semibold text-slate-700 placeholder-slate-400 focus:outline-none"
+                                                required
+                                            />
                                         </div>
                                     ))}
                                 </div>

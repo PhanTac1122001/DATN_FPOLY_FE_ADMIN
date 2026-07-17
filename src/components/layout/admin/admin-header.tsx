@@ -3,29 +3,33 @@
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { Avatar } from "@/components/base/avatar/avatar";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { RoleEnum } from "@/types/staff.types";
 
-interface AdminHeaderProps {
-    title?: string;
-    subtitle?: string;
-}
+const PAD_LENGTH = 2;
+const CLOCK_INTERVAL = 1000;
 
 export function AdminHeader({
-    title = "Thống kê hệ đào tạo",
-    subtitle = "Tổng quan số học viên và lớp học theo từng hệ đào tạo",
-}: AdminHeaderProps) {
+    title = "",
+    subtitle = "",
+}: {
+    title?: string;
+    subtitle?: string;
+}) {
     const { user } = useAuth();
     const [time, setTime] = useState("");
 
     useEffect(() => {
         const updateClock = () => {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, "0");
-            const minutes = String(now.getMinutes()).padStart(2, "0");
+            const hours = String(now.getHours()).padStart(PAD_LENGTH, "0");
+            const minutes = String(now.getMinutes()).padStart(PAD_LENGTH, "0");
             setTime(`${hours}:${minutes}`);
         };
 
         updateClock();
-        const interval = setInterval(updateClock, 1000);
+        const interval = setInterval(updateClock, CLOCK_INTERVAL);
         return () => clearInterval(interval);
     }, []);
 
@@ -41,15 +45,29 @@ export function AdminHeader({
         return lastWord[0].toUpperCase();
     };
 
+    const getRoleLabel = (roles?: string[], defaultRole?: string) => {
+        if (!roles || roles.length === 0) {
+            return defaultRole === RoleEnum.ADMIN ? UI_TEXT.staff.roleAdmin : UI_TEXT.staff.roleTeacher;
+        }
+        if (roles.includes(RoleEnum.ADMIN)) return UI_TEXT.staff.roleAdmin;
+        if (roles.includes(RoleEnum.MANAGER)) return UI_TEXT.staff.roleManager;
+        if (roles.includes(RoleEnum.TEACHER)) return UI_TEXT.staff.roleTeacher;
+        if (roles.includes(RoleEnum.TEACHER_ASSISTANT)) return UI_TEXT.staff.roleTeacherAssistant;
+        if (roles.includes(RoleEnum.ASSISTANT)) return UI_TEXT.staff.roleAssistant;
+        return UI_TEXT.staff.roleDefault;
+    };
+
     return (
         <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-line bg-white/86 px-8 py-4 backdrop-blur-md">
             <div className="min-w-0">
                 <h1 className="font-display text-[20px] font-extrabold tracking-tight leading-normal text-ink">
-                    {title}
+                    {title || UI_TEXT.common.appName}
                 </h1>
-                <p className="mt-0.5 text-[12px] font-medium text-muted">
-                    {subtitle}
-                </p>
+                {subtitle && (
+                    <p className="mt-0.5 text-[12px] font-medium text-muted">
+                        {subtitle}
+                    </p>
+                )}
             </div>
 
             <div className="flex items-center gap-4 shrink-0">
@@ -63,15 +81,19 @@ export function AdminHeader({
                 <div className="flex items-center gap-2.5 rounded-full border border-line bg-white px-3 py-1 shadow-xs">
                     <div className="text-right">
                         <div className="font-bold text-[13px] leading-tight text-ink">
-                            {user?.fullName || "Rikkei Admin"}
+                            {user?.fullName || UI_TEXT.common.appName}
                         </div>
                         <div className="text-[10.5px] font-medium text-muted">
-                            {user?.role === "ADMIN" ? "Quản trị viên" : "Quản trị tối cao"}
+                            {getRoleLabel(user?.roles, user?.role)}
                         </div>
                     </div>
-                    <div className="flex size-8.5 items-center justify-center rounded-full bg-linear-to-br from-wine-bright to-wine text-[13.5px] font-extrabold text-white">
-                        {getInitials(user?.fullName)}
-                    </div>
+                    <Avatar
+                        size="sm"
+                        src={user?.avatarUrl || undefined}
+                        initials={getInitials(user?.fullName)}
+                        alt={user?.fullName}
+                        className="bg-linear-to-br from-wine-bright to-wine text-white font-extrabold"
+                    />
                 </div>
             </div>
         </header>

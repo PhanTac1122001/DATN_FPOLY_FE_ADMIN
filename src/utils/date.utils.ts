@@ -37,3 +37,13 @@ export function utcToLocalString(utcTime: string) {
 
 /** Get current timestamp in milliseconds */
 export const getCurrentTimeMs = (): number => Date.now();
+
+const SECONDS_IN_MINUTE = 60;
+const PAD_LENGTH = 2;
+
+/** Format countdown seconds as "MM:SS" */
+export function formatOtpCountdown(seconds: number): string {
+    const mins = Math.floor(seconds / SECONDS_IN_MINUTE);
+    const secs = seconds % SECONDS_IN_MINUTE;
+    return `${String(mins).padStart(PAD_LENGTH, "0")}:${String(secs).padStart(PAD_LENGTH, "0")}`;
+}

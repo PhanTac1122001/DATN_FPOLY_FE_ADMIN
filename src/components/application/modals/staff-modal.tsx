@@ -15,7 +15,6 @@ import { type StaffSchemaType, staffSchema } from "@/schemas/staff.schema";
 import { createStaff, getSystemsList, updateStaff } from "@/services/staff.service";
 import { toast } from "@/services/toast.service";
 import { GenderEnum, RoleEnum, type StaffModalProps, StatusEnum } from "@/types/staff.types";
-import { registerInput } from "@/utils/form.utils";
 
 export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
     const queryClient = useQueryClient();
@@ -41,7 +40,6 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
     ];
 
     const {
-        register,
         handleSubmit,
         control,
         reset,
@@ -162,76 +160,136 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                         <div className="custom-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto p-6">
                             {/* Họ tên & Email cùng hàng */}
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <Input
-                                    label={
-                                        <span>
-                                            {UI_TEXT.staff.labelFullName.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
-                                        </span>
-                                    }
-                                    placeholder={UI_TEXT.staff.placeholderFullName}
-                                    hint={errors.fullName?.message}
-                                    isInvalid={!!errors.fullName}
-                                    {...registerInput(register("fullName", { onChange: () => clearErrors("fullName") }))}
+                                <Controller
+                                    name="fullName"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={
+                                                <span>
+                                                    {UI_TEXT.staff.labelFullName.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                                </span>
+                                            }
+                                            placeholder={UI_TEXT.staff.placeholderFullName}
+                                            hint={errors.fullName?.message}
+                                            isInvalid={!!errors.fullName}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearErrors("fullName");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
                                 />
 
-                                <Input
-                                    label={
-                                        <span>
-                                            {UI_TEXT.staff.labelEmail.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
-                                        </span>
-                                    }
-                                    placeholder={UI_TEXT.staff.placeholderEmail}
-                                    type="email"
-                                    hint={errors.email?.message}
-                                    isInvalid={!!errors.email}
-                                    {...registerInput(register("email", { onChange: () => clearErrors("email") }))}
+                                <Controller
+                                    name="email"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={
+                                                <span>
+                                                    {UI_TEXT.staff.labelEmail.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                                </span>
+                                            }
+                                            placeholder={UI_TEXT.staff.placeholderEmail}
+                                            type="email"
+                                            hint={errors.email?.message}
+                                            isInvalid={!!errors.email}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearErrors("email");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
                                 />
                             </div>
 
                             {/* Số điện thoại & Địa chỉ cùng hàng */}
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <Input
-                                    label={
-                                        <span>
-                                            {UI_TEXT.staff.labelPhone.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
-                                        </span>
-                                    }
-                                    placeholder={UI_TEXT.staff.placeholderPhone}
-                                    hint={errors.phone?.message}
-                                    isInvalid={!!errors.phone}
-                                    {...registerInput(register("phone", { onChange: () => clearErrors("phone") }))}
+                                <Controller
+                                    name="phone"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={
+                                                <span>
+                                                    {UI_TEXT.staff.labelPhone.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                                </span>
+                                            }
+                                            placeholder={UI_TEXT.staff.placeholderPhone}
+                                            hint={errors.phone?.message}
+                                            isInvalid={!!errors.phone}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearErrors("phone");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
                                 />
 
-                                <Input
-                                    label={
-                                        <span>
-                                            {UI_TEXT.staff.labelAddress.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
-                                        </span>
-                                    }
-                                    placeholder={UI_TEXT.staff.placeholderAddress}
-                                    hint={errors.address?.message}
-                                    isInvalid={!!errors.address}
-                                    {...registerInput(register("address", { onChange: () => clearErrors("address") }))}
+                                <Controller
+                                    name="address"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={
+                                                <span>
+                                                    {UI_TEXT.staff.labelAddress.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                                </span>
+                                            }
+                                            placeholder={UI_TEXT.staff.placeholderAddress}
+                                            hint={errors.address?.message}
+                                            isInvalid={!!errors.address}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearErrors("address");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
                                 />
                             </div>
 
                             {/* Mật khẩu & Giới tính cùng hàng */}
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <Input
-                                    label={
-                                        staff ? (
-                                            UI_TEXT.staff.labelPasswordEdit
-                                        ) : (
-                                            <span>
-                                                {UI_TEXT.staff.labelPassword.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
-                                            </span>
-                                        )
-                                    }
-                                    placeholder={staff ? UI_TEXT.staff.placeholderPasswordEdit : UI_TEXT.staff.placeholderPassword}
-                                    type="password"
-                                    hint={errors.password?.message}
-                                    isInvalid={!!errors.password}
-                                    {...registerInput(register("password", { onChange: () => clearErrors("password") }))}
+                                <Controller
+                                    name="password"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={
+                                                staff ? (
+                                                    UI_TEXT.staff.labelPasswordEdit
+                                                ) : (
+                                                    <span>
+                                                        {UI_TEXT.staff.labelPassword.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                                    </span>
+                                                )
+                                            }
+                                            placeholder={staff ? UI_TEXT.staff.placeholderPasswordEdit : UI_TEXT.staff.placeholderPassword}
+                                            type="password"
+                                            hint={errors.password?.message}
+                                            isInvalid={!!errors.password}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearErrors("password");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
                                 />
 
                                 {/* Gender Select */}

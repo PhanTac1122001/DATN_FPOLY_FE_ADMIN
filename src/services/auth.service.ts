@@ -15,12 +15,35 @@ import type {
     ResetPasswordResponse,
     UpdateProfileRequest,
     UserProfile,
+    VerifyOtpRequest,
 } from "@/types/auth.types";
 
 export type { UserProfile } from "@/types/auth.types";
 
-export async function login(data: LoginRequest): Promise<LoginResponse> {
-    return httpClient<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, {
+export async function login(data: LoginRequest): Promise<any> {
+    return httpClient<any>(API_ENDPOINTS.AUTH.LOGIN, {
+        method: HttpMethod.POST,
+        body: JSON.stringify(data),
+        requireAuth: false,
+    });
+}
+
+export async function verifyOtp(data: VerifyOtpRequest): Promise<LoginResponse> {
+    const response = await httpClient<any>(API_ENDPOINTS.AUTH.VERIFY_OTP, {
+        method: HttpMethod.POST,
+        body: JSON.stringify(data),
+        requireAuth: false,
+    });
+
+    // Check if the response matches { statusCode: number, data: LoginResponse }
+    if (response && response.data && "accessToken" in response.data) {
+        return response.data;
+    }
+    return response;
+}
+
+export async function renewOtp(data: { email: string; action: string }): Promise<any> {
+    return httpClient<any>(API_ENDPOINTS.AUTH.RENEW_OTP, {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
         requireAuth: false,
@@ -70,16 +93,48 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPa
     });
 }
 
+function mapBackendStaffToUserProfile(staff: any): UserProfile {
+    if (!staff) {
+        throw new Error("Invalid staff profile payload");
+    }
+    const roleNames = (staff.roles || []).map((r: any) => r.name);
+
+    // Default role mappings
+    let role = "ADMIN";
+    if (roleNames.includes("TEACHER") || roleNames.includes("TEACHER_ASSISTANT") || roleNames.includes("ASSISTANT")) {
+        role = "INSTRUCTOR";
+    }
+
+    // Default permissions based on roles
+    let permissions: string[] = ["VIEW_USERS"];
+    if (roleNames.includes("ADMIN") || roleNames.includes("MANAGER")) {
+        permissions = ["MANAGE_USERS", "VIEW_USERS", "admin", "manage_users", "manage_courses"];
+    } else {
+        permissions = ["VIEW_USERS", "teacher", "manage_courses"];
+    }
+
+    return {
+        id: staff.id || staff._id || "",
+        email: staff.email || "",
+        fullName: staff.fullName || "",
+        avatarUrl: staff.avatar || null,
+        phoneNumber: staff.phone || null,
+        role: role,
+        roles: roleNames,
+        permissions: permissions,
+        createdAt: staff.createdAt,
+    };
+}
+
 export async function getProfile(): Promise<UserProfile> {
     try {
-        return await httpClient<UserProfile>(API_ENDPOINTS.AUTH.PROFILE, {
+        const response = await httpClient<any>(API_ENDPOINTS.AUTH.PROFILE, {
             method: HttpMethod.GET,
         });
+        return mapBackendStaffToUserProfile(response);
     } catch (error) {
         // Fallback to mock profile if we have the access token cookie
-        const hasToken = typeof window !== "undefined"
-            ? Cookies.get(APP_CONFIG.ACCESS_TOKEN_KEY)
-            : null;
+        const hasToken = typeof window !== "undefined" ? Cookies.get(APP_CONFIG.ACCESS_TOKEN_KEY) : null;
 
         if (hasToken) {
             return {
@@ -87,7 +142,8 @@ export async function getProfile(): Promise<UserProfile> {
                 email: "minhanh.k18@rikkei.edu.vn",
                 fullName: "Nguyễn Minh Anh (Admin)",
                 role: "ADMIN",
-                permissions: ["admin", "manage_users", "manage_courses"],
+                roles: ["ADMIN"],
+                permissions: ["admin", "manage_users", "manage_courses", "MANAGE_USERS", "VIEW_USERS"],
             };
         }
         throw error;
@@ -95,15 +151,20 @@ export async function getProfile(): Promise<UserProfile> {
 }
 
 export async function updateProfile(data: UpdateProfileRequest): Promise<UserProfile> {
-    return httpClient<UserProfile>(API_ENDPOINTS.AUTH.UPDATE_PROFILE, {
+    const response = await httpClient<any>(API_ENDPOINTS.AUTH.UPDATE_PROFILE, {
         method: HttpMethod.PUT,
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+            fullName: data.fullName,
+            phone: data.phoneNumber,
+            avatar: data.avatarUrl,
+        }),
     });
+    return mapBackendStaffToUserProfile(response);
 }
 
 export async function changePassword(data: ChangePasswordRequest): Promise<{ message: string }> {
     return httpClient<{ message: string }>(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
-        method: HttpMethod.POST,
+        method: HttpMethod.PUT,
         body: JSON.stringify({
             currentPassword: data.currentPassword,
             newPassword: data.newPassword,

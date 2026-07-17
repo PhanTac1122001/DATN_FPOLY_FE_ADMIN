@@ -53,6 +53,8 @@ export function AdminSidebar() {
         diem: false,
     });
 
+    const isCourseDetailPage = pathname.startsWith("/type/") && pathname.split("/").filter(Boolean).length >= 3;
+
     const isDtActive = dtItems.some((item) => pathname === item.path);
     const isElearningActive = elearningItems.some((item) => pathname === item.path);
     const isDiemActive = diemItems.some((item) => pathname === item.path);
@@ -65,7 +67,10 @@ export function AdminSidebar() {
     };
 
     return (
-        <aside className="sticky top-0 flex h-screen w-20 flex-col bg-gradient-to-b from-wine to-wine-deep p-6 text-[#FCEDEF] transition-all duration-300 lg:w-[270px]">
+        <aside className={cx(
+            "sticky top-0 flex h-screen w-20 flex-col bg-gradient-to-b from-wine to-wine-deep p-6 text-[#FCEDEF] transition-all duration-300 lg:w-[270px]",
+            isCourseDetailPage && "course-detail-sidebar"
+        )}>
             {/* Logo block */}
             <div className="logo-container flex flex-col border-b border-white/10 pb-4.5 justify-center lg:justify-start gap-3">
                 {/* Logo Image wrapper for expanded sidebar */}

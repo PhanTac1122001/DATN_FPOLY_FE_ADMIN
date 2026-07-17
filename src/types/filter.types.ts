@@ -96,6 +96,8 @@ export interface AdvancedFilterProps {
     maxConditions?: number;
     /** Trigger element */
     trigger: React.ReactNode;
+    /** Hide operator selector */
+    hideOperator?: boolean;
 }
 
 export interface SelectFilterInputProps {

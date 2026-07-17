@@ -13,12 +13,29 @@ export interface QuestionMock {
     options: OptionMock[];
 }
 
+export interface TestCaseMock {
+    input: string;
+    output: string;
+}
+
+export interface EssayQuestionMock {
+    id: string;
+    title: string;
+    language: string;
+    functionName: string;
+    detail: string;
+    templateCode: string;
+    testCases: TestCaseMock[];
+    points: number;
+}
+
 export interface ExamSetMock {
     id: string;
     name: string;
     questionCount: number;
     createdAt: string;
     questions: QuestionMock[];
+    essayQuestions?: EssayQuestionMock[];
 }
 
 export interface ExamSetDetailViewProps {

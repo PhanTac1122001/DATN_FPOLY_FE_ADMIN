@@ -4,10 +4,11 @@ export const API_ENDPOINTS = {
     AUTH: {
         LOGIN: "/v1/auth/login/staff",
         VERIFY_OTP: "/v1/auth/login/staff/verify-otp",
+        RENEW_OTP: "/v1/auth/renew-otp",
         REGISTER: `${API_PREFIX}/auth/register`,
         VERIFY_EMAIL: `${API_PREFIX}/auth/verify-email`,
-        LOGOUT: `${API_PREFIX}/auth/staff/logout`,
-        REFRESH: `${API_PREFIX}/auth/staff/refresh`,
+        LOGOUT: "/v1/auth/logout",
+        REFRESH: "/v1/auth/refresh-token",
         FORGOT_PASSWORD: `${API_PREFIX}/auth/forgot-password`,
         RESET_PASSWORD: `${API_PREFIX}/auth/reset-password`,
         PROFILE: `${API_PREFIX}/staff/profile/me`,
