@@ -180,7 +180,7 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
                                         </td>
                                         <td className="border-b border-slate-100 px-6 py-5.5 text-center">
                                             <Link
-                                                href={`/courses?systemId=${detail.system.id}&courseId=${course.id}` as Route}
+                                                href={`/type-course?systemId=${detail.system.id}&courseId=${course.id}` as Route}
                                                 className="shadow-xxs inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-wine hover:bg-wine/5 hover:text-wine"
                                                 title={UI_TEXT.trainingTypesEl.viewDetails}
                                             >
