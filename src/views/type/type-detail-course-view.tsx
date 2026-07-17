@@ -186,7 +186,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 </div>
 
                 {/* Right panel: Cấu hình bài học */}
-                <div className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs lg:col-span-8 min-[1440px]:col-span-9 h-fit max-h-full overflow-hidden self-start">
+                <div className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs lg:col-span-8 min-[1440px]:col-span-9 h-full overflow-hidden">
                     {sessions.length === 0 ? (
                         <div className="flex flex-1 flex-col items-center justify-center p-12 py-20 text-center">
                             <div className="flex size-14 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-slate-50 text-slate-400">
