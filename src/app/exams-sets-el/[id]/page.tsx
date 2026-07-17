@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { ExamSetDetailClientView } from "@/views/exam-set-detail-client-view";
+import { ExamSetDetailClientView } from "@/views/exams-sets/exam-set-detail-client-view";
 
 interface PageProps {
     params: Promise<{ id: string }>;

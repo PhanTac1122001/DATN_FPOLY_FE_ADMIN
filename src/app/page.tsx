@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { HomeClientView } from "@/views/home-client-view";
+import { HomeClientView } from "@/views/home/home-client-view";
 
 export const metadata: Metadata = {
     title: {

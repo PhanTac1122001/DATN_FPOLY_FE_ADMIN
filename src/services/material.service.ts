@@ -99,3 +99,7 @@ export async function updateCourseClass(id: string, body: Partial<{ teacherId: s
 export async function deleteCourseClass(id: string): Promise<void> {
     await httpClient<any>(`/api/staff/course-classes/${id}`, { method: HttpMethod.DELETE });
 }
+
+export async function deleteLesson(id: string): Promise<void> {
+    await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.DELETE });
+}

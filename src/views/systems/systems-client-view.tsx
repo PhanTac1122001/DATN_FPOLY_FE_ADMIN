@@ -4,9 +4,10 @@ import { useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { useAuth } from "@/hooks/use-auth";
 import { useAppRouter } from "@/hooks/use-app-router";
-import { HomeView } from "@/views/home-view";
+import { SystemsView } from "./systems-view";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 
-export function HomeClientView() {
+export function SystemsClientView() {
     const { user, isLoading } = useAuth();
     const router = useAppRouter();
 
@@ -20,7 +21,7 @@ export function HomeClientView() {
         return (
             <div className="flex min-h-screen items-center justify-center bg-cream">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand-500" />
+                    <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
                 </div>
             </div>
         );
@@ -31,8 +32,8 @@ export function HomeClientView() {
     }
 
     return (
-        <AdminLayout>
-            <HomeView />
+        <AdminLayout title={UI_TEXT.trainingSystem.title} subtitle={UI_TEXT.trainingSystem.subtitle} disableScroll={true}>
+            <SystemsView />
         </AdminLayout>
     );
 }

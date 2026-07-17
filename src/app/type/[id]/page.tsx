@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { TypeDetailClientView } from "@/views/type-detail-client-view";
+import { TypeDetailClientView } from "@/views/type/type-detail-client-view";
 
 interface PageProps {
     params: Promise<{ id: string }>;
