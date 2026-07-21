@@ -3,16 +3,18 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, ChevronDown, File, FileText, HelpCircle, Play, Plus, ScrollText, Video, Trash2, GripVertical, Search, CheckCircle2, Circle } from "lucide-react";
+import { ChevronRight, ChevronDown, File, FileText, HelpCircle, Play, Plus, ScrollText, Video, Trash2, GripVertical, Search, CheckCircle2, Circle, Repeat, Link as LinkIcon, Map, ExternalLink, BookText, X, ArrowLeft, Pencil } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { Button } from "@/components/base/buttons/button";
-import { createLesson, createSession, getCoursesBySystem, getLessonsBySession, getSessionsByCourse, configureLessonVideo, configureLessonReading, linkLessonQuiz, getQuizzesList, getLessonDetails, deleteLesson, updateSession, updateLesson } from "@/services/material.service";
+import { createLesson, createSession, getCoursesBySystem, getLessonsBySession, getSessionsByCourse, configureLessonVideo, configureLessonReading, linkLessonQuiz, getQuizzesList, getLessonDetails, deleteLesson, deleteSession, updateSession, updateLesson } from "@/services/material.service";
 import { getSystemsList } from "@/services/system.service";
 import { toast } from "@/services/toast.service";
 import type { Lesson, Session } from "@/types/material.types";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { TiptapEditor } from "@/components/base/editor";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 
 interface TypeDetailCourseViewProps {
     id: string;
@@ -24,7 +26,39 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
 
     const [selectedLessonId, setSelectedLessonId] = useState("");
     const [selectedTab, setSelectedTab] = useState<"video" | "reading" | "quiz">("video");
+    const [selectedSessionId, setSelectedSessionId] = useState("");
+    const [selectedSessionTab, setSelectedSessionTab] = useState<"mindmap" | "pdf" | "srs">("mindmap");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
+    const [addSessionTab, setAddSessionTab] = useState<"general" | "resources" | "practice">("general");
+    const [editSessionTab, setEditSessionTab] = useState<"general" | "resources" | "practice">("general");
+
+    const initialSessionFields = {
+        name: "",
+        type: "LY_THUYET",
+        status: false,
+        mindmap: "",
+        srs: "",
+        miniProject: "",
+        pdf: "",
+        exercise: "",
+        quizzi: "",
+        practiceEntranceQuiz: "",
+        isShowMindmap: false,
+        description: "",
+        practice: {
+            content: "",
+            resources: [] as { label: string; url: string }[],
+            submissionType: "LINK" as "LINK" | "FILE" | "TEXT",
+        }
+    };
+
+    const [newSessionFields, setNewSessionFields] = useState(initialSessionFields);
+
+    const [isEditSessionOpen, setIsEditSessionOpen] = useState(false);
+    const [editingSession, setEditingSession] = useState<Session | null>(null);
+    const [isDeleteSessionOpen, setIsDeleteSessionOpen] = useState(false);
+    const [deletingSession, setDeletingSession] = useState<{ id: string; name: string } | null>(null);
 
     // Queries
     const { data: systemDetail } = useQuery({
@@ -57,7 +91,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const courseName = course?.name || "";
 
     const addSessionMutation = useMutation({
-        mutationFn: (name: string) => createSession({ name, courseId }),
+        mutationFn: (body: Omit<Session, "id" | "createdAt" | "position">) => createSession(body),
         onSuccess: () => {
             toast.success("Thành công", "Đã thêm chương học mới");
             queryClient.invalidateQueries({ queryKey: ["sessions", courseId] });
@@ -80,9 +114,72 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         },
     });
 
+    const updateSessionMutation = useMutation({
+        mutationFn: ({ sessionId, body }: { sessionId: string; body: Partial<Session> }) => updateSession(sessionId, body),
+        onSuccess: () => {
+            toast.success("Thành công", "Đã cập nhật chương học");
+            queryClient.invalidateQueries({ queryKey: ["sessions", courseId] });
+        },
+        onError: () => {
+            toast.error("Lỗi", "Không thể cập nhật chương học");
+        },
+    });
+
+    const deleteSessionMutation = useMutation({
+        mutationFn: (sessionId: string) => deleteSession(sessionId),
+        onSuccess: () => {
+            toast.success("Thành công", "Đã xóa chương học");
+            queryClient.invalidateQueries({ queryKey: ["sessions", courseId] });
+            setSelectedSessionId("");
+        },
+        onError: () => {
+            toast.error("Lỗi", "Không thể xóa chương học");
+        },
+    });
+
     const handleAddSession = () => {
-        const name = prompt("Nhập tên chương học mới (Chapter name):");
-        if (name) addSessionMutation.mutate(name);
+        setNewSessionFields(initialSessionFields);
+        setAddSessionTab("general");
+        setIsAddSessionOpen(true);
+    };
+
+    const handleSubmitAddSession = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newSessionFields.name.trim()) {
+            addSessionMutation.mutate({
+                ...newSessionFields,
+                name: newSessionFields.name.trim(),
+                courseId,
+                practice: newSessionFields.practice.content.trim() ? newSessionFields.practice : null
+            }, {
+                onSuccess: () => {
+                    setIsAddSessionOpen(false);
+                    setNewSessionFields(initialSessionFields);
+                    setAddSessionTab("general");
+                }
+            });
+        }
+    };
+
+    const handleSubmitEditSession = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (editingSession && editingSession.name.trim()) {
+            const { id, createdAt, position, courseId, ...body } = editingSession;
+            updateSessionMutation.mutate({
+                sessionId: id,
+                body: {
+                    ...body,
+                    name: body.name.trim(),
+                    practice: body.practice?.content.trim() ? body.practice : null
+                }
+            }, {
+                onSuccess: () => {
+                    setIsEditSessionOpen(false);
+                    setEditingSession(null);
+                    setEditSessionTab("general");
+                }
+            });
+        }
     };
 
     const sortedSessions = [...sessions].sort((a, b) => a.position - b.position);
@@ -148,7 +245,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     ) : sessions.length === 0 ? (
                         <div className="flex flex-1 items-center justify-center py-6">
                             <div className="w-full rounded-xl border border-red-100 bg-red-50/40 p-4 text-center">
-                                <p className="text-xs font-extrabold text-[#A14747]">Chưa có chương học nào.</p>
+                                <p className="text-xs font-extrabold text-red-custom">Chưa có chương học nào.</p>
                             </div>
                         </div>
                     ) : (
@@ -173,10 +270,27 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                         session={ses}
                                         index={idx}
                                         selectedLessonId={selectedLessonId}
+                                        selectedSessionId={selectedSessionId}
+                                        selectedSessionTab={selectedSessionTab}
                                         selectedTab={selectedTab}
                                         onSelectLesson={(lessonId, tab) => {
                                             setSelectedLessonId(lessonId);
                                             setSelectedTab(tab);
+                                            setSelectedSessionId(""); // Deselect session
+                                        }}
+                                        onSelectSession={(sessionId, tab) => {
+                                            setSelectedSessionId(sessionId);
+                                            setSelectedSessionTab(tab);
+                                            setSelectedLessonId(""); // Deselect lesson
+                                        }}
+                                        onEditSession={(session) => {
+                                            setEditingSession(session);
+                                            setEditSessionTab("general");
+                                            setIsEditSessionOpen(true);
+                                        }}
+                                        onDeleteSession={(sessionId, name) => {
+                                            setDeletingSession({ id: sessionId, name });
+                                            setIsDeleteSessionOpen(true);
                                         }}
                                     />
                                 </div>
@@ -196,6 +310,12 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                 Cấu trúc khóa học rỗng. Vui lòng bấm &ldquo;Thêm chương&rdquo; để bắt đầu.
                             </p>
                         </div>
+                    ) : selectedSessionId ? (
+                        <SessionViewerWrapper
+                            session={sessions.find((s) => s.id === selectedSessionId)}
+                            activeTab={selectedSessionTab}
+                            onChangeTab={setSelectedSessionTab}
+                        />
                     ) : !selectedLessonId ? (
                         <div className="flex flex-1 flex-col items-center justify-center p-12 text-center">
                             <FileText className="size-10 text-slate-300 mb-2" />
@@ -206,6 +326,698 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     )}
                 </div>
             </div>
+
+            {/* Custom Modal for Adding Session */}
+            <CustomModal.Root open={isAddSessionOpen} onOpenChange={setIsAddSessionOpen}>
+                <CustomModal.Content className="max-w-xl !rounded-[20px] w-full">
+                    <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsAddSessionOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                        >
+                            <X className="size-4" />
+                        </button>
+                        <form onSubmit={handleSubmitAddSession} className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-800">{UI_TEXT.courseDetail.addSessionTitle}</h3>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.addSessionDescription}</p>
+                            </div>
+
+                            {/* Form Tabs Header */}
+                            <div className="flex gap-1.5 border-b border-slate-100 pb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setAddSessionTab("general")}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        addSessionTab === "general"
+                                            ? "bg-wine/5 text-wine"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {UI_TEXT.courseDetail.sessionTabGeneral}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAddSessionTab("resources")}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        addSessionTab === "resources"
+                                            ? "bg-wine/5 text-wine"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {UI_TEXT.courseDetail.sessionTabResources}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAddSessionTab("practice")}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        addSessionTab === "practice"
+                                            ? "bg-wine/5 text-wine"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {UI_TEXT.courseDetail.sessionTabPractice}
+                                </button>
+                            </div>
+
+                            {/* Tab 1: General Info */}
+                            {addSessionTab === "general" && (
+                                <div className="flex flex-col gap-4 py-2">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
+                                        <input
+                                            type="text"
+                                            value={newSessionFields.name}
+                                            onChange={(e) => setNewSessionFields(prev => ({ ...prev, name: e.target.value }))}
+                                            placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            autoFocus
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
+                                            <select
+                                                value={newSessionFields.type}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, type: e.target.value }))}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            >
+                                                <option value="LY_THUYET">{UI_TEXT.courseDetail.sessionTypeTheory}</option>
+                                                <option value="THUC_HANH">{UI_TEXT.courseDetail.sessionTypePractice}</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center justify-between border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionStatusLabel}</span>
+                                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.sessionStatusDesc}</span>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={newSessionFields.status}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, status: e.target.checked }))}
+                                                className="size-4 rounded border-slate-300 text-wine focus:ring-wine cursor-pointer accent-wine"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionDescLabel}</label>
+                                        <textarea
+                                            value={newSessionFields.description}
+                                            onChange={(e) => setNewSessionFields(prev => ({ ...prev, description: e.target.value }))}
+                                            placeholder={UI_TEXT.courseDetail.sessionDescPlaceholder}
+                                            rows={3}
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tab 2: Resources */}
+                            {addSessionTab === "resources" && (
+                                <div className="flex flex-col gap-3.5 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMindmapLabel}</label>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase">{UI_TEXT.courseDetail.sessionShowMindmapLabel}</span>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newSessionFields.isShowMindmap}
+                                                    onChange={(e) => setNewSessionFields(prev => ({ ...prev, isShowMindmap: e.target.checked }))}
+                                                    className="size-3.5 rounded border-slate-300 text-wine cursor-pointer accent-wine"
+                                                />
+                                            </div>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={newSessionFields.mindmap}
+                                            onChange={(e) => setNewSessionFields(prev => ({ ...prev, mindmap: e.target.value }))}
+                                            placeholder="https://example.com/mindmap.jpg"
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionSrsLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.srs}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, srs: e.target.value }))}
+                                                placeholder="https://example.com/srs.pdf"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPdfLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.pdf}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, pdf: e.target.value }))}
+                                                placeholder="https://example.com/lecture.pdf"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMiniProjectLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.miniProject}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, miniProject: e.target.value }))}
+                                                placeholder="https://example.com/miniproject.zip"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionExerciseLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.exercise}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, exercise: e.target.value }))}
+                                                placeholder="Bài tập..."
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionQuizziLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.quizzi}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, quizzi: e.target.value }))}
+                                                placeholder="Quizzi..."
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionEntranceQuizLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.practiceEntranceQuiz}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, practiceEntranceQuiz: e.target.value }))}
+                                                placeholder="Entrance Quiz..."
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tab 3: Practice */}
+                            {addSessionTab === "practice" && (
+                                <div className="flex flex-col gap-4 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeTypeLabel}</label>
+                                            <select
+                                                value={newSessionFields.practice.submissionType}
+                                                onChange={(e) => setNewSessionFields(prev => ({
+                                                    ...prev,
+                                                    practice: {
+                                                        ...prev.practice,
+                                                        submissionType: e.target.value as "LINK" | "FILE" | "TEXT"
+                                                    }
+                                                }))}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            >
+                                                <option value="LINK">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeLink}</option>
+                                                <option value="FILE">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeFile}</option>
+                                                <option value="TEXT">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeText}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeContentLabel}</label>
+                                        <textarea
+                                            value={newSessionFields.practice.content}
+                                            onChange={(e) => setNewSessionFields(prev => ({
+                                                ...prev,
+                                                practice: {
+                                                    ...prev.practice,
+                                                    content: e.target.value
+                                                }
+                                            }))}
+                                            placeholder={UI_TEXT.courseDetail.sessionPracticeContentPlaceholder}
+                                            rows={3}
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Resources references */}
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeResourcesLabel}</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setNewSessionFields(prev => ({
+                                                    ...prev,
+                                                    practice: {
+                                                        ...prev.practice,
+                                                        resources: [...prev.practice.resources, { label: "", url: "" }]
+                                                    }
+                                                }))}
+                                                className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
+                                            >
+                                                <Plus className="size-3" />
+                                                {UI_TEXT.courseDetail.sessionPracticeAddResourceBtn}
+                                            </button>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2">
+                                            {newSessionFields.practice.resources.map((resource, resIdx) => (
+                                                <div key={resIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                                    <input
+                                                        type="text"
+                                                        value={resource.label}
+                                                        onChange={(e) => {
+                                                            const newResources = [...newSessionFields.practice.resources];
+                                                            newResources[resIdx].label = e.target.value;
+                                                            setNewSessionFields(prev => ({
+                                                                ...prev,
+                                                                practice: { ...prev.practice, resources: newResources }
+                                                            }));
+                                                        }}
+                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceLabelPlaceholder}
+                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                        required
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={resource.url}
+                                                        onChange={(e) => {
+                                                            const newResources = [...newSessionFields.practice.resources];
+                                                            newResources[resIdx].url = e.target.value;
+                                                            setNewSessionFields(prev => ({
+                                                                ...prev,
+                                                                practice: { ...prev.practice, resources: newResources }
+                                                            }));
+                                                        }}
+                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceUrlPlaceholder}
+                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                        required
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newResources = newSessionFields.practice.resources.filter((_, rIdx) => rIdx !== resIdx);
+                                                            setNewSessionFields(prev => ({
+                                                                ...prev,
+                                                                practice: { ...prev.practice, resources: newResources }
+                                                            }));
+                                                        }}
+                                                        className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
+                                                        title="Xóa tài liệu"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {newSessionFields.practice.resources.length === 0 && (
+                                                <span className="text-[10px] text-slate-400 italic font-semibold">{UI_TEXT.courseDetail.sessionPracticeNoResources}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2.5 mt-2 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddSessionOpen(false)}
+                                    className="w-1/3 bg-slate-50 border border-slate-200 text-slate-600 py-2.5 text-xs font-bold rounded-xl active:scale-[0.98] transition cursor-pointer text-center hover:bg-brand-500 hover:text-white hover:border-brand-500"
+                                >
+                                    {UI_TEXT.courseDetail.cancelButton}
+                                </button>
+                                <Button
+                                    type="submit"
+                                    disabled={addSessionMutation.isPending || !newSessionFields.name.trim()}
+                                    className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white border-none py-2.5 text-xs font-black rounded-xl active:scale-[0.98] transition cursor-pointer text-center"
+                                >
+                                    {addSessionMutation.isPending ? UI_TEXT.courseDetail.addingText : UI_TEXT.courseDetail.confirmButton}
+                                </Button>
+                            </div>
+                        </form>
+                    </Dialog>
+                </CustomModal.Content>
+            </CustomModal.Root>
+            {/* Custom Modal for Editing Session */}
+            <CustomModal.Root open={isEditSessionOpen} onOpenChange={setIsEditSessionOpen}>
+                <CustomModal.Content className="max-w-xl !rounded-[20px] w-full">
+                    <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsEditSessionOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                        >
+                            <X className="size-4" />
+                        </button>
+                        <form onSubmit={handleSubmitEditSession} className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-800">{UI_TEXT.courseDetail.editSessionTitle}</h3>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.editSessionDescription}</p>
+                            </div>
+
+                            {/* Form Tabs Header */}
+                            <div className="flex gap-1.5 border-b border-slate-100 pb-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditSessionTab("general")}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        editSessionTab === "general"
+                                            ? "bg-wine/5 text-wine"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {UI_TEXT.courseDetail.sessionTabGeneral}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditSessionTab("resources")}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        editSessionTab === "resources"
+                                            ? "bg-wine/5 text-wine"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {UI_TEXT.courseDetail.sessionTabResources}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditSessionTab("practice")}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        editSessionTab === "practice"
+                                            ? "bg-wine/5 text-wine"
+                                            : "text-slate-500 hover:bg-slate-50"
+                                    }`}
+                                >
+                                    {UI_TEXT.courseDetail.sessionTabPractice}
+                                </button>
+                            </div>
+
+                            {/* Tab 1: General Info */}
+                            {editSessionTab === "general" && editingSession && (
+                                <div className="flex flex-col gap-4 py-2">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
+                                        <input
+                                            type="text"
+                                            value={editingSession.name}
+                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                            placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            autoFocus
+                                            required
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
+                                            <select
+                                                value={editingSession.type || "LY_THUYET"}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, type: e.target.value } : null)}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            >
+                                                <option value="LY_THUYET">{UI_TEXT.courseDetail.sessionTypeTheory}</option>
+                                                <option value="THUC_HANH">{UI_TEXT.courseDetail.sessionTypePractice}</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center justify-between border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionStatusLabel}</span>
+                                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.sessionStatusDesc}</span>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={!!editingSession.status}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, status: e.target.checked } : null)}
+                                                className="size-4 rounded border-slate-300 text-wine focus:ring-wine cursor-pointer accent-wine"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionDescLabel}</label>
+                                        <textarea
+                                            value={editingSession.description || ""}
+                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, description: e.target.value } : null)}
+                                            placeholder={UI_TEXT.courseDetail.sessionDescPlaceholder}
+                                            rows={3}
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tab 2: Resources */}
+                            {editSessionTab === "resources" && editingSession && (
+                                <div className="flex flex-col gap-3.5 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <div className="flex flex-col gap-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMindmapLabel}</label>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase">{UI_TEXT.courseDetail.sessionShowMindmapLabel}</span>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!editingSession.isShowMindmap}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, isShowMindmap: e.target.checked } : null)}
+                                                    className="size-3.5 rounded border-slate-300 text-wine cursor-pointer accent-wine"
+                                                />
+                                            </div>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={editingSession.mindmap || ""}
+                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, mindmap: e.target.value } : null)}
+                                            placeholder="https://example.com/mindmap.jpg"
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionSrsLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={editingSession.srs || ""}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, srs: e.target.value } : null)}
+                                                placeholder="https://example.com/srs.pdf"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPdfLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={editingSession.pdf || ""}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, pdf: e.target.value } : null)}
+                                                placeholder="https://example.com/lecture.pdf"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMiniProjectLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={editingSession.miniProject || ""}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, miniProject: e.target.value } : null)}
+                                                placeholder="https://example.com/miniproject.zip"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionExerciseLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={editingSession.exercise || ""}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, exercise: e.target.value } : null)}
+                                                placeholder="Bài tập..."
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionQuizziLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={editingSession.quizzi || ""}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, quizzi: e.target.value } : null)}
+                                                placeholder="Quizzi..."
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionEntranceQuizLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={editingSession.practiceEntranceQuiz || ""}
+                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, practiceEntranceQuiz: e.target.value } : null)}
+                                                placeholder="Entrance Quiz..."
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tab 3: Practice */}
+                            {editSessionTab === "practice" && editingSession && editingSession.practice && (
+                                <div className="flex flex-col gap-4 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeTypeLabel}</label>
+                                            <select
+                                                value={editingSession.practice.submissionType}
+                                                onChange={(e) => setEditingSession(prev => prev ? {
+                                                    ...prev,
+                                                    practice: {
+                                                        ...prev.practice!,
+                                                        submissionType: e.target.value as "LINK" | "FILE" | "TEXT"
+                                                    }
+                                                } : null)}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            >
+                                                <option value="LINK">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeLink}</option>
+                                                <option value="FILE">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeFile}</option>
+                                                <option value="TEXT">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeText}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeContentLabel}</label>
+                                        <textarea
+                                            value={editingSession.practice.content}
+                                            onChange={(e) => setEditingSession(prev => prev ? {
+                                                ...prev,
+                                                practice: {
+                                                    ...prev.practice!,
+                                                    content: e.target.value
+                                                }
+                                            } : null)}
+                                            placeholder={UI_TEXT.courseDetail.sessionPracticeContentPlaceholder}
+                                            rows={3}
+                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Resources references */}
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeResourcesLabel}</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingSession(prev => prev ? {
+                                                    ...prev,
+                                                    practice: {
+                                                        ...prev.practice!,
+                                                        resources: [...(prev.practice!.resources || []), { label: "", url: "" }]
+                                                    }
+                                                } : null)}
+                                                className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
+                                            >
+                                                <Plus className="size-3" />
+                                                {UI_TEXT.courseDetail.sessionPracticeAddResourceBtn}
+                                            </button>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2">
+                                            {(editingSession.practice.resources || []).map((resource, resIdx) => (
+                                                <div key={resIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                                    <input
+                                                        type="text"
+                                                        value={resource.label || ""}
+                                                        onChange={(e) => {
+                                                            const newResources = [...(editingSession.practice!.resources || [])];
+                                                            newResources[resIdx].label = e.target.value;
+                                                            setEditingSession(prev => prev ? {
+                                                                ...prev,
+                                                                practice: { ...prev.practice!, resources: newResources }
+                                                            } : null);
+                                                        }}
+                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceLabelPlaceholder}
+                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                        required
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={resource.url}
+                                                        onChange={(e) => {
+                                                            const newResources = [...(editingSession.practice!.resources || [])];
+                                                            newResources[resIdx].url = e.target.value;
+                                                            setEditingSession(prev => prev ? {
+                                                                ...prev,
+                                                                practice: { ...prev.practice!, resources: newResources }
+                                                            } : null);
+                                                        }}
+                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceUrlPlaceholder}
+                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                        required
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newResources = (editingSession.practice!.resources || []).filter((_, rIdx) => rIdx !== resIdx);
+                                                            setEditingSession(prev => prev ? {
+                                                                ...prev,
+                                                                practice: { ...prev.practice!, resources: newResources }
+                                                            } : null);
+                                                        }}
+                                                        className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
+                                                        title="Xóa tài liệu"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {(editingSession.practice.resources || []).length === 0 && (
+                                                <span className="text-[10px] text-slate-400 italic font-semibold">{UI_TEXT.courseDetail.sessionPracticeNoResources}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-2.5 mt-2 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditSessionOpen(false)}
+                                    className="w-1/3 bg-slate-50 border border-slate-200 text-slate-600 py-2.5 text-xs font-bold rounded-xl active:scale-[0.98] transition cursor-pointer text-center hover:bg-brand-500 hover:text-white hover:border-brand-500"
+                                >
+                                    {UI_TEXT.courseDetail.cancelButton}
+                                </button>
+                                <Button
+                                    type="submit"
+                                    disabled={updateSessionMutation.isPending || !editingSession?.name.trim()}
+                                    className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white border-none py-2.5 text-xs font-black rounded-xl active:scale-[0.98] transition cursor-pointer text-center"
+                                >
+                                    {updateSessionMutation.isPending ? UI_TEXT.courseDetail.savingText : UI_TEXT.courseDetail.confirmButton}
+                                </Button>
+                            </div>
+                        </form>
+                    </Dialog>
+                </CustomModal.Content>
+            </CustomModal.Root>
+
+            {/* Confirmation Modal for Session Deletion */}
+            <ConfirmModal
+                isOpen={isDeleteSessionOpen}
+                onClose={() => setIsDeleteSessionOpen(false)}
+                onConfirm={() => {
+                    if (deletingSession) {
+                        deleteSessionMutation.mutate(deletingSession.id);
+                        setIsDeleteSessionOpen(false);
+                    }
+                }}
+                title="Xóa chương học"
+                message={`Bạn có chắc chắn muốn xóa chương học "${deletingSession?.name || ""}"? Tất cả các bài học và học liệu bên trong chương học này cũng sẽ bị xóa vĩnh viễn và không thể khôi phục.`}
+                confirmText={UI_TEXT.learningMaterials.confirmDeleteButton}
+                cancelText={UI_TEXT.courseDetail.cancelButton}
+                variant="danger"
+            />
         </div>
     );
 }
@@ -239,7 +1051,6 @@ function LessonNode({
             {/* Lesson Header */}
             <div
                 onClick={() => {
-                    setIsExpanded(!isExpanded);
                     onSelectLesson(lesson.id, "video");
                 }}
                 className={`flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 text-left text-[11.5px] transition duration-150 group ${isSelected
@@ -251,11 +1062,22 @@ function LessonNode({
                     <div className="cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-slate-500 transition shrink-0" title="Kéo thả để di chuyển" onClick={(e) => e.stopPropagation()}>
                         <GripVertical className="size-3" />
                     </div>
-                    {isExpanded ? (
-                        <ChevronDown className="size-3 text-slate-400 shrink-0" />
-                    ) : (
-                        <ChevronRight className="size-3 text-slate-400 shrink-0" />
-                    )}
+                    {/* Toggle open/close Chevron button */}
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsExpanded(!isExpanded);
+                        }}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100/50 transition shrink-0 cursor-pointer"
+                        title={isExpanded ? "Thu gọn bài học" : "Mở rộng bài học"}
+                    >
+                        {isExpanded ? (
+                            <ChevronDown className="size-3 shrink-0" />
+                        ) : (
+                            <ChevronRight className="size-3 shrink-0" />
+                        )}
+                    </button>
                     <span className="truncate flex-1">{lesson.name}</span>
                 </div>
                 <button
@@ -310,7 +1132,7 @@ function LessonNode({
                             : "text-slate-500 hover:bg-slate-50"
                             }`}
                     >
-                        <HelpCircle className="size-3.5 shrink-0" />
+                        <BookText className="size-3.5 shrink-0" />
                         <span>Bài tập (Quiz)</span>
                     </button>
                 </div>
@@ -323,18 +1145,30 @@ function SessionNode({
     session,
     index,
     selectedLessonId,
+    selectedSessionId,
+    selectedSessionTab,
     selectedTab,
     onSelectLesson,
+    onSelectSession,
+    onEditSession,
+    onDeleteSession,
 }: {
     session: Session;
     index: number;
     selectedLessonId: string;
+    selectedSessionId: string;
+    selectedSessionTab: "mindmap" | "pdf" | "srs";
     selectedTab: "video" | "reading" | "quiz";
     onSelectLesson: (id: string, tab: "video" | "reading" | "quiz") => void;
+    onSelectSession: (id: string, tab: "mindmap" | "pdf" | "srs") => void;
+    onEditSession: (session: Session) => void;
+    onDeleteSession: (id: string, name: string) => void;
 }) {
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
     const [draggedLessonIndex, setDraggedLessonIndex] = useState<number | null>(null);
+    const [isAddLessonOpen, setIsAddLessonOpen] = useState(false);
+    const [newLessonName, setNewLessonName] = useState("");
 
     const { data: lessons = [], isLoading } = useQuery({
         queryKey: ["lessons", session.id],
@@ -382,8 +1216,20 @@ function SessionNode({
 
     const handleAddLesson = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const name = prompt("Nhập tên bài học mới (Lesson name):");
-        if (name) addLessonMutation.mutate(name);
+        setNewLessonName("");
+        setIsAddLessonOpen(true);
+    };
+
+    const handleSubmitAddLesson = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newLessonName.trim()) {
+            addLessonMutation.mutate(newLessonName.trim(), {
+                onSuccess: () => {
+                    setIsAddLessonOpen(false);
+                    setNewLessonName("");
+                }
+            });
+        }
     };
 
     const sortedLessons = [...lessons].sort((a, b) => (a.position || 0) - (b.position || 0));
@@ -408,38 +1254,127 @@ function SessionNode({
     };
 
     return (
-        <div className="flex flex-col gap-1.5 border border-slate-100 rounded-xl p-3 bg-slate-50/30">
+        <div className={`flex flex-col gap-1.5 border rounded-xl p-3 transition ${selectedSessionId === session.id
+            ? "border-blue-300 bg-blue-50/10 shadow-xs"
+            : "border-slate-100 bg-slate-50/30"
+            }`}>
             {/* Session Header */}
             <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1 min-w-0 flex-1">
                     <div className="cursor-grab active:cursor-grabbing p-0.5 text-slate-300 hover:text-slate-500 transition shrink-0" title="Kéo thả để di chuyển">
                         <GripVertical className="size-3" />
                     </div>
-                    <div
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="flex items-center gap-2 cursor-pointer select-none group min-w-0 flex-1"
+                    {/* Toggle open/close Chevron button */}
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition duration-150 cursor-pointer shrink-0"
+                        title={isOpen ? "Thu gọn chương học" : "Mở rộng chương học"}
                     >
                         {isOpen ? (
-                            <ChevronDown className="size-3.5 text-slate-400 shrink-0" />
+                            <ChevronDown className="size-3.5 shrink-0" />
                         ) : (
-                            <ChevronRight className="size-3.5 text-slate-400 shrink-0" />
+                            <ChevronRight className="size-3.5 shrink-0" />
                         )}
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Chương {index + 1}</span>
-                            <h4 className="text-xs font-extrabold text-slate-700 truncate leading-snug group-hover:text-blue-600 transition">
-                                {session.name}
-                            </h4>
-                        </div>
+                    </button>
+                    {/* Title click selects session */}
+                    <div
+                        onClick={() => {
+                            // Also select this session, opening the first available resource tab
+                            const defaultTab = session.mindmap ? "mindmap" : session.pdf ? "pdf" : "srs";
+                            onSelectSession(session.id, defaultTab);
+                        }}
+                        className="flex flex-col min-w-0 flex-1 cursor-pointer select-none group"
+                    >
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Chương {index + 1}</span>
+                        <h4 className="text-xs font-extrabold text-slate-700 truncate leading-snug group-hover:text-blue-600 transition">
+                            {session.name}
+                        </h4>
                     </div>
                 </div>
-                <button
-                    onClick={handleAddLesson}
-                    title="Thêm bài học"
-                    className="flex size-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-wine hover:bg-wine/5 hover:text-wine shrink-0"
-                >
-                    <Plus className="size-3.5" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                    <button
+                        onClick={handleAddLesson}
+                        title="Thêm bài học"
+                        className="flex size-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-wine hover:bg-wine/5 hover:text-wine"
+                    >
+                        <Plus className="size-3.5" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEditSession(session);
+                        }}
+                        title="Sửa chương học"
+                        className="flex size-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600"
+                    >
+                        <Pencil className="size-3" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteSession(session.id, session.name);
+                        }}
+                        title="Xóa chương học"
+                        className="flex size-6 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition hover:border-red-500 hover:bg-red-50 hover:text-red-500"
+                    >
+                        <Trash2 className="size-3.5" />
+                    </button>
+                </div>
             </div>
+
+            {/* Session resources (Mindmap, PDF, SRS) */}
+            {(session.mindmap || session.pdf || session.srs) && (
+                <div className="flex flex-wrap items-center gap-1.5 pl-[30px] mt-0.5 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                    {session.mindmap && (
+                        <button
+                            type="button"
+                            onClick={() => onSelectSession(session.id, "mindmap")}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${selectedSessionId === session.id && selectedSessionTab === "mindmap"
+                                ? "bg-blue-600 text-white"
+                                : "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                                }`}
+                            title="Xem Mindmap chương học"
+                        >
+                            <Map className="size-2.5" />
+                            <span>Mindmap</span>
+                        </button>
+                    )}
+                    {session.pdf && (
+                        <button
+                            type="button"
+                            onClick={() => onSelectSession(session.id, "pdf")}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${selectedSessionId === session.id && selectedSessionTab === "pdf"
+                                ? "bg-rose-600 text-white"
+                                : "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+                                }`}
+                            title="Xem tài liệu PDF chương học"
+                        >
+                            <FileText className="size-2.5" />
+                            <span>PDF</span>
+                        </button>
+                    )}
+                    {session.srs && (
+                        <button
+                            type="button"
+                            onClick={() => onSelectSession(session.id, "srs")}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${selectedSessionId === session.id && selectedSessionTab === "srs"
+                                ? "bg-emerald-600 text-white"
+                                : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
+                                }`}
+                            title="Xem tài liệu SRS chương học"
+                        >
+                            <ScrollText className="size-2.5" />
+                            <span>SRS</span>
+                        </button>
+                    )}
+                </div>
+            )}
 
             {/* Nested Lessons List */}
             {isOpen && (
@@ -486,11 +1421,65 @@ function SessionNode({
                     )}
                 </div>
             )}
+
+            {/* Custom Modal for Adding Lesson */}
+            <CustomModal.Root open={isAddLessonOpen} onOpenChange={setIsAddLessonOpen}>
+                <CustomModal.Content className="max-w-xl !rounded-[20px] w-full">
+                    <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsAddLessonOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                        >
+                            <X className="size-4" />
+                        </button>
+                        <form onSubmit={handleSubmitAddLesson} className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-800">{UI_TEXT.courseDetail.addLessonTitle}</h3>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
+                                    {UI_TEXT.courseDetail.addLessonDescriptionPrefix}
+                                    <strong>{session.name}</strong>
+                                    {UI_TEXT.courseDetail.addLessonDescriptionSuffix}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.lessonNameLabel}</label>
+                                <input
+                                    type="text"
+                                    value={newLessonName}
+                                    onChange={(e) => setNewLessonName(e.target.value)}
+                                    placeholder={UI_TEXT.courseDetail.lessonNamePlaceholder}
+                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                    autoFocus
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2.5 mt-2 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddLessonOpen(false)}
+                                    className="w-1/3 bg-slate-50 border border-slate-200 text-slate-600 py-2.5 text-xs font-bold rounded-xl active:scale-[0.98] transition cursor-pointer text-center hover:bg-brand-500 hover:text-white hover:border-brand-500"
+                                >
+                                    {UI_TEXT.courseDetail.cancelButton}
+                                </button>
+                                <Button
+                                    type="submit"
+                                    disabled={addLessonMutation.isPending || !newLessonName.trim()}
+                                    className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white border-none py-2.5 text-xs font-black rounded-xl active:scale-[0.98] transition cursor-pointer text-center"
+                                >
+                                    {addLessonMutation.isPending ? UI_TEXT.courseDetail.addingText : UI_TEXT.courseDetail.confirmButton}
+                                </Button>
+                            </div>
+                        </form>
+                    </Dialog>
+                </CustomModal.Content>
+            </CustomModal.Root>
         </div>
     );
 }
 
-/* Wrapper for loading specific lesson details and managing config tabs in the right column */
 function LessonEditorWrapper({
     lessonId,
     quizzes,
@@ -500,6 +1489,7 @@ function LessonEditorWrapper({
     quizzes: any[];
     activeTab: "video" | "reading" | "quiz";
 }) {
+    const queryClient = useQueryClient();
     const [localLesson, setLocalLesson] = useState<Lesson | null>(null);
 
     // Lifted Form States
@@ -510,8 +1500,38 @@ function LessonEditorWrapper({
 
     const [readingContent, setReadingContent] = useState("");
     const [readingFile, setReadingFile] = useState<File | null>(null);
+    const [readingPdfUrl, setReadingPdfUrl] = useState("");
+    const [isPdfDeleted, setIsPdfDeleted] = useState(false);
+    const [readingVersion, setReadingVersion] = useState(0);
 
     const [quizId, setQuizId] = useState("");
+
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<"video" | "reading" | "quiz" | null>(null);
+
+    const triggerDelete = (target: "video" | "reading" | "quiz") => {
+        setDeleteTarget(target);
+        setIsConfirmDeleteOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteTarget === "video") {
+            setVideoUrl("");
+            setVideoFile(null);
+            setVideoDuration(0);
+            setVideoQuestions([]);
+        } else if (deleteTarget === "reading") {
+            setReadingContent("");
+            setReadingFile(null);
+            setReadingPdfUrl("");
+            setIsPdfDeleted(true);
+            setReadingVersion((prev) => prev + 1);
+        } else if (deleteTarget === "quiz") {
+            setQuizId("");
+        }
+        setDeleteTarget(null);
+        setIsConfirmDeleteOpen(false);
+    };
 
     const { data: lessonDetails, isLoading } = useQuery({
         queryKey: ["lesson-details-editor", lessonId],
@@ -529,6 +1549,9 @@ function LessonEditorWrapper({
             setQuizId(lessonDetails.quizId || "");
             setVideoFile(null);
             setReadingFile(null);
+            setReadingPdfUrl(lessonDetails.reading?.pdf || "");
+            setIsPdfDeleted(false);
+            setReadingVersion(0);
         }
     }, [lessonDetails]);
 
@@ -536,7 +1559,6 @@ function LessonEditorWrapper({
         setLocalLesson(updated);
         // Invalidate cache for session lessons to trigger reload of indicators
         if (updated.sessionId) {
-            const queryClient = useQueryClient();
             queryClient.invalidateQueries({ queryKey: ["lessons", updated.sessionId] });
         }
     };
@@ -565,13 +1587,22 @@ function LessonEditorWrapper({
             }
 
             // 2. Check if reading is dirty
+            const hasPdfBeenDeleted = !!lessonDetails?.reading?.pdf && !readingFile && !readingContent && !readingPdfUrl;
             const isReadingDirty =
                 readingContent !== (lessonDetails?.reading?.content || "") ||
-                readingFile !== null;
+                readingFile !== null ||
+                readingPdfUrl !== (lessonDetails?.reading?.pdf || "") ||
+                hasPdfBeenDeleted;
 
             if (isReadingDirty) {
                 const readingFd = new FormData();
-                if (readingFile) readingFd.append("file", readingFile);
+                if (readingFile) {
+                    readingFd.append("file", readingFile);
+                } else if (readingPdfUrl) {
+                    readingFd.append("pdf", readingPdfUrl);
+                } else {
+                    readingFd.append("pdf", "");
+                }
                 readingFd.append("content", readingContent);
                 readingFd.append("questions", JSON.stringify([]));
                 promises.push(configureLessonReading(lessonId, readingFd));
@@ -613,9 +1644,9 @@ function LessonEditorWrapper({
     }
 
     return (
-        <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar">
+        <div className="flex flex-col gap-4 flex-1 min-h-0 h-full">
             {/* Header */}
-            <div className="border-b border-slate-100  sticky top-0 bg-white z-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="border-b border-slate-100 pb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
                 <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         {activeTab === "video" && "Cấu hình Video"}
@@ -625,54 +1656,85 @@ function LessonEditorWrapper({
                     <h3 className="text-base font-extrabold text-blue-500 mt-0.5">{localLesson.name}</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    {!(activeTab === "video" && !videoUrl && !videoFile) && (
-                        <Button
-                            onClick={handleSaveAll}
-                            isLoading={isSaving}
-                            className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white border-none py-2 px-5 rounded-xl text-xs font-black transition-all duration-150 cursor-pointer shadow-md shadow-blue-500/25"
-                        >
-                            Lưu bài học
-                        </Button>
-                    )}
+                    <Button
+                        onClick={handleSaveAll}
+                        isLoading={isSaving}
+                        className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white border-none py-2 px-5 rounded-xl text-xs font-black transition-all duration-150 cursor-pointer shadow-md shadow-blue-500/25"
+                    >
+                        Lưu bài học
+                    </Button>
                 </div>
             </div>
 
-            {/* Video Config Section */}
-            {activeTab === "video" && (
-                <div className="flex flex-col gap-4">
-                    <VideoConfigTab
-                        url={videoUrl}
-                        setUrl={setVideoUrl}
-                        duration={videoDuration}
-                        setDuration={setVideoDuration}
-                        file={videoFile}
-                        setFile={setVideoFile}
-                        questions={videoQuestions}
-                        setQuestions={setVideoQuestions}
-                    />
-                </div>
-            )}
+            {/* Scrollable Content Area */}
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 custom-scrollbar flex flex-col gap-4">
+                {/* Video Config Section */}
+                {activeTab === "video" && (
+                    <div className="flex flex-col gap-4 flex-1 min-h-0">
+                        <VideoConfigTab
+                            url={videoUrl}
+                            setUrl={setVideoUrl}
+                            duration={videoDuration}
+                            setDuration={setVideoDuration}
+                            file={videoFile}
+                            setFile={setVideoFile}
+                            questions={videoQuestions}
+                            setQuestions={setVideoQuestions}
+                            onDelete={() => triggerDelete("video")}
+                        />
+                    </div>
+                )}
 
-            {/* Quiz Config Section */}
-            {activeTab === "quiz" && (
-                <QuizConfigTab
-                    quizId={quizId}
-                    setQuizId={setQuizId}
-                    quizzes={quizzes}
-                />
-            )}
+                {/* Quiz Config Section */}
+                {activeTab === "quiz" && (
+                    <div className="flex flex-col gap-4 flex-1 min-h-0">
+                        <QuizConfigTab
+                            key={localLesson.id}
+                            quizId={quizId}
+                            setQuizId={setQuizId}
+                            quizzes={quizzes}
+                            onDelete={() => triggerDelete("quiz")}
+                        />
+                    </div>
+                )}
 
-            {/* Reading Config Section */}
-            {activeTab === "reading" && (
-                <div className="flex flex-col gap-4">
-                    <ReadingConfigTab
-                        content={readingContent}
-                        setContent={setReadingContent}
-                        file={readingFile}
-                        setFile={setReadingFile}
-                    />
-                </div>
-            )}
+                {/* Reading Config Section */}
+                {activeTab === "reading" && (
+                    <div className="flex flex-col gap-4 flex-1 min-h-0">
+                        <ReadingConfigTab
+                            key={`${localLesson.id}-${readingVersion}`}
+                            content={readingContent}
+                            setContent={setReadingContent}
+                            file={readingFile}
+                            setFile={setReadingFile}
+                            pdfUrl={readingPdfUrl}
+                            setPdfUrl={setReadingPdfUrl}
+                            savedPdf={isPdfDeleted ? undefined : (readingPdfUrl || localLesson.reading?.pdf)}
+                            onDelete={() => triggerDelete("reading")}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Confirmation Modal for Deletion using application ConfirmModal */}
+            <ConfirmModal
+                isOpen={isConfirmDeleteOpen}
+                onClose={() => setIsConfirmDeleteOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title={UI_TEXT.learningMaterials.confirmDeleteTitle}
+                message={
+                    deleteTarget === "video"
+                        ? UI_TEXT.learningMaterials.confirmDeleteVideoDesc
+                        : deleteTarget === "reading"
+                            ? UI_TEXT.learningMaterials.confirmDeleteReadingDesc
+                            : deleteTarget === "quiz"
+                                ? UI_TEXT.learningMaterials.confirmDeleteQuizDesc
+                                : ""
+                }
+                confirmText={UI_TEXT.learningMaterials.confirmDeleteButton}
+                cancelText={UI_TEXT.courseDetail.cancelButton}
+                variant="danger"
+            />
         </div>
     );
 }
@@ -687,6 +1749,7 @@ function VideoConfigTab({
     setFile,
     questions,
     setQuestions,
+    onDelete,
 }: {
     url: string;
     setUrl: (u: string) => void;
@@ -696,6 +1759,7 @@ function VideoConfigTab({
     setFile: (f: File | null) => void;
     questions: any[];
     setQuestions: (q: any[]) => void;
+    onDelete?: () => void;
 }) {
     const [videoType, setVideoType] = useState<"link" | "file" | "">("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -830,9 +1894,21 @@ function VideoConfigTab({
     const videoSrc = file ? URL.createObjectURL(file) : url;
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5 relative">
-                <label className="text-xs font-bold text-slate-800">Video</label>
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+            <div className={`flex flex-col gap-1.5 relative ${hasVideo ? "" : "flex-1 min-h-0"}`}>
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800">Video</label>
+                    {hasVideo && (
+                        <button
+                            type="button"
+                            onClick={() => setIsSelectModalOpen(true)}
+                            className="text-slate-400 hover:text-blue-500 transition cursor-pointer p-0.5 rounded"
+                            title="Thay đổi nguồn video"
+                        >
+                            <Repeat className="size-4" />
+                        </button>
+                    )}
+                </div>
 
                 {hasVideo ? (
                     /* Video Preview Player (Image 2) */
@@ -859,22 +1935,11 @@ function VideoConfigTab({
                                 <span>Thời lượng:</span>
                                 <span className="text-slate-800 font-extrabold normal-case">{duration} giây</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setUrl("");
-                                    setFile(null);
-                                    setVideoType("");
-                                }}
-                                className="text-xs text-red-500 hover:text-red-700 font-bold transition flex items-center gap-1 cursor-pointer"
-                            >
-                                Thay đổi video / Xóa
-                            </button>
                         </div>
                     </div>
                 ) : (
                     /* Centered Empty State View for Video (Image 2 style) */
-                    <div className="flex flex-col items-center justify-center p-8 py-14 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 animate-fadeIn">
+                    <div className="flex flex-col flex-1 items-center justify-center p-8 py-14 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 animate-fadeIn">
                         <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-white text-slate-400">
                             <Video className="size-6 text-slate-400" />
                         </div>
@@ -887,7 +1952,7 @@ function VideoConfigTab({
                         <button
                             type="button"
                             onClick={() => setIsSelectModalOpen(true)}
-                            className="flex items-center gap-1.5 bg-[#A14747] hover:bg-[#8e3e3e] active:scale-[0.98] text-white text-xs font-black py-2 px-6 rounded-full shadow-md shadow-[#A14747]/20 transition duration-150 cursor-pointer"
+                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2 px-6 rounded-xl transition duration-150 cursor-pointer"
                         >
                             {"+ Thêm video"}
                         </button>
@@ -914,9 +1979,29 @@ function VideoConfigTab({
             <CustomModal.Root open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
                 <CustomModal.Content className="max-w-md !rounded-[20px] w-full">
                     <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
-                        <div>
-                            <h3 className="text-sm font-black text-slate-800">{"Nhập liên kết bài học"}</h3>
-                            <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{"Nhập liên kết video từ YouTube, S3 hoặc nguồn trực tiếp khác"}</p>
+                        <button
+                            type="button"
+                            onClick={() => setIsLinkModalOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                        >
+                            <X className="size-4" />
+                        </button>
+
+                        <div className="flex items-center  gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsLinkModalOpen(false);
+                                    setIsSelectModalOpen(true);
+                                }}
+                                className="text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50 -ml-1 mt-0.5 shrink-0"
+                                title="Quay lại"
+                            >
+                                <ArrowLeft className="size-4" />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-black text-slate-800">{"Nhập liên kết bài học"}</h3>
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-1.5">
@@ -931,19 +2016,20 @@ function VideoConfigTab({
                             />
                         </div>
 
-                        <div className="flex justify-end gap-2 mt-2">
-                            <Button
+                        <div className="flex items-center gap-2.5 mt-2 w-full">
+                            <button
+                                type="button"
                                 onClick={() => setIsLinkModalOpen(false)}
-                                className="bg-slate-50 border-slate-200 text-slate-600 px-4 py-2 text-xs font-bold"
+                                className="w-1/3 bg-slate-50 border border-slate-200 text-slate-600 py-2.5 text-xs font-bold rounded-xl active:scale-[0.98] transition cursor-pointer text-center hover:bg-brand-500 hover:text-white hover:border-brand-500"
                             >
                                 {"Hủy"}
-                            </Button>
+                            </button>
                             <Button
                                 onClick={() => {
                                     setUrl(tempLink);
                                     setIsLinkModalOpen(false);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white border-none px-4 py-2 text-xs font-black rounded-xl"
+                                className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white border-none py-2.5 text-xs font-black rounded-xl active:scale-[0.98] transition cursor-pointer text-center"
                             >
                                 {"Xác nhận"}
                             </Button>
@@ -956,6 +2042,13 @@ function VideoConfigTab({
             <CustomModal.Root open={isSelectModalOpen} onOpenChange={setIsSelectModalOpen}>
                 <CustomModal.Content className="max-w-md !rounded-[20px] w-full">
                     <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                        <button
+                            type="button"
+                            onClick={() => setIsSelectModalOpen(false)}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                        >
+                            <X className="size-4" />
+                        </button>
                         <div>
                             <h3 className="text-sm font-black text-slate-800">{"Chọn nguồn video"}</h3>
                             <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{"Chọn cách thức bạn muốn thêm video vào bài học này"}</p>
@@ -973,7 +2066,7 @@ function VideoConfigTab({
                                 className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left text-xs hover:bg-slate-50 transition duration-150 cursor-pointer"
                             >
                                 <span className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
-                                        <Play className="size-3 fill-current ml-0.5" />
+                                    <Play className="size-3 fill-current ml-0.5" />
                                 </span>
                                 <div className="flex flex-col">
                                     <span className="font-bold text-slate-800">{"Nhập liên kết bài học"}</span>
@@ -998,24 +2091,15 @@ function VideoConfigTab({
                                 </div>
                             </button>
                         </div>
-
-                        <div className="flex justify-end mt-1">
-                            <Button
-                                onClick={() => setIsSelectModalOpen(false)}
-                                className="bg-slate-50 border border-slate-200 text-slate-600 px-4 py-2 text-xs font-bold rounded-xl"
-                            >
-                                {"Hủy"}
-                            </Button>
-                        </div>
                     </Dialog>
                 </CustomModal.Content>
             </CustomModal.Root>
 
-            {/* Video Questions (always show or show if video type selected/uploaded) */}
-            {(hasVideo || videoType !== "") && (
+            {/* Video Questions (only show if video has been assigned/uploaded) */}
+            {hasVideo && (
                 <div className="pt-4 ">
                     <div className="flex justify-between items-center mb-3">
-                        <label className="text-xs font-bold text-slate-500 uppercase">Câu hỏi nhúng trắc nghiệm chặn dòng video</label>
+                        <label className="text-xs font-bold ">{UI_TEXT.learningMaterials.embeddedQuestionsTitle}</label>
                         <button
                             type="button"
                             onClick={addQuestion}
@@ -1205,108 +2289,71 @@ function ReadingConfigTab({
     setContent,
     file,
     setFile,
+    pdfUrl,
+    setPdfUrl,
+    savedPdf,
+    onDelete,
 }: {
     content: string;
     setContent: (c: string) => void;
     file: File | null;
     setFile: (f: File | null) => void;
+    pdfUrl: string;
+    setPdfUrl: (url: string) => void;
+    savedPdf?: string;
+    onDelete?: () => void;
 }) {
-    const [readingType, setReadingType] = useState<"pdf" | "text" | "">("");
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+    const [readingType, setReadingType] = useState<"pdf" | "text" | "">(() => {
+        if (file || savedPdf || pdfUrl) return "pdf";
+        if (content) return "text";
+        return "";
+    });
+    const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+    const [tempLink, setTempLink] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (file) {
-            setReadingType("pdf");
-        } else if (content) {
-            setReadingType("text");
-        } else {
-            setReadingType("");
-        }
-    }, [file, content]);
-
-    const updateCoords = () => {
-        if (containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            setCoords({
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-            });
-
-            const scrollParent = containerRef.current.closest(".overflow-y-auto") || document.documentElement;
-            const parentRect = scrollParent.getBoundingClientRect();
-            const spaceBelow = parentRect.bottom - rect.bottom;
-            const spaceAbove = rect.top - parentRect.top;
-            if (spaceBelow < 185 && spaceAbove > spaceBelow) {
-                setOpenDirection("up");
-            } else {
-                setOpenDirection("down");
-            }
-        }
-    };
-
-    useEffect(() => {
-        if (!isDropdownOpen) return;
-
-        updateCoords();
-
-        const handleScroll = (event: Event) => {
-            const target = event.target as Node;
-            if (dropdownRef.current && dropdownRef.current.contains(target)) {
-                return;
-            }
-
-            if (containerRef.current && !containerRef.current.contains(target)) {
-                setIsDropdownOpen(false);
-            } else {
-                updateCoords();
-            }
-        };
-
-        window.addEventListener("scroll", handleScroll, true);
-        window.addEventListener("resize", updateCoords);
-        return () => {
-            window.removeEventListener("scroll", handleScroll, true);
-            window.removeEventListener("resize", updateCoords);
-        };
-    }, [isDropdownOpen]);
 
     return (
-        <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5 relative">
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+            <div className={`flex flex-col gap-1.5 relative ${readingType !== "" ? "" : "flex-1 min-h-0"}`}>
                 <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-800">Tài liệu / Bài đọc</label>
                     {readingType !== "" && (
                         <button
                             type="button"
-                            onClick={() => {
-                                setFile(null);
-                                setContent("");
-                                setReadingType("");
-                            }}
-                            className="text-xs text-red-500 hover:text-red-700 font-bold transition cursor-pointer"
+                            onClick={() => setIsSelectModalOpen(true)}
+                            className="text-slate-400 hover:text-blue-500 transition cursor-pointer p-0.5 rounded"
+                            title="Thay đổi tài liệu"
                         >
-                            Xóa tài liệu
+                            <Repeat className="size-4" />
                         </button>
                     )}
                 </div>
 
-                {readingType === "pdf" && file ? (
-                    /* PDF File chosen display */
-                    <div className="rounded-xl p-4 bg-slate-50 flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex size-8 items-center justify-center rounded-lg bg-red-50 text-red-600 shrink-0">
-                                <FileText className="size-4" />
-                            </span>
-                            <div className="flex flex-col">
-                                <span className="text-xs font-bold text-slate-800 line-clamp-1">{file.name}</span>
-                                <span className="text-[10px] text-slate-400 font-semibold">Tệp PDF học liệu</span>
+                {readingType === "pdf" && (file || savedPdf || pdfUrl) ? (
+                    /* PDF File chosen display & Preview */
+                    <div className="flex flex-col gap-3 w-full animate-fadeIn">
+                        <div className="rounded-xl p-4 bg-slate-50 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex size-8 items-center justify-center rounded-lg bg-red-50 text-red-600 shrink-0">
+                                    <FileText className="size-4" />
+                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-slate-800 line-clamp-1">
+                                        {file ? file.name : (pdfUrl ? pdfUrl.split("/").pop() : (savedPdf ? savedPdf.split("/").pop() : "Tệp học liệu"))}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-semibold">Tệp PDF học liệu</span>
+                                </div>
                             </div>
+                        </div>
+
+                        {/* PDF Content Preview */}
+                        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full h-[550px] shadow-sm">
+                            <iframe
+                                src={file ? URL.createObjectURL(file) : (pdfUrl || savedPdf)}
+                                className="w-full h-full border-none"
+                                title={UI_TEXT.learningMaterials.pdfPreviewTitle}
+                            />
                         </div>
                     </div>
                 ) : readingType === "text" ? (
@@ -1316,82 +2363,171 @@ function ReadingConfigTab({
                             <TiptapEditor
                                 value={content}
                                 onChange={setContent}
-                                placeholder="Nhập nội dung bài viết..."
+                                placeholder={UI_TEXT.learningMaterials.editorPlaceholder}
                                 className="w-full bg-white rounded-lg overflow-hidden border border-slate-200"
                             />
                         </div>
                     </div>
                 ) : (
-                    /* Dropdown Select to choose reading input method */
-                    <div ref={containerRef} className="relative">
+                    /* Centered Empty State View for Reading */
+                    <div className="flex flex-col flex-1 items-center justify-center p-8 py-14 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 animate-fadeIn">
+                        <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-white text-slate-400">
+                            <FileText className="size-6 text-slate-400" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-sm font-black text-slate-800">{UI_TEXT.learningMaterials.emptyReadingTitle}</h4>
+                            <p className="text-xs text-slate-400 font-semibold max-w-[320px] leading-relaxed">
+                                {UI_TEXT.learningMaterials.emptyReadingDesc}
+                            </p>
+                        </div>
                         <button
                             type="button"
-                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full flex items-center justify-between rounded-lg border border-slate-200 px-3.5 py-2 text-xs bg-white text-slate-700 hover:border-slate-300 transition duration-150 cursor-pointer shadow-xxs font-semibold"
+                            onClick={() => setIsSelectModalOpen(true)}
+                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2 px-6 rounded-xl transition duration-150 cursor-pointer"
                         >
-                            <span>Chọn</span>
-                            <ChevronDown className={`size-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
+                            {UI_TEXT.learningMaterials.addReadingButton}
                         </button>
-
-                        {isDropdownOpen && typeof document !== "undefined" && createPortal(
-                            <>
-                                <div
-                                    className="fixed inset-0 z-[9998] cursor-default"
-                                    onClick={() => setIsDropdownOpen(false)}
-                                />
-                                <div
-                                    ref={dropdownRef}
-                                    style={{
-                                        position: "fixed",
-                                        left: `${coords.left}px`,
-                                        width: `${coords.width}px`,
-                                        zIndex: 9999,
-                                        ...(openDirection === "up"
-                                            ? { bottom: `${window.innerHeight - coords.top + 6}px` }
-                                            : { top: `${coords.top + 38}px` }
-                                        )
-                                    }}
-                                    className="rounded-xl border border-slate-100 bg-white p-1 shadow-md flex flex-col gap-0.5 animate-fadeIn"
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setReadingType("pdf");
-                                            setIsDropdownOpen(false);
-                                            fileInputRef.current?.click();
-                                        }}
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50 transition cursor-pointer relative z-30 font-bold"
-                                    >
-                                        <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
-                                            <FileText className="size-3.5" />
-                                        </span>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800">Tải tệp PDF</span>
-                                            <span className="text-[10px] text-slate-400 font-semibold">Chọn tệp tài liệu từ máy tính</span>
-                                        </div>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setReadingType("text");
-                                            setIsDropdownOpen(false);
-                                        }}
-                                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs hover:bg-slate-50 transition cursor-pointer relative z-30 font-bold"
-                                    >
-                                        <span className="flex size-7 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
-                                            <File className="size-3.5" />
-                                        </span>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800">Nội dung bài viết</span>
-                                            <span className="text-[10px] text-slate-400 font-semibold">Nhập nội dung bài đọc bằng văn bản</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </>,
-                            document.body
-                        )}
                     </div>
                 )}
+
+                {/* Custom Modal to choose document source method */}
+                <CustomModal.Root open={isSelectModalOpen} onOpenChange={setIsSelectModalOpen}>
+                    <CustomModal.Content className="max-w-md !rounded-[20px] w-full">
+                        <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                            <button
+                                type="button"
+                                onClick={() => setIsSelectModalOpen(false)}
+                                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                            >
+                                <X className="size-4" />
+                            </button>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-800">{UI_TEXT.learningMaterials.selectDocSourceTitle}</h3>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.learningMaterials.selectDocSourceDesc}</p>
+                            </div>
+
+                            <div className="flex flex-col gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSelectModalOpen(false);
+                                        fileInputRef.current?.click();
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left text-xs hover:bg-slate-50 transition duration-150 cursor-pointer"
+                                >
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
+                                        <FileText className="size-4" />
+                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-slate-800">{UI_TEXT.learningMaterials.uploadPdfTitle}</span>
+                                        <span className="text-[10px] text-slate-400 font-semibold">{UI_TEXT.learningMaterials.uploadPdfDesc}</span>
+                                    </div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSelectModalOpen(false);
+                                        setTempLink(pdfUrl || savedPdf || "");
+                                        setIsLinkModalOpen(true);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left text-xs hover:bg-slate-50 transition duration-150 cursor-pointer"
+                                >
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
+                                        <LinkIcon className="size-4" />
+                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-slate-800">Gán liên kết PDF</span>
+                                        <span className="text-[10px] text-slate-400 font-semibold">Nhập URL trực tuyến tới tệp PDF</span>
+                                    </div>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSelectModalOpen(false);
+                                        setReadingType("text");
+                                        setContent("");
+                                        setFile(null);
+                                        setPdfUrl("");
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-slate-100 p-3 text-left text-xs hover:bg-slate-50 transition duration-150 cursor-pointer"
+                                >
+                                    <span className="flex size-8 items-center justify-center rounded-full bg-slate-900 text-white shrink-0">
+                                        <File className="size-4" />
+                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-slate-800">{UI_TEXT.learningMaterials.writeDocTitle}</span>
+                                        <span className="text-[10px] text-slate-400 font-semibold">{UI_TEXT.learningMaterials.writeDocDesc}</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </Dialog>
+                    </CustomModal.Content>
+                </CustomModal.Root>
+
+                {/* Custom Modal for PDF Link Input */}
+                <CustomModal.Root open={isLinkModalOpen} onOpenChange={setIsLinkModalOpen}>
+                    <CustomModal.Content className="max-w-md !rounded-[20px] w-full">
+                        <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl  relative">
+                            <button
+                                type="button"
+                                onClick={() => setIsLinkModalOpen(false)}
+                                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50"
+                            >
+                                <X className="size-4" />
+                            </button>
+
+                            <div className="flex items-center  gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsLinkModalOpen(false);
+                                        setIsSelectModalOpen(true);
+                                    }}
+                                    className="text-slate-400 hover:text-slate-600 transition cursor-pointer p-1 rounded-lg hover:bg-slate-50 -ml-1 mt-0.5 shrink-0"
+                                    title="Quay lại"
+                                >
+                                    <ArrowLeft className="size-4" />
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-sm font-black text-slate-800">Nhập liên kết tệp PDF</h3>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Đường dẫn liên kết (Link PDF)</label>
+                                <input
+                                    type="text"
+                                    value={tempLink}
+                                    onChange={(e) => setTempLink(e.target.value)}
+                                    placeholder="https://example.com/document.pdf"
+                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2.5 mt-2 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsLinkModalOpen(false)}
+                                    className="w-1/3 bg-slate-50 border border-slate-200 text-slate-600 py-2.5 text-xs font-bold rounded-xl active:scale-[0.98] transition cursor-pointer text-center hover:bg-brand-500 hover:text-white hover:border-brand-500"
+                                >
+                                    Hủy
+                                </button>
+                                <Button
+                                    onClick={() => {
+                                        setPdfUrl(tempLink);
+                                        setFile(null);
+                                        setReadingType("pdf");
+                                        setIsLinkModalOpen(false);
+                                    }}
+                                    className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white border-none py-2.5 text-xs font-black rounded-xl active:scale-[0.98] transition cursor-pointer text-center"
+                                >
+                                    Xác nhận
+                                </Button>
+                            </div>
+                        </Dialog>
+                    </CustomModal.Content>
+                </CustomModal.Root>
             </div>
 
             {/* Hidden file input for automatic selection dialog */}
@@ -1404,6 +2540,7 @@ function ReadingConfigTab({
                     const selectedFile = e.target.files?.[0] || null;
                     setFile(selectedFile);
                     if (selectedFile) {
+                        setPdfUrl("");
                         setReadingType("pdf");
                     }
                 }}
@@ -1412,209 +2549,474 @@ function ReadingConfigTab({
     );
 }
 
-function SearchableQuizSelect({
-    value,
-    onChange,
-    quizzes,
-}: {
-    value: string;
-    onChange: (val: string) => void;
-    quizzes: any[];
-}) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
-    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
-    const inputRef = useRef<HTMLInputElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    const updateCoords = () => {
-        if (containerRef.current) {
-            const rect = containerRef.current.getBoundingClientRect();
-            setCoords({
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-            });
-
-            const scrollParent = containerRef.current.closest(".overflow-y-auto") || document.documentElement;
-            const parentRect = scrollParent.getBoundingClientRect();
-            const spaceBelow = parentRect.bottom - rect.bottom;
-            const spaceAbove = rect.top - parentRect.top;
-            if (spaceBelow < 250 && spaceAbove > spaceBelow) {
-                setOpenDirection("up");
-            } else {
-                setOpenDirection("down");
-            }
-        }
-    };
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        updateCoords();
-
-        const handleScroll = (event: Event) => {
-            const target = event.target as Node;
-            if (dropdownRef.current && dropdownRef.current.contains(target)) {
-                return;
-            }
-
-            if (containerRef.current && !containerRef.current.contains(target)) {
-                setIsOpen(false);
-                setSearchTerm("");
-            } else {
-                updateCoords();
-            }
-        };
-
-        window.addEventListener("scroll", handleScroll, true);
-        window.addEventListener("resize", updateCoords);
-        return () => {
-            window.removeEventListener("scroll", handleScroll, true);
-            window.removeEventListener("resize", updateCoords);
-        };
-    }, [isOpen]);
-
-    const selectedQuiz = quizzes.find((q) => q.id === value);
-    const selectedTitle = selectedQuiz ? (selectedQuiz.title || `Bộ đề Quiz ${selectedQuiz.id}`) : "Chọn đề kiểm tra (Quiz)...";
-
-    const filteredQuizzes = quizzes.filter((q) => {
-        const title = (q.title || "").toLowerCase();
-        const id = (q.id || "").toLowerCase();
-        const search = searchTerm.toLowerCase();
-        return title.includes(search) || id.includes(search);
-    });
-
-    return (
-        <div ref={containerRef} className="relative w-full">
-            {/* Search Input styled as Select Box */}
-            <div className="relative w-full flex items-center border border-slate-200 rounded-xl bg-white focus-within:border-slate-300 transition duration-150 shadow-xxs">
-                <Search className="absolute left-3 size-4 text-slate-400 pointer-events-none" />
-                <input
-                    ref={inputRef}
-                    type="text"
-                    className={`w-full bg-transparent pl-9 pr-9 py-2.5 text-xs focus:outline-none font-bold placeholder-slate-400 ${!isOpen && value ? "text-slate-900" : "text-slate-700"
-                        }`}
-                    placeholder={isOpen ? "Gõ để tìm kiếm đề..." : (value ? "" : "Chọn đề kiểm tra (Quiz)...")}
-                    value={isOpen ? searchTerm : (value ? selectedTitle : "")}
-                    onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                    }}
-                    onFocus={() => {
-                        setIsOpen(true);
-                        setSearchTerm("");
-                    }}
-                />
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        if (isOpen) {
-                            setIsOpen(false);
-                        } else {
-                            inputRef.current?.focus();
-                        }
-                    }}
-                    className="absolute right-3 p-0.5 hover:bg-slate-50 rounded cursor-pointer flex items-center justify-center"
-                >
-                    <ChevronDown className={`size-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-                </button>
-            </div>
-
-            {/* Dropdown panel */}
-            {isOpen && typeof document !== "undefined" && createPortal(
-                <>
-                    {/* Transparent backdrop to click outside */}
-                    <div
-                        className="fixed inset-0 z-[9998] cursor-default"
-                        onClick={() => {
-                            setIsOpen(false);
-                            setSearchTerm("");
-                        }}
-                    />
-                    <div
-                        ref={dropdownRef}
-                        style={{
-                            position: "fixed",
-                            left: `${coords.left}px`,
-                            width: `${coords.width}px`,
-                            zIndex: 9999,
-                            ...(openDirection === "up"
-                                ? { bottom: `${window.innerHeight - coords.top + 6}px` }
-                                : { top: `${coords.top + 42}px` }
-                            )
-                        }}
-                        className="rounded-xl border border-slate-100 bg-white p-1 shadow-lg flex flex-col gap-0.5 animate-fadeIn"
-                    >
-                        {/* List items */}
-                        <div className="overflow-y-auto flex flex-col gap-0.5 max-h-56 pr-1 custom-scrollbar-gray">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    onChange("");
-                                    setIsOpen(false);
-                                    setSearchTerm("");
-                                }}
-                                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs text-red-500 hover:bg-red-50 transition cursor-pointer font-bold"
-                            >
-                                Không liên kết Quiz (Hủy chọn)
-                            </button>
-
-                            {filteredQuizzes.length > 0 ? (
-                                filteredQuizzes.map((q) => {
-                                    const isSelected = q.id === value;
-                                    return (
-                                        <button
-                                            key={q.id}
-                                            type="button"
-                                            onClick={() => {
-                                                onChange(q.id);
-                                                setIsOpen(false);
-                                                setSearchTerm("");
-                                            }}
-                                            className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition cursor-pointer ${isSelected
-                                                ? "bg-wine/5 text-wine font-bold"
-                                                : "hover:bg-slate-50 text-slate-700 font-semibold"
-                                                }`}
-                                        >
-                                            <span className="truncate">{q.title || `Bộ đề Quiz ${q.id}`}</span>
-                                            {isSelected && <span className="size-1.5 rounded-full bg-wine shrink-0 ml-2" />}
-                                        </button>
-                                    );
-                                })
-                            ) : (
-                                <div className="text-[11px] text-slate-400 font-semibold text-center py-4">
-                                    Không tìm thấy đề kiểm tra nào
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </>,
-                document.body
-            )}
-        </div>
-    );
-}
 
 function QuizConfigTab({
     quizId,
     setQuizId,
     quizzes,
+    onDelete,
 }: {
     quizId: string;
     setQuizId: (id: string) => void;
     quizzes: any[];
+    onDelete?: () => void;
 }) {
+    const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+    const [tempQuizId, setTempQuizId] = useState(quizId);
+    const [modalSearchTerm, setModalSearchTerm] = useState("");
+
+    const selectedQuiz = quizzes.find((q) => q.id === quizId);
+
+    useEffect(() => {
+        setTempQuizId(quizId);
+    }, [quizId]);
+
+    const filteredQuizzes = quizzes.filter((q) => {
+        const title = (q.title || "").toLowerCase();
+        const id = (q.id || "").toLowerCase();
+        const search = modalSearchTerm.toLowerCase();
+        return title.includes(search) || id.includes(search);
+    });
+
     return (
-        <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-800">Chọn đề kiểm tra (Quiz)</label>
-            <SearchableQuizSelect
-                value={quizId}
-                onChange={setQuizId}
-                quizzes={quizzes}
-            />
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
+            <div className={`flex flex-col gap-1.5 relative ${quizId !== "" ? "" : "flex-1 min-h-0"}`}>
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800">{UI_TEXT.learningMaterials.labelQuizSelect}</label>
+                    {quizId !== "" && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setTempQuizId(quizId);
+                                setModalSearchTerm("");
+                                setIsSelectModalOpen(true);
+                            }}
+                            className="text-slate-400 hover:text-blue-500 transition cursor-pointer p-0.5 rounded"
+                            title="Thay đổi bài tập (quiz)"
+                        >
+                            <Repeat className="size-4" />
+                        </button>
+                    )}
+                </div>
+
+                {quizId !== "" ? (
+                    /* Linked Quiz display */
+                    <div className="flex flex-col gap-3 w-full animate-fadeIn">
+                        <div className="rounded-xl p-4 bg-slate-50 flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex size-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
+                                    <HelpCircle className="size-4" />
+                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-bold text-slate-800 line-clamp-1">
+                                        {selectedQuiz ? selectedQuiz.title : `${UI_TEXT.learningMaterials.defaultQuizTitlePrefix} ${quizId}`}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-semibold">
+                                        {UI_TEXT.learningMaterials.linkedQuizSub}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setTempQuizId(quizId);
+                                    setModalSearchTerm("");
+                                    setIsSelectModalOpen(true);
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
+                            >
+                                {UI_TEXT.learningMaterials.changeQuizButton}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    /* Centered Empty State View for Quiz */
+                    <div className="flex flex-col flex-1 items-center justify-center p-8 py-14 border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 animate-fadeIn">
+                        <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-white text-slate-400">
+                            <HelpCircle className="size-6 text-slate-400" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-sm font-black text-slate-800">{UI_TEXT.learningMaterials.emptyQuizTitle}</h4>
+                            <p className="text-xs text-slate-400 font-semibold max-w-[320px] leading-relaxed">
+                                {UI_TEXT.learningMaterials.emptyQuizDesc}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setTempQuizId("");
+                                setModalSearchTerm("");
+                                setIsSelectModalOpen(true);
+                            }}
+                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2 px-6 rounded-xl transition duration-150 cursor-pointer"
+                        >
+                            {UI_TEXT.learningMaterials.addQuizButton}
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Custom Modal to choose Quiz as Table */}
+            <CustomModal.Root open={isSelectModalOpen} onOpenChange={setIsSelectModalOpen}>
+                <CustomModal.Content className="max-w-2xl !rounded-[20px] w-full">
+                    <Dialog className="bg-white p-6 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative max-h-[85vh]">
+                        <div className="text-center">
+                            <h3 className="text-sm font-black text-slate-800">{UI_TEXT.learningMaterials.linkQuizModalTitle}</h3>
+                            <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.learningMaterials.linkQuizModalDesc}</p>
+                        </div>
+
+                        {/* Search Box */}
+                        <div className="relative w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-slate-200 font-semibold text-slate-700 placeholder-slate-400"
+                                placeholder={UI_TEXT.learningMaterials.quizSearchPlaceholder}
+                                value={modalSearchTerm}
+                                onChange={(e) => setModalSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Scrollable Table View */}
+                        <div className="overflow-x-auto border border-slate-100 rounded-xl max-h-[350px] overflow-y-auto custom-scrollbar-gray">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                        <th className="py-2.5 px-4 w-12 text-center">{UI_TEXT.learningMaterials.tableHeaderSelect}</th>
+                                        <th className="py-2.5 px-4">{UI_TEXT.learningMaterials.tableHeaderTitle}</th>
+                                        <th className="py-2.5 px-4">{UI_TEXT.learningMaterials.tableHeaderDate}</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {filteredQuizzes.length > 0 ? (
+                                        filteredQuizzes.map((q) => {
+                                            const isSelected = q.id === tempQuizId;
+                                            return (
+                                                <tr
+                                                    key={q.id}
+                                                    onClick={() => setTempQuizId(q.id)}
+                                                    className={`hover:bg-slate-50/40 transition cursor-pointer text-xs font-semibold text-slate-700 ${isSelected ? "bg-wine/5" : ""
+                                                        }`}
+                                                >
+                                                    <td className="py-2.5 px-4 text-center">
+                                                        <div className="flex items-center justify-center">
+                                                            <div className={`size-4 rounded-full border flex items-center justify-center transition ${isSelected ? "border-wine bg-white" : "border-slate-200 bg-white"
+                                                                }`}>
+                                                                {isSelected && <div className="size-2 rounded-full bg-wine" />}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-2.5 px-4 text-slate-800 font-bold truncate max-w-xs">{q.title || "—"}</td>
+                                                    <td className="py-2.5 px-4 text-slate-400 text-[10px]">
+                                                        {q.createdAt ? new Date(q.createdAt).toLocaleDateString("vi-VN") : "—"}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={3} className="text-center py-8 text-xs text-slate-400 font-semibold">
+                                                {UI_TEXT.learningMaterials.emptyQuizDesc}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Footer Buttons */}
+                        <div className="flex w-full gap-3 mt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsSelectModalOpen(false)}
+                                className="w-1/3 bg-slate-50 border border-slate-200 text-slate-600 py-2.5 text-xs font-bold rounded-xl active:scale-[0.98] transition-all duration-150 cursor-pointer text-center hover:bg-brand-500 hover:text-white hover:border-brand-500"
+                            >
+                                {UI_TEXT.courseDetail.cancelButton}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuizId(tempQuizId);
+                                    setIsSelectModalOpen(false);
+                                }}
+                                disabled={!tempQuizId}
+                                className="w-2/3 bg-blue-600 hover:bg-blue-700 text-white border-none py-2.5 text-xs font-black rounded-xl active:scale-[0.98] transition-all duration-150 cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed disabled:scale-100 shadow-md shadow-blue-500/10 text-center"
+                            >
+                                {UI_TEXT.courseDetail.confirmButton}
+                            </button>
+                        </div>
+                    </Dialog>
+                </CustomModal.Content>
+            </CustomModal.Root>
+        </div>
+    );
+}
+
+function getEmbeddableUrl(url: string): { embedUrl: string; canEmbed: boolean } {
+    if (!url) return { embedUrl: "", canEmbed: false };
+
+    // Google Drive file view
+    const driveFileRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
+    if (driveFileRegex.test(url)) {
+        const match = url.match(driveFileRegex);
+        if (match && match[1]) {
+            return {
+                embedUrl: `https://drive.google.com/file/d/${match[1]}/preview`,
+                canEmbed: true
+            };
+        }
+    }
+
+    // Google Docs view/edit
+    const googleDocRegex = /https:\/\/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/;
+    if (googleDocRegex.test(url)) {
+        const match = url.match(googleDocRegex);
+        if (match && match[1]) {
+            return {
+                embedUrl: `https://docs.google.com/document/d/${match[1]}/preview`,
+                canEmbed: true
+            };
+        }
+    }
+
+    // If it's a PDF link or S3 PDF link
+    if (url.toLowerCase().endsWith(".pdf") || url.toLowerCase().includes(".pdf")) {
+        return { embedUrl: url, canEmbed: true };
+    }
+
+    // Otherwise, normal websites (e.g. app.xmind.com, external drive folder links, v.v.) are likely not embeddable
+    return { embedUrl: url, canEmbed: false };
+}
+
+function SessionViewerWrapper({
+    session,
+    activeTab,
+    onChangeTab,
+}: {
+    session?: Session;
+    activeTab: "mindmap" | "pdf" | "srs";
+    onChangeTab: (tab: "mindmap" | "pdf" | "srs") => void;
+}) {
+    if (!session) return null;
+
+    const hasMindmap = !!session.mindmap;
+    const hasPdf = !!session.pdf;
+    const hasSrs = !!session.srs;
+
+    const noResources = !hasMindmap && !hasPdf && !hasSrs;
+
+    return (
+        <div className="flex flex-col gap-4 flex-1 min-h-0 h-full">
+            {/* Header */}
+            <div className="border-b border-slate-100 pb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
+                <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        {activeTab === "mindmap" && "Xem Mindmap chương"}
+                        {activeTab === "pdf" && "Xem tài liệu PDF chương"}
+                        {activeTab === "srs" && "Xem tài liệu SRS chương"}
+                    </span>
+                    <h3 className="text-base font-extrabold text-blue-500 mt-0.5">{session.name}</h3>
+                </div>
+
+                {/* Tabs switcher - only display configured tabs */}
+                {!noResources && (
+                    <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
+                        {hasMindmap && (
+                            <button
+                                onClick={() => onChangeTab("mindmap")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "mindmap"
+                                    ? "bg-white text-slate-800 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                                    }`}
+                            >
+                                Mindmap
+                            </button>
+                        )}
+                        {hasPdf && (
+                            <button
+                                onClick={() => onChangeTab("pdf")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "pdf"
+                                    ? "bg-white text-slate-800 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                                    }`}
+                            >
+                                Tài liệu PDF
+                            </button>
+                        )}
+                        {hasSrs && (
+                            <button
+                                onClick={() => onChangeTab("srs")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "srs"
+                                    ? "bg-white text-slate-800 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                                    }`}
+                            >
+                                SRS
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Scrollable Content Area */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-4">
+                {noResources ? (
+                    <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-2 p-8 animate-fadeIn">
+                        <Map className="size-8 text-slate-300" />
+                        <h4 className="text-xs font-bold text-slate-800">Chương này chưa được cấu hình học liệu (Mindmap, PDF, SRS)</h4>
+                    </div>
+                ) : activeTab === "mindmap" && hasMindmap ? (
+                    <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
+                        {(() => {
+                            const embedInfo = getEmbeddableUrl(session.mindmap || "");
+                            return embedInfo.canEmbed ? (
+                                <div className="flex flex-col gap-3 flex-1 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[400px]">
+                                            Đường dẫn: <a href={session.mindmap} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{session.mindmap}</a>
+                                        </span>
+                                        <a
+                                            href={session.mindmap}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black py-1.5 px-3 rounded-lg transition duration-150 cursor-pointer"
+                                        >
+                                            Mở trong tab mới <ExternalLink className="size-3" />
+                                        </a>
+                                    </div>
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full flex-1 shadow-sm">
+                                        <iframe
+                                            src={embedInfo.embedUrl}
+                                            className="w-full h-full border-none"
+                                            title="Mindmap preview"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 p-8">
+                                    <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                        <Map className="size-7 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 max-w-[360px]">
+                                        <h4 className="text-sm font-black text-slate-800">Không hỗ trợ hiển thị trực tiếp Mindmap</h4>
+                                        <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                                            Để bảo mật, liên kết này không cho phép nhúng xem trực tiếp bên trong trang. Bạn có thể xem bằng cách mở trực tiếp:
+                                        </p>
+                                    </div>
+                                    <a
+                                        href={session.mindmap}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2.5 px-6 rounded-xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/20"
+                                    >
+                                        Mở liên kết Mindmap <ExternalLink className="size-3.5" />
+                                    </a>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : activeTab === "pdf" && hasPdf ? (
+                    <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
+                        {(() => {
+                            const embedInfo = getEmbeddableUrl(session.pdf || "");
+                            return embedInfo.canEmbed ? (
+                                <div className="flex flex-col gap-3 flex-1 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[400px]">
+                                            Đường dẫn: <a href={session.pdf} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{session.pdf}</a>
+                                        </span>
+                                        <a
+                                            href={session.pdf}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black py-1.5 px-3 rounded-lg transition duration-150 cursor-pointer"
+                                        >
+                                            Mở trong tab mới <ExternalLink className="size-3" />
+                                        </a>
+                                    </div>
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full flex-1 shadow-sm">
+                                        <iframe
+                                            src={embedInfo.embedUrl}
+                                            className="w-full h-full border-none"
+                                            title="PDF preview"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 p-8">
+                                    <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                        <FileText className="size-7 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 max-w-[360px]">
+                                        <h4 className="text-sm font-black text-slate-800">Không hỗ trợ hiển thị trực tiếp tài liệu PDF</h4>
+                                        <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                                            Để bảo mật, liên kết này không cho phép nhúng xem trực tiếp bên trong trang. Bạn có thể xem bằng cách mở trực tiếp:
+                                        </p>
+                                    </div>
+                                    <a
+                                        href={session.pdf}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2.5 px-6 rounded-xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/20"
+                                    >
+                                        Mở liên kết tài liệu PDF <ExternalLink className="size-3.5" />
+                                    </a>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : activeTab === "srs" && hasSrs ? (
+                    <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
+                        {(() => {
+                            const embedInfo = getEmbeddableUrl(session.srs || "");
+                            return embedInfo.canEmbed ? (
+                                <div className="flex flex-col gap-3 flex-1 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[400px]">
+                                            Đường dẫn: <a href={session.srs} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{session.srs}</a>
+                                        </span>
+                                        <a
+                                            href={session.srs}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black py-1.5 px-3 rounded-lg transition duration-150 cursor-pointer"
+                                        >
+                                            Mở trong tab mới <ExternalLink className="size-3" />
+                                        </a>
+                                    </div>
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full flex-1 shadow-sm">
+                                        <iframe
+                                            src={embedInfo.embedUrl}
+                                            className="w-full h-full border-none"
+                                            title="SRS preview"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 p-8">
+                                    <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                        <ScrollText className="size-7 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 max-w-[360px]">
+                                        <h4 className="text-sm font-black text-slate-800">Không hỗ trợ hiển thị trực tiếp tài liệu SRS</h4>
+                                        <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                                            Để bảo mật, liên kết này không cho phép nhúng xem trực tiếp bên trong trang. Bạn có thể xem bằng cách mở trực tiếp:
+                                        </p>
+                                    </div>
+                                    <a
+                                        href={session.srs}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2.5 px-6 rounded-xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/20"
+                                    >
+                                        Mở liên kết tài liệu SRS <ExternalLink className="size-3.5" />
+                                    </a>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : null}
+            </div>
         </div>
     );
 }
