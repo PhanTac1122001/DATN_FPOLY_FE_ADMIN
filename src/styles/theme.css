@@ -15,6 +15,7 @@
     /* FONT FAMILY */
     /* LMS Portal style guide: Be Vietnam Pro for heading, SF Pro Display for body */
     --font-body: "SF Pro Display", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --font-sans: var(--font-body);
     --font-display: var(--font-sans-primary, "Be Vietnam Pro"), -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     --font-mono: ui-monospace, "Roboto Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
