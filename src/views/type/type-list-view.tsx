@@ -72,10 +72,10 @@ export function TypeListView() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-slate-100 bg-white p-8 shadow-xs">
+            <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-line bg-white p-8 shadow-xs">
                 <div className="flex flex-col items-center gap-4">
                     <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
-                    <p className="text-sm font-semibold text-slate-500">{UI_TEXT.trainingSystem.loading}</p>
+                    <p className="text-sm font-semibold text-muted">{UI_TEXT.trainingSystem.loading}</p>
                 </div>
             </div>
         );
@@ -84,9 +84,9 @@ export function TypeListView() {
     return (
         <div className="flex w-full flex-col gap-8">
             {/* Filter Bar & Table Area */}
-            <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
+            <div className="rounded-2xl border border-line bg-white shadow-xs">
                 {/* Filters header */}
-                <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 border-b border-line p-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                         <SearchFilters search={search} onSearchChange={handleSearchChange} searchPlaceholder={UI_TEXT.trainingTypesEl.searchPlaceholder} />
                     </div>
@@ -94,9 +94,9 @@ export function TypeListView() {
 
                 {/* Table list */}
                 <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px] table-auto border-collapse text-left text-sm text-slate-700">
+                    <table className="w-full min-w-[800px] table-auto border-collapse text-left text-sm text-ink">
                         <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                            <tr className="border-b border-line bg-slate-50/50 text-[11px] font-bold tracking-wider text-muted uppercase">
                                 <th className="w-16 px-6 py-4 text-center">{UI_TEXT.trainingTypesEl.thStt}</th>
                                 <th className="px-6 py-4">{UI_TEXT.trainingTypesEl.thName}</th>
                                 <th className="px-6 py-4">{UI_TEXT.trainingTypesEl.thMajors}</th>
@@ -107,26 +107,24 @@ export function TypeListView() {
                         <tbody>
                             {paginatedTypes.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                                    <td colSpan={5} className="px-6 py-8 text-center text-muted">
                                         {UI_TEXT.trainingTypesEl.noData}
                                     </td>
                                 </tr>
                             ) : (
                                 paginatedTypes.map((item, index) => (
                                     <tr key={item.id} className="group transition duration-150 hover:bg-slate-50/40">
-                                        <td className="border-b border-slate-100 px-6 py-5.5 text-center font-bold text-slate-800">
-                                            {(page - 1) * limit + index + 1}
-                                        </td>
-                                        <td className="border-b border-slate-100 px-6 py-5.5 font-bold text-slate-900">{item.name}</td>
-                                        <td className="border-b border-slate-100 px-6 py-5.5 font-medium text-slate-500">{item.majors}</td>
-                                        <td className="border-b border-slate-100 px-6 py-5.5 text-center font-medium whitespace-nowrap text-slate-500">
+                                        <td className="border-b border-line px-6 py-5.5 text-center font-bold text-muted">{(page - 1) * limit + index + 1}</td>
+                                        <td className="border-b border-line px-6 py-5.5 font-bold text-ink">{item.name}</td>
+                                        <td className="border-b border-line px-6 py-5.5 font-medium text-muted">{item.majors}</td>
+                                        <td className="border-b border-line px-6 py-5.5 text-center font-medium whitespace-nowrap text-muted">
                                             {item.createdAt}
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-5.5">
+                                        <td className="border-b border-line px-6 py-5.5">
                                             <div className="flex items-center justify-center">
                                                 <Link
                                                     href={`/type/${item.id}` as Route}
-                                                    className="inline-flex items-center justify-center rounded-lg border border-sky-100 bg-white p-2 text-sky-500 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50 hover:text-sky-600"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md bg-wine/10 text-wine shadow-xs transition-all duration-200 hover:scale-105 hover:bg-wine hover:text-white hover:shadow-md hover:shadow-wine/20 active:scale-95"
                                                     title={UI_TEXT.trainingTypesEl.viewDetails}
                                                 >
                                                     <Eye className="size-4.5" />
@@ -152,7 +150,7 @@ export function TypeListView() {
                             setLimit(l);
                             setPage(1);
                         }}
-                        className="shrink-0 border-t border-slate-100 px-6 py-4"
+                        className="shrink-0 border-t border-line px-6 py-4"
                     />
                 )}
             </div>
