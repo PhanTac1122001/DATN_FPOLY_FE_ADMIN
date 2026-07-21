@@ -329,8 +329,8 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
 
             {/* Custom Modal for Adding Session */}
             <CustomModal.Root open={isAddSessionOpen} onOpenChange={setIsAddSessionOpen}>
-                <CustomModal.Content className="max-w-xl !rounded-[20px] w-full">
-                    <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                <CustomModal.Content className="max-w-3xl !rounded-[20px] w-full">
+                    <Dialog className="bg-white p-6 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
                         <button
                             type="button"
                             onClick={() => setIsAddSessionOpen(false)}
@@ -344,60 +344,27 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                 <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.addSessionDescription}</p>
                             </div>
 
-                            {/* Form Tabs Header */}
-                            <div className="flex gap-1.5 border-b border-slate-100 pb-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setAddSessionTab("general")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        addSessionTab === "general"
-                                            ? "bg-wine/5 text-wine"
-                                            : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {UI_TEXT.courseDetail.sessionTabGeneral}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setAddSessionTab("resources")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        addSessionTab === "resources"
-                                            ? "bg-wine/5 text-wine"
-                                            : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {UI_TEXT.courseDetail.sessionTabResources}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setAddSessionTab("practice")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        addSessionTab === "practice"
-                                            ? "bg-wine/5 text-wine"
-                                            : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {UI_TEXT.courseDetail.sessionTabPractice}
-                                </button>
-                            </div>
-
-                            {/* Tab 1: General Info */}
-                            {addSessionTab === "general" && (
-                                <div className="flex flex-col gap-4 py-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
-                                        <input
-                                            type="text"
-                                            value={newSessionFields.name}
-                                            onChange={(e) => setNewSessionFields(prev => ({ ...prev, name: e.target.value }))}
-                                            placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            autoFocus
-                                            required
-                                        />
-                                    </div>
+                            {/* Scrollable Form Content */}
+                            <div className="flex flex-col gap-6 max-h-[500px] overflow-y-auto pr-3 custom-scrollbar">
+                                {/* Section 1: General Info */}
+                                <div className="flex flex-col gap-4">
+                                    <h4 className="text-[11px] font-extrabold text-wine uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                                        {UI_TEXT.courseDetail.sessionTabGeneral}
+                                    </h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-2">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.name}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, name: e.target.value }))}
+                                                placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                autoFocus
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
                                             <select
                                                 value={newSessionFields.type}
@@ -408,7 +375,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 <option value="THUC_HANH">{UI_TEXT.courseDetail.sessionTypePractice}</option>
                                             </select>
                                         </div>
-                                        <div className="flex items-center justify-between border border-slate-100 rounded-xl p-3 bg-slate-50/50">
+                                        <div className="flex items-center justify-between border border-slate-100 rounded-xl p-3 bg-slate-50/50 col-span-1">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionStatusLabel}</span>
                                                 <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.sessionStatusDesc}</span>
@@ -420,46 +387,47 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 className="size-4 rounded border-slate-300 text-wine focus:ring-wine cursor-pointer accent-wine"
                                             />
                                         </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionDescLabel}</label>
-                                        <textarea
-                                            value={newSessionFields.description}
-                                            onChange={(e) => setNewSessionFields(prev => ({ ...prev, description: e.target.value }))}
-                                            placeholder={UI_TEXT.courseDetail.sessionDescPlaceholder}
-                                            rows={3}
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
-                                        />
+                                        <div className="flex flex-col gap-1.5 col-span-2">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionDescLabel}</label>
+                                            <textarea
+                                                value={newSessionFields.description}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, description: e.target.value }))}
+                                                placeholder={UI_TEXT.courseDetail.sessionDescPlaceholder}
+                                                rows={2}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Tab 2: Resources */}
-                            {addSessionTab === "resources" && (
-                                <div className="flex flex-col gap-3.5 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                                    <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMindmapLabel}</label>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[9px] text-slate-400 font-bold uppercase">{UI_TEXT.courseDetail.sessionShowMindmapLabel}</span>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={newSessionFields.isShowMindmap}
-                                                    onChange={(e) => setNewSessionFields(prev => ({ ...prev, isShowMindmap: e.target.checked }))}
-                                                    className="size-3.5 rounded border-slate-300 text-wine cursor-pointer accent-wine"
-                                                />
-                                            </div>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={newSessionFields.mindmap}
-                                            onChange={(e) => setNewSessionFields(prev => ({ ...prev, mindmap: e.target.value }))}
-                                            placeholder="https://example.com/mindmap.jpg"
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                        />
-                                    </div>
+                                {/* Section 2: Resources */}
+                                <div className="flex flex-col gap-4">
+                                    <h4 className="text-[11px] font-extrabold text-wine uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                                        {UI_TEXT.courseDetail.sessionTabResources}
+                                    </h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-2">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMindmapLabel}</label>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">{UI_TEXT.courseDetail.sessionShowMindmapLabel}</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={newSessionFields.isShowMindmap}
+                                                        onChange={(e) => setNewSessionFields(prev => ({ ...prev, isShowMindmap: e.target.checked }))}
+                                                        className="size-3.5 rounded border-slate-300 text-wine cursor-pointer accent-wine"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={newSessionFields.mindmap}
+                                                onChange={(e) => setNewSessionFields(prev => ({ ...prev, mindmap: e.target.value }))}
+                                                placeholder="https://example.com/mindmap.jpg"
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionSrsLabel}</label>
                                             <input
                                                 type="text"
@@ -469,7 +437,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPdfLabel}</label>
                                             <input
                                                 type="text"
@@ -479,9 +447,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMiniProjectLabel}</label>
                                             <input
                                                 type="text"
@@ -491,7 +457,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionExerciseLabel}</label>
                                             <input
                                                 type="text"
@@ -501,9 +467,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionQuizziLabel}</label>
                                             <input
                                                 type="text"
@@ -513,7 +477,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionEntranceQuizLabel}</label>
                                             <input
                                                 type="text"
@@ -525,13 +489,14 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                         </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* Tab 3: Practice */}
-                            {addSessionTab === "practice" && (
-                                <div className="flex flex-col gap-4 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                {/* Section 3: Practice */}
+                                <div className="flex flex-col gap-4">
+                                    <h4 className="text-[11px] font-extrabold text-wine uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                                        {UI_TEXT.courseDetail.sessionTabPractice}
+                                    </h4>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
+                                        <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-1">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeTypeLabel}</label>
                                             <select
                                                 value={newSessionFields.practice.submissionType}
@@ -549,102 +514,102 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 <option value="TEXT">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeText}</option>
                                             </select>
                                         </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeContentLabel}</label>
-                                        <textarea
-                                            value={newSessionFields.practice.content}
-                                            onChange={(e) => setNewSessionFields(prev => ({
-                                                ...prev,
-                                                practice: {
-                                                    ...prev.practice,
-                                                    content: e.target.value
-                                                }
-                                            }))}
-                                            placeholder={UI_TEXT.courseDetail.sessionPracticeContentPlaceholder}
-                                            rows={3}
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
-                                        />
-                                    </div>
-
-                                    {/* Resources references */}
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeResourcesLabel}</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setNewSessionFields(prev => ({
+                                        <div className="flex flex-col gap-1.5 col-span-2">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeContentLabel}</label>
+                                            <textarea
+                                                value={newSessionFields.practice.content}
+                                                onChange={(e) => setNewSessionFields(prev => ({
                                                     ...prev,
                                                     practice: {
                                                         ...prev.practice,
-                                                        resources: [...prev.practice.resources, { label: "", url: "" }]
+                                                        content: e.target.value
                                                     }
                                                 }))}
-                                                className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
-                                            >
-                                                <Plus className="size-3" />
-                                                {UI_TEXT.courseDetail.sessionPracticeAddResourceBtn}
-                                            </button>
+                                                placeholder={UI_TEXT.courseDetail.sessionPracticeContentPlaceholder}
+                                                rows={2}
+                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                            />
                                         </div>
 
-                                        <div className="flex flex-col gap-2">
-                                            {newSessionFields.practice.resources.map((resource, resIdx) => (
-                                                <div key={resIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                                    <input
-                                                        type="text"
-                                                        value={resource.label}
-                                                        onChange={(e) => {
-                                                            const newResources = [...newSessionFields.practice.resources];
-                                                            newResources[resIdx].label = e.target.value;
-                                                            setNewSessionFields(prev => ({
-                                                                ...prev,
-                                                                practice: { ...prev.practice, resources: newResources }
-                                                            }));
-                                                        }}
-                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceLabelPlaceholder}
-                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
-                                                        required
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={resource.url}
-                                                        onChange={(e) => {
-                                                            const newResources = [...newSessionFields.practice.resources];
-                                                            newResources[resIdx].url = e.target.value;
-                                                            setNewSessionFields(prev => ({
-                                                                ...prev,
-                                                                practice: { ...prev.practice, resources: newResources }
-                                                            }));
-                                                        }}
-                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceUrlPlaceholder}
-                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
-                                                        required
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newResources = newSessionFields.practice.resources.filter((_, rIdx) => rIdx !== resIdx);
-                                                            setNewSessionFields(prev => ({
-                                                                ...prev,
-                                                                practice: { ...prev.practice, resources: newResources }
-                                                            }));
-                                                        }}
-                                                        className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
-                                                        title="Xóa tài liệu"
-                                                    >
-                                                        <Trash2 className="size-3.5" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                            {newSessionFields.practice.resources.length === 0 && (
-                                                <span className="text-[10px] text-slate-400 italic font-semibold">{UI_TEXT.courseDetail.sessionPracticeNoResources}</span>
-                                            )}
+                                        {/* Resources references */}
+                                        <div className="flex flex-col gap-2 col-span-2">
+                                            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeResourcesLabel}</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewSessionFields(prev => ({
+                                                        ...prev,
+                                                        practice: {
+                                                            ...prev.practice,
+                                                            resources: [...prev.practice.resources, { label: "", url: "" }]
+                                                        }
+                                                    }))}
+                                                    className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
+                                                >
+                                                    <Plus className="size-3" />
+                                                    {UI_TEXT.courseDetail.sessionPracticeAddResourceBtn}
+                                                </button>
+                                            </div>
+
+                                            <div className="flex flex-col gap-2">
+                                                {newSessionFields.practice.resources.map((resource, resIdx) => (
+                                                    <div key={resIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                                        <input
+                                                            type="text"
+                                                            value={resource.label}
+                                                            onChange={(e) => {
+                                                                const newResources = [...newSessionFields.practice.resources];
+                                                                newResources[resIdx].label = e.target.value;
+                                                                setNewSessionFields(prev => ({
+                                                                    ...prev,
+                                                                    practice: { ...prev.practice, resources: newResources }
+                                                                }));
+                                                            }}
+                                                            placeholder={UI_TEXT.courseDetail.sessionPracticeResourceLabelPlaceholder}
+                                                            className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                            required
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={resource.url}
+                                                            onChange={(e) => {
+                                                                const newResources = [...newSessionFields.practice.resources];
+                                                                newResources[resIdx].url = e.target.value;
+                                                                setNewSessionFields(prev => ({
+                                                                    ...prev,
+                                                                    practice: { ...prev.practice, resources: newResources }
+                                                                }));
+                                                            }}
+                                                            placeholder={UI_TEXT.courseDetail.sessionPracticeResourceUrlPlaceholder}
+                                                            className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                            required
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newResources = newSessionFields.practice.resources.filter((_, rIdx) => rIdx !== resIdx);
+                                                                setNewSessionFields(prev => ({
+                                                                    ...prev,
+                                                                    practice: { ...prev.practice, resources: newResources }
+                                                                }));
+                                                            }}
+                                                            className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
+                                                            title="Xóa tài liệu"
+                                                        >
+                                                            <Trash2 className="size-3.5" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {newSessionFields.practice.resources.length === 0 && (
+                                                    <span className="text-[10px] text-slate-400 italic font-semibold">{UI_TEXT.courseDetail.sessionPracticeNoResources}</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                            </div>
 
-                            <div className="flex items-center gap-2.5 mt-2 w-full">
+                            <div className="flex items-center gap-2.5 mt-2 w-full border-t border-slate-100 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setIsAddSessionOpen(false)}
@@ -666,8 +631,8 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
             </CustomModal.Root>
             {/* Custom Modal for Editing Session */}
             <CustomModal.Root open={isEditSessionOpen} onOpenChange={setIsEditSessionOpen}>
-                <CustomModal.Content className="max-w-xl !rounded-[20px] w-full">
-                    <Dialog className="bg-white p-5 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
+                <CustomModal.Content className="max-w-3xl !rounded-[20px] w-full">
+                    <Dialog className="bg-white p-6 rounded-[20px] flex flex-col gap-4 outline-none shadow-2xl relative">
                         <button
                             type="button"
                             onClick={() => setIsEditSessionOpen(false)}
@@ -681,307 +646,276 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                 <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.editSessionDescription}</p>
                             </div>
 
-                            {/* Form Tabs Header */}
-                            <div className="flex gap-1.5 border-b border-slate-100 pb-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setEditSessionTab("general")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        editSessionTab === "general"
-                                            ? "bg-wine/5 text-wine"
-                                            : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {UI_TEXT.courseDetail.sessionTabGeneral}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setEditSessionTab("resources")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        editSessionTab === "resources"
-                                            ? "bg-wine/5 text-wine"
-                                            : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {UI_TEXT.courseDetail.sessionTabResources}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setEditSessionTab("practice")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                        editSessionTab === "practice"
-                                            ? "bg-wine/5 text-wine"
-                                            : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {UI_TEXT.courseDetail.sessionTabPractice}
-                                </button>
-                            </div>
-
-                            {/* Tab 1: General Info */}
-                            {editSessionTab === "general" && editingSession && (
-                                <div className="flex flex-col gap-4 py-2">
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
-                                        <input
-                                            type="text"
-                                            value={editingSession.name}
-                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, name: e.target.value } : null)}
-                                            placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            autoFocus
-                                            required
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
-                                            <select
-                                                value={editingSession.type || "LY_THUYET"}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, type: e.target.value } : null)}
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            >
-                                                <option value="LY_THUYET">{UI_TEXT.courseDetail.sessionTypeTheory}</option>
-                                                <option value="THUC_HANH">{UI_TEXT.courseDetail.sessionTypePractice}</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex items-center justify-between border border-slate-100 rounded-xl p-3 bg-slate-50/50">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionStatusLabel}</span>
-                                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.sessionStatusDesc}</span>
+                            {/* Scrollable Form Content */}
+                            {editingSession && (
+                                <div className="flex flex-col gap-6 max-h-[500px] overflow-y-auto pr-3 custom-scrollbar">
+                                    {/* Section 1: General Info */}
+                                    <div className="flex flex-col gap-4">
+                                        <h4 className="text-[11px] font-extrabold text-wine uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                                            {UI_TEXT.courseDetail.sessionTabGeneral}
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col gap-1.5 col-span-2">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.name}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                                    placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                    autoFocus
+                                                    required
+                                                />
                                             </div>
-                                            <input
-                                                type="checkbox"
-                                                checked={!!editingSession.status}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, status: e.target.checked } : null)}
-                                                className="size-4 rounded border-slate-300 text-wine focus:ring-wine cursor-pointer accent-wine"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionDescLabel}</label>
-                                        <textarea
-                                            value={editingSession.description || ""}
-                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, description: e.target.value } : null)}
-                                            placeholder={UI_TEXT.courseDetail.sessionDescPlaceholder}
-                                            rows={3}
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tab 2: Resources */}
-                            {editSessionTab === "resources" && editingSession && (
-                                <div className="flex flex-col gap-3.5 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                                    <div className="flex flex-col gap-1.5">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMindmapLabel}</label>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="text-[9px] text-slate-400 font-bold uppercase">{UI_TEXT.courseDetail.sessionShowMindmapLabel}</span>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
+                                                <select
+                                                    value={editingSession.type || "LY_THUYET"}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, type: e.target.value } : null)}
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                >
+                                                    <option value="LY_THUYET">{UI_TEXT.courseDetail.sessionTypeTheory}</option>
+                                                    <option value="THUC_HANH">{UI_TEXT.courseDetail.sessionTypePractice}</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex items-center justify-between border border-slate-100 rounded-xl p-3 bg-slate-50/50 col-span-1">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionStatusLabel}</span>
+                                                    <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{UI_TEXT.courseDetail.sessionStatusDesc}</span>
+                                                </div>
                                                 <input
                                                     type="checkbox"
-                                                    checked={!!editingSession.isShowMindmap}
-                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, isShowMindmap: e.target.checked } : null)}
-                                                    className="size-3.5 rounded border-slate-300 text-wine cursor-pointer accent-wine"
+                                                    checked={!!editingSession.status}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, status: e.target.checked } : null)}
+                                                    className="size-4 rounded border-slate-300 text-wine focus:ring-wine cursor-pointer accent-wine"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-2">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionDescLabel}</label>
+                                                <textarea
+                                                    value={editingSession.description || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, description: e.target.value } : null)}
+                                                    placeholder={UI_TEXT.courseDetail.sessionDescPlaceholder}
+                                                    rows={2}
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
                                                 />
                                             </div>
                                         </div>
-                                        <input
-                                            type="text"
-                                            value={editingSession.mindmap || ""}
-                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, mindmap: e.target.value } : null)}
-                                            placeholder="https://example.com/mindmap.jpg"
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionSrsLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={editingSession.srs || ""}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, srs: e.target.value } : null)}
-                                                placeholder="https://example.com/srs.pdf"
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPdfLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={editingSession.pdf || ""}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, pdf: e.target.value } : null)}
-                                                placeholder="https://example.com/lecture.pdf"
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMiniProjectLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={editingSession.miniProject || ""}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, miniProject: e.target.value } : null)}
-                                                placeholder="https://example.com/miniproject.zip"
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionExerciseLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={editingSession.exercise || ""}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, exercise: e.target.value } : null)}
-                                                placeholder="Bài tập..."
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionQuizziLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={editingSession.quizzi || ""}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, quizzi: e.target.value } : null)}
-                                                placeholder="Quizzi..."
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionEntranceQuizLabel}</label>
-                                            <input
-                                                type="text"
-                                                value={editingSession.practiceEntranceQuiz || ""}
-                                                onChange={(e) => setEditingSession(prev => prev ? { ...prev, practiceEntranceQuiz: e.target.value } : null)}
-                                                placeholder={UI_TEXT.courseDetail.sessionEntranceQuizPlaceholder}
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tab 3: Practice */}
-                            {editSessionTab === "practice" && editingSession && editingSession.practice && (
-                                <div className="flex flex-col gap-4 py-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeTypeLabel}</label>
-                                            <select
-                                                value={editingSession.practice.submissionType}
-                                                onChange={(e) => setEditingSession(prev => prev ? {
-                                                    ...prev,
-                                                    practice: {
-                                                        ...prev.practice!,
-                                                        submissionType: e.target.value as "LINK" | "FILE" | "TEXT"
-                                                    }
-                                                } : null)}
-                                                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
-                                            >
-                                                <option value="LINK">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeLink}</option>
-                                                <option value="FILE">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeFile}</option>
-                                                <option value="TEXT">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeText}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeContentLabel}</label>
-                                        <textarea
-                                            value={editingSession.practice.content}
-                                            onChange={(e) => setEditingSession(prev => prev ? {
-                                                ...prev,
-                                                practice: {
-                                                    ...prev.practice!,
-                                                    content: e.target.value
-                                                }
-                                            } : null)}
-                                            placeholder={UI_TEXT.courseDetail.sessionPracticeContentPlaceholder}
-                                            rows={3}
-                                            className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
-                                        />
                                     </div>
 
-                                    {/* Resources references */}
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeResourcesLabel}</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => setEditingSession(prev => prev ? {
-                                                    ...prev,
-                                                    practice: {
-                                                        ...prev.practice!,
-                                                        resources: [...(prev.practice!.resources || []), { label: "", url: "" }]
-                                                    }
-                                                } : null)}
-                                                className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
-                                            >
-                                                <Plus className="size-3" />
-                                                {UI_TEXT.courseDetail.sessionPracticeAddResourceBtn}
-                                            </button>
-                                        </div>
-
-                                        <div className="flex flex-col gap-2">
-                                            {(editingSession.practice.resources || []).map((resource, resIdx) => (
-                                                <div key={resIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                                                    <input
-                                                        type="text"
-                                                        value={resource.label || ""}
-                                                        onChange={(e) => {
-                                                            const newResources = [...(editingSession.practice!.resources || [])];
-                                                            newResources[resIdx].label = e.target.value;
-                                                            setEditingSession(prev => prev ? {
-                                                                ...prev,
-                                                                practice: { ...prev.practice!, resources: newResources }
-                                                            } : null);
-                                                        }}
-                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceLabelPlaceholder}
-                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
-                                                        required
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={resource.url}
-                                                        onChange={(e) => {
-                                                            const newResources = [...(editingSession.practice!.resources || [])];
-                                                            newResources[resIdx].url = e.target.value;
-                                                            setEditingSession(prev => prev ? {
-                                                                ...prev,
-                                                                practice: { ...prev.practice!, resources: newResources }
-                                                            } : null);
-                                                        }}
-                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeResourceUrlPlaceholder}
-                                                        className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
-                                                        required
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newResources = (editingSession.practice!.resources || []).filter((_, rIdx) => rIdx !== resIdx);
-                                                            setEditingSession(prev => prev ? {
-                                                                ...prev,
-                                                                practice: { ...prev.practice!, resources: newResources }
-                                                            } : null);
-                                                        }}
-                                                        className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
-                                                        title="Xóa tài liệu"
-                                                    >
-                                                        <Trash2 className="size-3.5" />
-                                                    </button>
+                                    {/* Section 2: Resources */}
+                                    <div className="flex flex-col gap-4">
+                                        <h4 className="text-[11px] font-extrabold text-wine uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                                            {UI_TEXT.courseDetail.sessionTabResources}
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="flex flex-col gap-1.5 col-span-2">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMindmapLabel}</label>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[9px] text-slate-400 font-bold uppercase">{UI_TEXT.courseDetail.sessionShowMindmapLabel}</span>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!editingSession.isShowMindmap}
+                                                            onChange={(e) => setEditingSession(prev => prev ? { ...prev, isShowMindmap: e.target.checked } : null)}
+                                                            className="size-3.5 rounded border-slate-300 text-wine cursor-pointer accent-wine"
+                                                        />
+                                                    </div>
                                                 </div>
-                                            ))}
-                                            {(editingSession.practice.resources || []).length === 0 && (
-                                                <span className="text-[10px] text-slate-400 italic font-semibold">{UI_TEXT.courseDetail.sessionPracticeNoResources}</span>
-                                            )}
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.mindmap || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, mindmap: e.target.value } : null)}
+                                                    placeholder="https://example.com/mindmap.jpg"
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionSrsLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.srs || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, srs: e.target.value } : null)}
+                                                    placeholder="https://example.com/srs.pdf"
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPdfLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.pdf || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, pdf: e.target.value } : null)}
+                                                    placeholder="https://example.com/lecture.pdf"
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionMiniProjectLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.miniProject || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, miniProject: e.target.value } : null)}
+                                                    placeholder="https://example.com/miniproject.zip"
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionExerciseLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.exercise || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, exercise: e.target.value } : null)}
+                                                    placeholder="Bài tập..."
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionQuizziLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.quizzi || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, quizzi: e.target.value } : null)}
+                                                    placeholder="Quizzi..."
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 col-span-1">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionEntranceQuizLabel}</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingSession.practiceEntranceQuiz || ""}
+                                                    onChange={(e) => setEditingSession(prev => prev ? { ...prev, practiceEntranceQuiz: e.target.value } : null)}
+                                                    placeholder={UI_TEXT.courseDetail.sessionEntranceQuizPlaceholder}
+                                                    className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* Section 3: Practice */}
+                                    {editingSession.practice && (
+                                        <div className="flex flex-col gap-4">
+                                            <h4 className="text-[11px] font-extrabold text-wine uppercase tracking-wider border-b border-slate-100 pb-1.5">
+                                                {UI_TEXT.courseDetail.sessionTabPractice}
+                                            </h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-1">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeTypeLabel}</label>
+                                                    <select
+                                                        value={editingSession.practice.submissionType}
+                                                        onChange={(e) => setEditingSession(prev => prev ? {
+                                                            ...prev,
+                                                            practice: {
+                                                                ...prev.practice!,
+                                                                submissionType: e.target.value as "LINK" | "FILE" | "TEXT"
+                                                            }
+                                                        } : null)}
+                                                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
+                                                    >
+                                                        <option value="LINK">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeLink}</option>
+                                                        <option value="FILE">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeFile}</option>
+                                                        <option value="TEXT">{UI_TEXT.courseDetail.sessionPracticeSubmissionTypeText}</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5 col-span-2">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeContentLabel}</label>
+                                                    <textarea
+                                                        value={editingSession.practice.content}
+                                                        onChange={(e) => setEditingSession(prev => prev ? {
+                                                            ...prev,
+                                                            practice: {
+                                                                ...prev.practice!,
+                                                                content: e.target.value
+                                                            }
+                                                        } : null)}
+                                                        placeholder={UI_TEXT.courseDetail.sessionPracticeContentPlaceholder}
+                                                        rows={2}
+                                                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold resize-none"
+                                                    />
+                                                </div>
+
+                                                {/* Resources references */}
+                                                <div className="flex flex-col gap-2 col-span-2">
+                                                    <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+                                                        <label className="text-[10px] font-bold text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionPracticeResourcesLabel}</label>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEditingSession(prev => prev ? {
+                                                                ...prev,
+                                                                practice: {
+                                                                    ...prev.practice!,
+                                                                    resources: [...(prev.practice!.resources || []), { label: "", url: "" }]
+                                                                }
+                                                            } : null)}
+                                                            className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-700 font-bold transition cursor-pointer"
+                                                        >
+                                                            <Plus className="size-3" />
+                                                            {UI_TEXT.courseDetail.sessionPracticeAddResourceBtn}
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-2">
+                                                        {(editingSession.practice.resources || []).map((resource, resIdx) => (
+                                                            <div key={resIdx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                                                <input
+                                                                    type="text"
+                                                                    value={resource.label || ""}
+                                                                    onChange={(e) => {
+                                                                        const newResources = [...(editingSession.practice!.resources || [])];
+                                                                        newResources[resIdx].label = e.target.value;
+                                                                        setEditingSession(prev => prev ? {
+                                                                            ...prev,
+                                                                            practice: { ...prev.practice!, resources: newResources }
+                                                                        } : null);
+                                                                    }}
+                                                                    placeholder={UI_TEXT.courseDetail.sessionPracticeResourceLabelPlaceholder}
+                                                                    className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                                    required
+                                                                />
+                                                                <input
+                                                                    type="text"
+                                                                    value={resource.url}
+                                                                    onChange={(e) => {
+                                                                        const newResources = [...(editingSession.practice!.resources || [])];
+                                                                        newResources[resIdx].url = e.target.value;
+                                                                        setEditingSession(prev => prev ? {
+                                                                            ...prev,
+                                                                            practice: { ...prev.practice!, resources: newResources }
+                                                                        } : null);
+                                                                    }}
+                                                                    placeholder={UI_TEXT.courseDetail.sessionPracticeResourceUrlPlaceholder}
+                                                                    className="w-1/2 rounded-lg border border-slate-200 px-2 py-1 text-[11px] focus:outline-none focus:border-wine bg-white font-semibold"
+                                                                    required
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newResources = (editingSession.practice!.resources || []).filter((_, rIdx) => rIdx !== resIdx);
+                                                                        setEditingSession(prev => prev ? {
+                                                                            ...prev,
+                                                                            practice: { ...prev.practice!, resources: newResources }
+                                                                        } : null);
+                                                                    }}
+                                                                    className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition cursor-pointer shrink-0"
+                                                                    title="Xóa tài liệu"
+                                                                >
+                                                                    <Trash2 className="size-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        {(editingSession.practice.resources || []).length === 0 && (
+                                                            <span className="text-[10px] text-slate-400 italic font-semibold">{UI_TEXT.courseDetail.sessionPracticeNoResources}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            <div className="flex items-center gap-2.5 mt-2 w-full">
+                            <div className="flex items-center gap-2.5 mt-2 w-full border-t border-slate-100 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setIsEditSessionOpen(false)}
