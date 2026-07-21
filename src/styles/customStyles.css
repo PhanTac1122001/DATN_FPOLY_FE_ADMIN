@@ -157,3 +157,24 @@ button {
     scrollbar-width: thin;
     scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
 }
+
+/* Custom Red button style matching #A14747 without using arbitrary tailwind values in JSX */
+.btn-red-custom {
+    background-color: #A14747;
+    box-shadow: 0 4px 6px -1px rgba(161, 71, 71, 0.2), 0 2px 4px -2px rgba(161, 71, 71, 0.2);
+}
+.btn-red-custom:hover {
+    background-color: #8e3e3e;
+}
+.text-red-custom {
+    color: #A14747;
+}
+
+/* Hide scrollbars for chrome, safari, firefox, edge */
+.no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+}
+.no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+}

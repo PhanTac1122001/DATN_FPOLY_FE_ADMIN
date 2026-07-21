@@ -2793,8 +2793,8 @@ function SessionViewerWrapper({
     return (
         <div className="flex flex-col gap-4 flex-1 min-h-0 h-full">
             {/* Header */}
-            <div className="border-b border-slate-100 pb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
-                <div>
+            <div className="border-b border-slate-100 pb-3 flex flex-col gap-3 shrink-0">
+                <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                         {activeTab === "mindmap" && "Xem Mindmap chương"}
                         {activeTab === "pdf" && "Xem tài liệu PDF chương"}
@@ -2808,11 +2808,11 @@ function SessionViewerWrapper({
 
                 {/* Tabs switcher - only display configured tabs */}
                 {!noResources && (
-                    <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
+                    <div className="flex gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar whitespace-nowrap w-full">
                         {hasMindmap && (
                             <button
                                 onClick={() => onChangeTab("mindmap")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "mindmap"
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 text-center min-w-max ${activeTab === "mindmap"
                                     ? "bg-white text-slate-800 shadow-sm"
                                     : "text-slate-500 hover:text-slate-800"
                                     }`}
@@ -2823,7 +2823,7 @@ function SessionViewerWrapper({
                         {hasPdf && (
                             <button
                                 onClick={() => onChangeTab("pdf")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "pdf"
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 text-center min-w-max ${activeTab === "pdf"
                                     ? "bg-white text-slate-800 shadow-sm"
                                     : "text-slate-500 hover:text-slate-800"
                                     }`}
@@ -2834,7 +2834,7 @@ function SessionViewerWrapper({
                         {hasSrs && (
                             <button
                                 onClick={() => onChangeTab("srs")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "srs"
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 text-center min-w-max ${activeTab === "srs"
                                     ? "bg-white text-slate-800 shadow-sm"
                                     : "text-slate-500 hover:text-slate-800"
                                     }`}
@@ -2845,7 +2845,7 @@ function SessionViewerWrapper({
                         {hasMiniProject && (
                             <button
                                 onClick={() => onChangeTab("miniProject")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "miniProject"
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 text-center min-w-max ${activeTab === "miniProject"
                                     ? "bg-white text-slate-800 shadow-sm"
                                     : "text-slate-500 hover:text-slate-800"
                                     }`}
@@ -2856,7 +2856,7 @@ function SessionViewerWrapper({
                         {hasExercise && (
                             <button
                                 onClick={() => onChangeTab("exercise")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "exercise"
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 text-center min-w-max ${activeTab === "exercise"
                                     ? "bg-white text-slate-800 shadow-sm"
                                     : "text-slate-500 hover:text-slate-800"
                                     }`}
@@ -2867,7 +2867,7 @@ function SessionViewerWrapper({
                         {hasEntranceQuiz && (
                             <button
                                 onClick={() => onChangeTab("practiceEntranceQuiz")}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "practiceEntranceQuiz"
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-1 text-center min-w-max ${activeTab === "practiceEntranceQuiz"
                                     ? "bg-white text-slate-800 shadow-sm"
                                     : "text-slate-500 hover:text-slate-800"
                                     }`}
