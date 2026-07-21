@@ -17,6 +17,8 @@ import { toast } from "@/services/toast.service";
 import { type FilterState } from "@/types/filter.types";
 import { GenderEnum, RoleEnum, type Staff, StatusEnum, type UpdateStaffRequest } from "@/types/staff.types";
 
+const maxVisibleRoles = 2;
+
 export function StaffListView() {
     const queryClient = useQueryClient();
     const [search, setSearch] = useState("");
@@ -183,15 +185,15 @@ export function StaffListView() {
                             <p className="text-sm text-slate-500">{UI_TEXT.staff.noDataDesc}</p>
                         </div>
                     ) : (
-                        <table className="w-full min-w-[1200px] table-auto border-collapse text-left text-sm text-slate-700">
+                        <table className="w-full min-w-[1200px] table-auto border-collapse text-left text-sm text-ink">
                             <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 uppercase">
+                                <tr className="border-b border-line bg-slate-50/50 text-[11px] font-bold tracking-wider text-muted uppercase">
                                     <th className="w-12 px-6 py-4 text-center">{UI_TEXT.staff.thStt}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thName}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thContact}</th>
                                     <th className="w-24 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thGender}</th>
                                     <th className="w-24 px-6 py-4">{UI_TEXT.staff.thAddress}</th>
-                                    <th className="w-24 px-6 py-4 text-center">{UI_TEXT.staff.thRole}</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thStatus}</th>
                                     <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
@@ -200,59 +202,97 @@ export function StaffListView() {
                             <tbody>
                                 {filteredStaffs.map((staff, index) => (
                                     <tr key={staff.id} className="group transition duration-150 hover:bg-slate-50/40">
-                                        <td className="border-b border-slate-100 px-6 py-4 text-center font-semibold text-slate-400">{index + 1}</td>
-                                        <td className="border-b border-slate-100 px-6 py-4 whitespace-nowrap">
-                                            <div className="text-[14.5px] font-bold text-slate-900">{staff.fullName}</div>
+                                        <td className="border-b border-line px-6 py-4 text-center font-semibold text-muted">{index + 1}</td>
+                                        <td className="border-b border-line px-6 py-4 whitespace-nowrap">
+                                            <div className="text-[14.5px] font-bold text-ink">{staff.fullName}</div>
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4">
-                                            <div className="flex items-center gap-1.5 text-[13px] font-medium text-slate-600">
-                                                <Phone className="size-3.5 text-slate-400" />
+                                        <td className="border-b border-line px-6 py-4">
+                                            <div className="flex items-center gap-1.5 text-[13px] font-medium text-ink">
+                                                <Phone className="size-3.5 text-muted" />
                                                 <span>{staff.phone || UI_TEXT.common.noData}</span>
                                             </div>
-                                            <div className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-slate-500">
-                                                <Mail className="size-3.5 shrink-0 text-slate-400" />
+                                            <div className="mt-1 flex items-center gap-1.5 text-[13px] font-medium text-muted">
+                                                <Mail className="size-3.5 shrink-0 text-muted" />
                                                 <span className="max-w-[130px] truncate xl:max-w-[150px] 2xl:max-w-[180px]" title={staff.email}>
                                                     {staff.email}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4 text-center text-xs font-semibold whitespace-nowrap text-slate-500">
+                                        <td className="border-b border-line px-6 py-4 text-center text-xs font-semibold whitespace-nowrap text-muted">
                                             {staff.gender === GenderEnum.MALE
                                                 ? UI_TEXT.staff.genderMale
                                                 : staff.gender === GenderEnum.FEMALE
                                                   ? UI_TEXT.staff.genderFemale
                                                   : UI_TEXT.staff.genderOther}
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4">
-                                            <div className="flex items-center gap-1 text-[13px] text-slate-600">
-                                                <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                                        <td className="border-b border-line px-6 py-4">
+                                            <div className="flex items-center gap-1 text-[13px] text-ink">
+                                                <MapPin className="size-3.5 shrink-0 text-muted" />
                                                 <span className="max-w-[70px] truncate xl:max-w-[100px] 2xl:max-w-[130px]">
                                                     {staff.address || UI_TEXT.common.noData}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4 text-center">
-                                            <div className="mx-auto flex max-w-[90px] flex-wrap justify-center gap-1 xl:max-w-[110px] 2xl:max-w-[130px]">
-                                                {staff.roles.map((role) => (
-                                                    <Badge
-                                                        key={role.name}
-                                                        color={
-                                                            role.name === RoleEnum.ADMIN
-                                                                ? "error"
-                                                                : role.name === RoleEnum.MANAGER
-                                                                  ? "warning"
-                                                                  : role.name === RoleEnum.TEACHER
-                                                                    ? "brand"
-                                                                    : "gray"
-                                                        }
-                                                        size="sm"
-                                                    >
-                                                        {translateRole(role.name)}
-                                                    </Badge>
-                                                ))}
-                                            </div>
+                                        <td className="border-b border-line px-6 py-4 whitespace-nowrap">
+                                            {staff.roles.length > maxVisibleRoles ? (
+                                                <Tooltip
+                                                    placement="top"
+                                                    title={
+                                                        <div className="flex flex-col gap-1 py-0.5 text-left">
+                                                            {staff.roles.map((role) => (
+                                                                <div key={role.name} className="whitespace-nowrap">
+                                                                    {translateRole(role.name)}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    }
+                                                >
+                                                    <TooltipTrigger className="flex cursor-pointer items-center gap-1">
+                                                        {staff.roles.slice(0, maxVisibleRoles).map((role) => (
+                                                            <Badge
+                                                                key={role.name}
+                                                                color={
+                                                                    role.name === RoleEnum.ADMIN
+                                                                        ? "error"
+                                                                        : role.name === RoleEnum.MANAGER
+                                                                          ? "warning"
+                                                                          : role.name === RoleEnum.TEACHER
+                                                                            ? "brand"
+                                                                            : "gray"
+                                                                }
+                                                                size="sm"
+                                                            >
+                                                                {translateRole(role.name)}
+                                                            </Badge>
+                                                        ))}
+                                                        <Badge color="gray" size="sm">
+                                                            {`+${staff.roles.length - maxVisibleRoles}`}
+                                                        </Badge>
+                                                    </TooltipTrigger>
+                                                </Tooltip>
+                                            ) : (
+                                                <div className="flex items-center gap-1">
+                                                    {staff.roles.map((role) => (
+                                                        <Badge
+                                                            key={role.name}
+                                                            color={
+                                                                role.name === RoleEnum.ADMIN
+                                                                    ? "error"
+                                                                    : role.name === RoleEnum.MANAGER
+                                                                      ? "warning"
+                                                                      : role.name === RoleEnum.TEACHER
+                                                                        ? "brand"
+                                                                        : "gray"
+                                                            }
+                                                            size="sm"
+                                                        >
+                                                            {translateRole(role.name)}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4">
+                                        <td className="border-b border-line px-6 py-4">
                                             {staff.systemIds && staff.systemIds.length > 0 ? (
                                                 <div className="max-w-[120px] truncate xl:max-w-[160px]">
                                                     <Tooltip
@@ -270,25 +310,25 @@ export function StaffListView() {
                                                             </div>
                                                         }
                                                     >
-                                                        <TooltipTrigger className="block max-w-full cursor-pointer truncate text-[13px] font-semibold text-slate-600">
+                                                        <TooltipTrigger className="block max-w-full cursor-pointer truncate text-[13px] font-semibold text-ink">
                                                             {getSystemCodes(staff.systemIds)}
                                                         </TooltipTrigger>
                                                     </Tooltip>
                                                 </div>
                                             ) : (
-                                                <div className="text-[13px] font-semibold text-slate-600">{UI_TEXT.staff.systemNone}</div>
+                                                <div className="text-[13px] font-semibold text-ink">{UI_TEXT.staff.systemNone}</div>
                                             )}
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4 text-center whitespace-nowrap">
+                                        <td className="border-b border-line px-6 py-4 text-center whitespace-nowrap">
                                             <Badge color={staff.status === StatusEnum.ACTIVE ? "success" : "error"} size="sm">
                                                 {staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.statusActiveLabel : UI_TEXT.staff.statusDisableLabel}
                                             </Badge>
                                         </td>
-                                        <td className="sticky right-0 z-20 border-b border-slate-100 border-slate-200 bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50/40">
+                                        <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-cream/40">
                                             <div className="flex justify-center">
                                                 <Dropdown.Root>
-                                                    <Dropdown.DotsButton className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100" />
-                                                    <Dropdown.Popover className="z-50 w-48 rounded-xl border border-slate-100 bg-white shadow-xl ring-1 ring-slate-100">
+                                                    <Dropdown.DotsButton className="rounded-lg p-1.5 text-muted hover:bg-cream" />
+                                                    <Dropdown.Popover className="z-50 w-48 rounded-xl border border-line bg-white shadow-xl ring-1 ring-line">
                                                         <Dropdown.Menu>
                                                             <Dropdown.Item
                                                                 icon={Edit}
@@ -314,7 +354,7 @@ export function StaffListView() {
                                                                         : UI_TEXT.staff.unlockTooltip}
                                                                 </span>
                                                             </Dropdown.Item>
-                                                            <Dropdown.Separator className="my-1 bg-slate-100" />
+                                                            <Dropdown.Separator className="my-1 bg-line" />
                                                             <Dropdown.Item
                                                                 icon={Trash2}
                                                                 onAction={() => handleOpenDelete(staff)}
