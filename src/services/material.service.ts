@@ -12,7 +12,7 @@ export async function getSessionsByCourse(courseId: string): Promise<Session[]> 
     return res.data || res || [];
 }
 
-export async function createSession(body: { name: string; courseId: string }): Promise<Session> {
+export async function createSession(body: Omit<Session, "id" | "createdAt" | "position"> & { position?: number }): Promise<Session> {
     const res = await httpClient<any>("/api/staff/sessions", {
         method: HttpMethod.POST,
         body: JSON.stringify(body),
@@ -100,11 +100,15 @@ export async function deleteCourseClass(id: string): Promise<void> {
     await httpClient<any>(`/api/staff/course-classes/${id}`, { method: HttpMethod.DELETE });
 }
 
+export async function deleteSession(id: string): Promise<void> {
+    await httpClient<any>(`/api/staff/sessions/${id}`, { method: HttpMethod.DELETE });
+}
+
 export async function deleteLesson(id: string): Promise<void> {
     await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.DELETE });
 }
 
-export async function updateSession(id: string, body: Partial<{ name: string; position: number }>): Promise<Session> {
+export async function updateSession(id: string, body: Partial<Omit<Session, "id" | "createdAt">>): Promise<Session> {
     const res = await httpClient<any>(`/api/staff/sessions/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(body),
