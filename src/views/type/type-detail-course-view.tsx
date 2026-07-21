@@ -27,7 +27,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const [selectedLessonId, setSelectedLessonId] = useState("");
     const [selectedTab, setSelectedTab] = useState<"video" | "reading" | "quiz">("video");
     const [selectedSessionId, setSelectedSessionId] = useState("");
-    const [selectedSessionTab, setSelectedSessionTab] = useState<"mindmap" | "pdf" | "srs">("mindmap");
+    const [selectedSessionTab, setSelectedSessionTab] = useState<"mindmap" | "pdf" | "srs" | "miniProject" | "exercise" | "practiceEntranceQuiz">("mindmap");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [isAddSessionOpen, setIsAddSessionOpen] = useState(false);
     const [addSessionTab, setAddSessionTab] = useState<"general" | "resources" | "practice">("general");
@@ -519,7 +519,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 type="text"
                                                 value={newSessionFields.practiceEntranceQuiz}
                                                 onChange={(e) => setNewSessionFields(prev => ({ ...prev, practiceEntranceQuiz: e.target.value }))}
-                                                placeholder="Entrance Quiz..."
+                                                placeholder={UI_TEXT.courseDetail.sessionEntranceQuizPlaceholder}
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
@@ -856,7 +856,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 type="text"
                                                 value={editingSession.practiceEntranceQuiz || ""}
                                                 onChange={(e) => setEditingSession(prev => prev ? { ...prev, practiceEntranceQuiz: e.target.value } : null)}
-                                                placeholder="Entrance Quiz..."
+                                                placeholder={UI_TEXT.courseDetail.sessionEntranceQuizPlaceholder}
                                                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs focus:outline-none focus:border-wine bg-white font-semibold"
                                             />
                                         </div>
@@ -1157,10 +1157,10 @@ function SessionNode({
     index: number;
     selectedLessonId: string;
     selectedSessionId: string;
-    selectedSessionTab: "mindmap" | "pdf" | "srs";
+    selectedSessionTab: "mindmap" | "pdf" | "srs" | "miniProject" | "exercise" | "practiceEntranceQuiz";
     selectedTab: "video" | "reading" | "quiz";
     onSelectLesson: (id: string, tab: "video" | "reading" | "quiz") => void;
-    onSelectSession: (id: string, tab: "mindmap" | "pdf" | "srs") => void;
+    onSelectSession: (id: string, tab: "mindmap" | "pdf" | "srs" | "miniProject" | "exercise" | "practiceEntranceQuiz") => void;
     onEditSession: (session: Session) => void;
     onDeleteSession: (id: string, name: string) => void;
 }) {
@@ -1284,7 +1284,13 @@ function SessionNode({
                     <div
                         onClick={() => {
                             // Also select this session, opening the first available resource tab
-                            const defaultTab = session.mindmap ? "mindmap" : session.pdf ? "pdf" : "srs";
+                            const defaultTab = session.mindmap ? "mindmap"
+                                : session.pdf ? "pdf"
+                                : session.srs ? "srs"
+                                : session.miniProject ? "miniProject"
+                                : session.exercise ? "exercise"
+                                : session.practiceEntranceQuiz ? "practiceEntranceQuiz"
+                                : "mindmap";
                             onSelectSession(session.id, defaultTab);
                         }}
                         className="flex flex-col min-w-0 flex-1 cursor-pointer select-none group"
@@ -1328,8 +1334,8 @@ function SessionNode({
                 </div>
             </div>
 
-            {/* Session resources (Mindmap, PDF, SRS) */}
-            {(session.mindmap || session.pdf || session.srs) && (
+            {/* Session resources (Mindmap, PDF, SRS, Mini Project, Exercise, Entrance Quiz) */}
+            {(session.mindmap || session.pdf || session.srs || session.miniProject || session.exercise || session.practiceEntranceQuiz) && (
                 <div className="flex flex-wrap items-center gap-1.5 pl-[30px] mt-0.5 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
                     {session.mindmap && (
                         <button
@@ -1371,6 +1377,48 @@ function SessionNode({
                         >
                             <ScrollText className="size-2.5" />
                             <span>SRS</span>
+                        </button>
+                    )}
+                    {session.miniProject && (
+                        <button
+                            type="button"
+                            onClick={() => onSelectSession(session.id, "miniProject")}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${selectedSessionId === session.id && selectedSessionTab === "miniProject"
+                                ? "bg-amber-600 text-white"
+                                : "bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700"
+                                }`}
+                            title="Xem Mini Project chương học"
+                        >
+                            <File className="size-2.5" />
+                            <span>Mini Project</span>
+                        </button>
+                    )}
+                    {session.exercise && (
+                        <button
+                            type="button"
+                            onClick={() => onSelectSession(session.id, "exercise")}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${selectedSessionId === session.id && selectedSessionTab === "exercise"
+                                ? "bg-indigo-600 text-white"
+                                : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                                }`}
+                            title="Xem bài tập chương học"
+                        >
+                            <BookText className="size-2.5" />
+                            <span>Bài tập</span>
+                        </button>
+                    )}
+                    {session.practiceEntranceQuiz && (
+                        <button
+                            type="button"
+                            onClick={() => onSelectSession(session.id, "practiceEntranceQuiz")}
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition cursor-pointer ${selectedSessionId === session.id && selectedSessionTab === "practiceEntranceQuiz"
+                                ? "bg-purple-600 text-white"
+                                : "bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700"
+                                }`}
+                            title="Xem bài kiểm tra đầu vào thực hành"
+                        >
+                            <HelpCircle className="size-2.5" />
+                            <span>Kiểm tra đầu vào</span>
                         </button>
                     )}
                 </div>
@@ -2794,16 +2842,19 @@ function SessionViewerWrapper({
     onChangeTab,
 }: {
     session?: Session;
-    activeTab: "mindmap" | "pdf" | "srs";
-    onChangeTab: (tab: "mindmap" | "pdf" | "srs") => void;
+    activeTab: "mindmap" | "pdf" | "srs" | "miniProject" | "exercise" | "practiceEntranceQuiz";
+    onChangeTab: (tab: "mindmap" | "pdf" | "srs" | "miniProject" | "exercise" | "practiceEntranceQuiz") => void;
 }) {
     if (!session) return null;
 
     const hasMindmap = !!session.mindmap;
     const hasPdf = !!session.pdf;
     const hasSrs = !!session.srs;
+    const hasMiniProject = !!session.miniProject;
+    const hasExercise = !!session.exercise;
+    const hasEntranceQuiz = !!session.practiceEntranceQuiz;
 
-    const noResources = !hasMindmap && !hasPdf && !hasSrs;
+    const noResources = !hasMindmap && !hasPdf && !hasSrs && !hasMiniProject && !hasExercise && !hasEntranceQuiz;
 
     return (
         <div className="flex flex-col gap-4 flex-1 min-h-0 h-full">
@@ -2814,6 +2865,9 @@ function SessionViewerWrapper({
                         {activeTab === "mindmap" && "Xem Mindmap chương"}
                         {activeTab === "pdf" && "Xem tài liệu PDF chương"}
                         {activeTab === "srs" && "Xem tài liệu SRS chương"}
+                        {activeTab === "miniProject" && "Xem tài liệu Mini Project chương"}
+                        {activeTab === "exercise" && "Xem thông tin bài tập chương"}
+                        {activeTab === "practiceEntranceQuiz" && "Xem bài kiểm tra đầu vào thực hành"}
                     </span>
                     <h3 className="text-base font-extrabold text-blue-500 mt-0.5">{session.name}</h3>
                 </div>
@@ -2854,6 +2908,39 @@ function SessionViewerWrapper({
                                 SRS
                             </button>
                         )}
+                        {hasMiniProject && (
+                            <button
+                                onClick={() => onChangeTab("miniProject")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "miniProject"
+                                    ? "bg-white text-slate-800 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                                    }`}
+                            >
+                                Mini Project
+                            </button>
+                        )}
+                        {hasExercise && (
+                            <button
+                                onClick={() => onChangeTab("exercise")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "exercise"
+                                    ? "bg-white text-slate-800 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                                    }`}
+                            >
+                                Bài tập
+                            </button>
+                        )}
+                        {hasEntranceQuiz && (
+                            <button
+                                onClick={() => onChangeTab("practiceEntranceQuiz")}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === "practiceEntranceQuiz"
+                                    ? "bg-white text-slate-800 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-800"
+                                    }`}
+                            >
+                                Kiểm tra đầu vào
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -2863,7 +2950,7 @@ function SessionViewerWrapper({
                 {noResources ? (
                     <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-2 p-8 animate-fadeIn">
                         <Map className="size-8 text-slate-300" />
-                        <h4 className="text-xs font-bold text-slate-800">Chương này chưa được cấu hình học liệu (Mindmap, PDF, SRS)</h4>
+                        <h4 className="text-xs font-bold text-slate-800">Chương này chưa được cấu hình học liệu</h4>
                     </div>
                 ) : activeTab === "mindmap" && hasMindmap ? (
                     <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
@@ -3011,6 +3098,162 @@ function SessionViewerWrapper({
                                     >
                                         Mở liên kết tài liệu SRS <ExternalLink className="size-3.5" />
                                     </a>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : activeTab === "miniProject" && hasMiniProject ? (
+                    <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
+                        {(() => {
+                            const embedInfo = getEmbeddableUrl(session.miniProject || "");
+                            return embedInfo.canEmbed ? (
+                                <div className="flex flex-col gap-3 flex-1 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[400px]">
+                                            Đường dẫn: <a href={session.miniProject} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{session.miniProject}</a>
+                                        </span>
+                                        <a
+                                            href={session.miniProject}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black py-1.5 px-3 rounded-lg transition duration-150 cursor-pointer"
+                                        >
+                                            Mở trong tab mới <ExternalLink className="size-3" />
+                                        </a>
+                                    </div>
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full flex-1 shadow-sm">
+                                        <iframe
+                                            src={embedInfo.embedUrl}
+                                            className="w-full h-full border-none"
+                                            title="Mini Project preview"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 p-8">
+                                    <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                        <File className="size-7 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 max-w-[360px]">
+                                        <h4 className="text-sm font-black text-slate-800">Tài liệu Mini Project</h4>
+                                        <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                                            Xem hoặc tải xuống liên kết tài liệu Mini Project:
+                                        </p>
+                                    </div>
+                                    <a
+                                        href={session.miniProject}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2.5 px-6 rounded-xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/20"
+                                    >
+                                        Mở liên kết Mini Project <ExternalLink className="size-3.5" />
+                                    </a>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : activeTab === "exercise" && hasExercise ? (
+                    <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
+                        {(() => {
+                            const embedInfo = getEmbeddableUrl(session.exercise || "");
+                            const isUrl = session.exercise?.startsWith("http://") || session.exercise?.startsWith("https://");
+                            return isUrl && embedInfo.canEmbed ? (
+                                <div className="flex flex-col gap-3 flex-1 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[400px]">
+                                            Đường dẫn: <a href={session.exercise} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{session.exercise}</a>
+                                        </span>
+                                        <a
+                                            href={session.exercise}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black py-1.5 px-3 rounded-lg transition duration-150 cursor-pointer"
+                                        >
+                                            Mở trong tab mới <ExternalLink className="size-3" />
+                                        </a>
+                                    </div>
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full flex-1 shadow-sm">
+                                        <iframe
+                                            src={embedInfo.embedUrl}
+                                            className="w-full h-full border-none"
+                                            title="Exercise preview"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 p-8">
+                                    <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                        <BookText className="size-7 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 max-w-[360px]">
+                                        <h4 className="text-sm font-black text-slate-800">Nội dung / Liên kết bài tập</h4>
+                                        <p className="text-xs text-slate-400 font-semibold leading-relaxed break-all">
+                                            {session.exercise}
+                                        </p>
+                                    </div>
+                                    {isUrl && (
+                                        <a
+                                            href={session.exercise}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2.5 px-6 rounded-xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/20"
+                                        >
+                                            Mở liên kết bài tập <ExternalLink className="size-3.5" />
+                                        </a>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                ) : activeTab === "practiceEntranceQuiz" && hasEntranceQuiz ? (
+                    <div className="flex flex-col flex-1 h-full min-h-0 animate-fadeIn">
+                        {(() => {
+                            const embedInfo = getEmbeddableUrl(session.practiceEntranceQuiz || "");
+                            const isUrl = session.practiceEntranceQuiz?.startsWith("http://") || session.practiceEntranceQuiz?.startsWith("https://");
+                            return isUrl && embedInfo.canEmbed ? (
+                                <div className="flex flex-col gap-3 flex-1 h-full">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-slate-400 font-semibold truncate max-w-[400px]">
+                                            Đường dẫn: <a href={session.practiceEntranceQuiz} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{session.practiceEntranceQuiz}</a>
+                                        </span>
+                                        <a
+                                            href={session.practiceEntranceQuiz}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black py-1.5 px-3 rounded-lg transition duration-150 cursor-pointer"
+                                        >
+                                            Mở trong tab mới <ExternalLink className="size-3" />
+                                        </a>
+                                    </div>
+                                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white w-full flex-1 shadow-sm">
+                                        <iframe
+                                            src={embedInfo.embedUrl}
+                                            className="w-full h-full border-none"
+                                            title="Entrance Quiz preview"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col flex-1 items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/30 text-center gap-4 p-8">
+                                    <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                        <HelpCircle className="size-7 text-slate-400" />
+                                    </div>
+                                    <div className="flex flex-col gap-1 max-w-[360px]">
+                                        <h4 className="text-sm font-black text-slate-800">Bài kiểm tra đầu vào thực hành</h4>
+                                        <p className="text-xs text-slate-400 font-semibold leading-relaxed break-all">
+                                            {session.practiceEntranceQuiz}
+                                        </p>
+                                    </div>
+                                    {isUrl && (
+                                        <a
+                                            href={session.practiceEntranceQuiz}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white text-xs font-black py-2.5 px-6 rounded-xl transition duration-150 cursor-pointer shadow-md shadow-blue-500/20"
+                                        >
+                                            Mở bài kiểm tra đầu vào <ExternalLink className="size-3.5" />
+                                        </a>
+                                    )}
                                 </div>
                             );
                         })()}
