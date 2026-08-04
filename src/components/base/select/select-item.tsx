@@ -58,12 +58,12 @@ export const SelectItem = ({
             {(state) => (
                 <div
                     className={cx(
-                        "flex cursor-pointer items-center gap-2 text-sm text-slate-800 outline-hidden select-none",
-                        (state.isSelected || state.isFocused) && "bg-slate-100",
+                        "flex cursor-pointer items-center gap-2 text-md font-medium text-slate-800 outline-hidden transition-colors select-none",
+                        (state.isSelected || state.isFocused) && "bg-wine/10 font-bold text-wine",
                         state.isDisabled && "cursor-not-allowed opacity-50",
 
                         // Icon styles
-                        "*:data-icon:size-5 *:data-icon:shrink-0 *:data-icon:text-fg-quaternary",
+                        "*:data-icon:size-4 *:data-icon:shrink-0 *:data-icon:text-fg-quaternary",
                         state.isDisabled && "*:data-icon:text-fg-disabled",
 
                         SELECT_ITEM_SIZES[size],
@@ -78,12 +78,12 @@ export const SelectItem = ({
                     ) : null}
 
                     <div className="flex w-full min-w-0 flex-1 flex-wrap gap-x-2">
-                        <AriaText slot="label" className={cx("truncate text-sm whitespace-nowrap", state.isDisabled && "text-disabled")}>
+                        <AriaText slot="label" className={cx("truncate text-md font-medium whitespace-nowrap", state.isDisabled && "text-disabled")}>
                             {label || (typeof children === "function" ? children(state) : children)}
                         </AriaText>
 
                         {supportingText && (
-                            <AriaText slot="description" className={cx("text-sm whitespace-nowrap text-slate-600", state.isDisabled && "text-disabled")}>
+                            <AriaText slot="description" className={cx("text-sm whitespace-nowrap text-slate-500", state.isDisabled && "text-disabled")}>
                                 {supportingText}
                             </AriaText>
                         )}

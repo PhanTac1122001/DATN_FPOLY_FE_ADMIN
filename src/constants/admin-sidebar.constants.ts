@@ -1,4 +1,5 @@
 import {
+    BookOpen,
     Bookmark,
     Briefcase,
     Clock,
@@ -21,6 +22,7 @@ import {
 
 export const dtItems = [
     { label: "Hệ đào tạo", icon: PieChart, path: "/systems" },
+    { label: "Môn học", icon: BookOpen, path: "/courses" },
     { label: "Lớp", icon: Users, path: "/classes" },
     { label: "Quản lý nhóm mẫu", icon: Network, path: "/groupwork" },
     { label: "Nhân viên", icon: UserCheck, path: "/staff" },

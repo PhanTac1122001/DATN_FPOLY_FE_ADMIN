@@ -171,6 +171,14 @@
     /* #0C0E28 */
 
     /* Sidebar / nav shell */
+    --color-nav-100: rgb(203 206 243);
+    /* #CBCEF3 — inactive sidebar item */
+    --color-nav-200: rgb(192 196 239);
+    /* #C0C4EF */
+    --color-nav-300: rgb(183 188 236);
+    /* #B7BCEC — sidebar soft labels */
+    --color-nav-400: rgb(154 160 220);
+    /* #9AA0DC — sidebar group labels */
     --color-nav-500: rgb(69 74 114);
     /* #454A72 */
     --color-nav-600: rgb(58 62 95);

@@ -25,7 +25,7 @@ export async function getLessonsBySession(sessionId: string): Promise<Lesson[]> 
     return res.data || res || [];
 }
 
-export async function createLesson(body: { name: string; sessionId: string }): Promise<Lesson> {
+export async function createLesson(body: { name: string; sessionId: string; position?: number }): Promise<Lesson> {
     const res = await httpClient<any>("/api/staff/lessons", {
         method: HttpMethod.POST,
         body: JSON.stringify(body),
@@ -41,10 +41,78 @@ export async function configureLessonVideo(lessonId: string, formData: FormData)
     return res.data || res;
 }
 
+export async function deleteLessonVideo(lessonId: string): Promise<Lesson> {
+    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/video`, {
+        method: HttpMethod.DELETE,
+    });
+    return res.data || res;
+}
+
 export async function configureLessonReading(lessonId: string, formData: FormData): Promise<Lesson> {
     const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading`, {
         method: HttpMethod.POST,
         body: formData,
+    });
+    return res.data || res;
+}
+
+export async function configureLessonReadingHtml(lessonId: string, formData: FormData): Promise<Lesson> {
+    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading-html`, {
+        method: HttpMethod.POST,
+        body: formData,
+    });
+    return res.data || res;
+}
+
+export async function deleteLessonReading(lessonId: string): Promise<Lesson> {
+    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading`, {
+        method: HttpMethod.DELETE,
+    });
+    try {
+        await httpClient<any>(`/api/staff/lessons/${lessonId}`, {
+            method: HttpMethod.PUT,
+            body: JSON.stringify({ pdf: "" }),
+        });
+    } catch (e) {
+        console.error("Failed to clear root pdf field", e);
+    }
+    return res.data || res;
+}
+
+export async function updateSessionPractice(sessionId: string, body: any): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${sessionId}/practice`, {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(body),
+    });
+    return res.data || res;
+}
+
+export async function deleteSessionPractice(sessionId: string): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${sessionId}/practice`, {
+        method: HttpMethod.DELETE,
+    });
+    return res.data || res;
+}
+
+export async function addSessionPractice(sessionId: string, body: any): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${sessionId}/practices`, {
+        method: HttpMethod.POST,
+        body: JSON.stringify(body),
+    });
+    return res.data || res;
+}
+
+export async function updateSessionPracticeById(sessionId: string, practiceId: string, body: any): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${sessionId}/practices/${practiceId}`, {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(body),
+    });
+    return res.data || res;
+}
+
+export async function deleteSessionPracticeById(sessionId: string, practiceId: string): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${sessionId}/practices/${practiceId}`, {
+        method: HttpMethod.DELETE,
     });
     return res.data || res;
 }
@@ -60,6 +128,22 @@ export async function linkLessonQuiz(lessonId: string, quizId: string): Promise<
 export async function getQuizzesList(): Promise<Quiz[]> {
     const res = await httpClient<any>("/api/staff/quizzes", { method: HttpMethod.GET });
     return res.data || res || [];
+}
+
+export async function getQuizDetails(id: string): Promise<Quiz> {
+    const res = await httpClient<any>(`/api/staff/quizzes/${id}`, { method: HttpMethod.GET });
+    return res.data || res;
+}
+
+export async function updateQuiz(
+    id: string,
+    body: { title?: string; description?: string; passThreshold?: number; courseId?: string; questions?: any[] },
+): Promise<Quiz> {
+    const res = await httpClient<any>(`/api/staff/quizzes/${id}`, {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(body),
+    });
+    return res.data || res;
 }
 
 export async function getLessonDetails(id: string): Promise<Lesson> {

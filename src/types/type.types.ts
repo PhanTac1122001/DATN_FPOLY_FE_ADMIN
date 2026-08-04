@@ -34,3 +34,23 @@ export interface CourseListModalProps {
     semesterName: string;
     courses: Course[];
 }
+
+export interface TypeDetailCourseClientViewProps {
+    courseId: string;
+}
+
+export interface TypeDetailCourseViewProps {
+    id?: string;
+    courseId: string;
+}
+
+export interface SystemCourseItem {
+    id: string;
+    courseCode: string;
+    name: string;
+    hour?: number;
+    category?: string;
+    description?: string;
+    isVisible?: boolean;
+    position?: number;
+}

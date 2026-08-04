@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/base/buttons/button";
 import { CustomModal } from "@/components/ui/custom-modal";
 import type { ConfirmModalProps } from "@/types/application.types";
 import { cx } from "@/utils/cx";
@@ -18,28 +17,6 @@ export function ConfirmModal({
     icon,
     modalClassName,
 }: ConfirmModalProps & { icon?: React.ReactNode }) {
-    const getConfirmButtonColor = () => {
-        switch (variant) {
-            case "danger":
-                return "primary" as const; // We will use custom classes for the exact red
-            case "warning":
-                return "primary" as const;
-            default:
-                return "primary" as const;
-        }
-    };
-
-    const getCancelButtonColor = () => {
-        switch (variant) {
-            case "danger":
-                return "secondary" as const; // We will use custom classes for the exact red
-            case "warning":
-                return "secondary" as const;
-            default:
-                return "secondary" as const;
-        }
-    };
-
     // Figma design has a specific layout: Icon -> Title -> Message -> Buttons
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onClose}>
@@ -55,29 +32,32 @@ export function ConfirmModal({
                     </div>
 
                     {/* Buttons */}
-                    <div className="mt-4 flex w-full items-center justify-center gap-4">
+                    <div className="mt-5 flex w-full items-center justify-center gap-3">
                         {cancelText && (
-                            <Button
+                            <button
                                 type="button"
-                                color={getCancelButtonColor()}
-                                size="lg"
                                 onClick={onClose}
-                                isDisabled={isLoading}
-                                className="w-[auto] justify-center px-4 max-sm:w-[117px] sm:min-w-[140px]"
+                                disabled={isLoading}
+                                className={cx(
+                                    "w-1/3 cursor-pointer justify-center !rounded-full border border-slate-200 bg-slate-50 py-2.5 text-center text-xs font-bold text-slate-600 transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
+                                    variant === "danger" ? "hover:border-red-600 hover:bg-red-600 hover:text-white" : "hover:bg-slate-100 hover:text-slate-800",
+                                )}
                             >
                                 {cancelText}
-                            </Button>
+                            </button>
                         )}
-                        <Button
+                        <button
                             type="button"
-                            color={getConfirmButtonColor()}
-                            size="lg"
                             onClick={onConfirm}
-                            isLoading={isLoading}
-                            className={cx("justify-center px-4", cancelText ? "flex-1" : "min-w-[140px]")}
+                            disabled={isLoading}
+                            className={cx(
+                                "cursor-pointer justify-center !rounded-full py-2.5 text-center text-xs font-black text-white shadow-md shadow-blue-500/10 transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400",
+                                cancelText ? "w-2/3" : "w-full",
+                                variant === "danger" ? "bg-brand-600 shadow-brand-500/10 hover:bg-brand-700" : "bg-blue-600 hover:bg-blue-700",
+                            )}
                         >
                             {confirmText}
-                        </Button>
+                        </button>
                     </div>
                 </div>
             </CustomModal.Content>

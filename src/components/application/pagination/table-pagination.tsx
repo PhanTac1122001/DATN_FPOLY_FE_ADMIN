@@ -178,6 +178,7 @@ export function TablePagination({
                             placeholder={`${limit}${UI_TEXT.common.pagination.perPage}`}
                             size="sm"
                             isClearable={false}
+                            triggerClassName="!rounded-full "
                             items={limitOptions.map((opt) => ({
                                 id: opt.toString(),
                                 label: `${opt}${UI_TEXT.common.pagination.perPage}`,

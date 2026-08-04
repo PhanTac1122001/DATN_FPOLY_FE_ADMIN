@@ -2,7 +2,7 @@ import { getLocalTimeZone, today } from "@internationalized/date";
 import type { CalendarDate } from "@internationalized/date";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { TIME_DIGIT_PADDING } from "@/constants/date-time.constants";
+import { SECONDS_PER_MINUTE, TIME_DIGIT_PADDING } from "@/constants/date-time.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 
 /** Today in local timezone (for date pickers). */
@@ -38,12 +38,9 @@ export function utcToLocalString(utcTime: string) {
 /** Get current timestamp in milliseconds */
 export const getCurrentTimeMs = (): number => Date.now();
 
-const SECONDS_IN_MINUTE = 60;
-const PAD_LENGTH = 2;
-
 /** Format countdown seconds as "MM:SS" */
 export function formatOtpCountdown(seconds: number): string {
-    const mins = Math.floor(seconds / SECONDS_IN_MINUTE);
-    const secs = seconds % SECONDS_IN_MINUTE;
-    return `${String(mins).padStart(PAD_LENGTH, "0")}:${String(secs).padStart(PAD_LENGTH, "0")}`;
+    const mins = Math.floor(seconds / SECONDS_PER_MINUTE);
+    const secs = seconds % SECONDS_PER_MINUTE;
+    return `${String(mins).padStart(TIME_DIGIT_PADDING, "0")}:${String(secs).padStart(TIME_DIGIT_PADDING, "0")}`;
 }

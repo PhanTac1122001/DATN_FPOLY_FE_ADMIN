@@ -140,11 +140,11 @@ export function StaffListView() {
     });
 
     return (
-        <div className="flex w-full flex-col gap-8">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-hidden">
             {/* Filter Bar & Table Area */}
-            <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {/* Filters */}
-                <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                         <SearchFilters
                             search={search}
@@ -172,14 +172,14 @@ export function StaffListView() {
                 </div>
 
                 {/* Table list */}
-                <div className="overflow-x-auto">
+                <div className="flex-1 overflow-auto">
                     {isLoadingStaffs ? (
-                        <div className="flex min-h-[300px] flex-col items-center justify-center gap-4">
+                        <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-4">
                             <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
                             <p className="text-sm font-semibold text-slate-500">{UI_TEXT.staff.loading}</p>
                         </div>
                     ) : filteredStaffs.length === 0 ? (
-                        <div className="flex min-h-[300px] flex-col items-center justify-center gap-2 p-8 text-center">
+                        <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-2 p-8 text-center">
                             <AlertTriangle className="size-10 text-slate-300" />
                             <p className="text-base font-bold text-slate-800">{UI_TEXT.staff.noDataTitle}</p>
                             <p className="text-sm text-slate-500">{UI_TEXT.staff.noDataDesc}</p>
@@ -187,7 +187,7 @@ export function StaffListView() {
                     ) : (
                         <table className="w-full min-w-[1200px] table-auto border-collapse text-left text-sm text-ink">
                             <thead>
-                                <tr className="border-b border-line bg-slate-50/50 text-[11px] font-bold tracking-wider text-muted uppercase">
+                                <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
                                     <th className="w-12 px-6 py-4 text-center">{UI_TEXT.staff.thStt}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thName}</th>
                                     <th className="px-6 py-4">{UI_TEXT.staff.thContact}</th>
@@ -201,7 +201,7 @@ export function StaffListView() {
                             </thead>
                             <tbody>
                                 {filteredStaffs.map((staff, index) => (
-                                    <tr key={staff.id} className="group transition duration-150 hover:bg-slate-50/40">
+                                    <tr key={staff.id} className="group transition duration-150 hover:bg-slate-50">
                                         <td className="border-b border-line px-6 py-4 text-center font-semibold text-muted">{index + 1}</td>
                                         <td className="border-b border-line px-6 py-4 whitespace-nowrap">
                                             <div className="text-[14.5px] font-bold text-ink">{staff.fullName}</div>
@@ -324,7 +324,7 @@ export function StaffListView() {
                                                 {staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.statusActiveLabel : UI_TEXT.staff.statusDisableLabel}
                                             </Badge>
                                         </td>
-                                        <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-cream/40">
+                                        <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50">
                                             <div className="flex justify-center">
                                                 <Dropdown.Root>
                                                     <Dropdown.DotsButton className="rounded-lg p-1.5 text-muted hover:bg-cream" />

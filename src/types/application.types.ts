@@ -464,3 +464,9 @@ export interface TabComponentProps extends AriaTabProps {
     /** The badge displayed next to the label. */
     badge?: number | string;
 }
+
+export interface SidebarItem {
+    path: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+}

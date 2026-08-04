@@ -26,14 +26,7 @@ import { SelectFilterInput } from "./select-filter-input";
 
 const t = UI_TEXT.filter;
 
-export function AdvancedFilter({
-    fields,
-    value,
-    onChange,
-    maxConditions = DEFAULT_MAX_CONDITIONS,
-    trigger,
-    hideOperator = false,
-}: AdvancedFilterProps) {
+export function AdvancedFilter({ fields, value, onChange, maxConditions = DEFAULT_MAX_CONDITIONS, trigger, hideOperator = false }: AdvancedFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [position, setPosition] = useState({ top: 0, left: 0 });
 
@@ -133,7 +126,11 @@ export function AdvancedFilter({
                 // Check viewport boundaries
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
-                const dropdownWidth = hideOperator ? 400 : 600; // Approximate width
+                const defaultCompactWidth = 400;
+                const defaultFullWidth = 600;
+                const estimatedDropdownHeightVal = 300;
+
+                const dropdownWidth = hideOperator ? defaultCompactWidth : defaultFullWidth; // Approximate width
 
                 // Ensure dropdown doesn't go beyond right edge
                 if (left + dropdownWidth > viewportWidth) {
@@ -147,7 +144,7 @@ export function AdvancedFilter({
                 }
 
                 // Adjust if dropdown goes beyond bottom edge - show above if needed
-                const estimatedDropdownHeight = 300; // Approximate height
+                const estimatedDropdownHeight = estimatedDropdownHeightVal; // Approximate height
                 if (top + estimatedDropdownHeight > viewportHeight) {
                     // Show above trigger if not enough space below
                     top = rect.top - estimatedDropdownHeight - DROPDOWN_GAP;

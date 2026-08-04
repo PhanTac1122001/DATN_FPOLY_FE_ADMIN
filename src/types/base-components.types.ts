@@ -477,6 +477,7 @@ export interface SelectCommonProps {
 export interface SelectProps extends Omit<AriaSelectProps<SelectItemType>, "children" | "items">, RefAttributes<HTMLDivElement>, SelectCommonProps {
     items?: SelectItemType[];
     popoverClassName?: string;
+    triggerClassName?: string;
     placeholderIcon?: FC | ReactNode;
     trailingIcon?: FC | ReactNode;
     matchTriggerWidth?: boolean;
@@ -489,6 +490,7 @@ export interface SelectValueProps {
     isFocused: boolean;
     isDisabled: boolean;
     isInvalid: boolean;
+    triggerClassName?: string;
     placeholder?: string;
     trailingIcon?: FC | ReactNode;
     ref?: Ref<HTMLButtonElement>;

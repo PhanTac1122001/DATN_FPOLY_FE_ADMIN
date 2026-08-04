@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 import { ClassesClientView } from "@/views/classes/classes-client-view";
 
 export const metadata: Metadata = {
-    title: "Phân công giảng dạy | LMS Portal",
-    description: "Quản lý giảng dạy, phân giảng viên trợ giảng vào lớp hành chính",
+    title: `${UI_TEXT.classes.title} | ${UI_TEXT.common.appName}`,
+    description: UI_TEXT.classes.subtitle,
 };
 
 export default function ClassesPage() {

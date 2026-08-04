@@ -2,34 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { Clock } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { MILLISECONDS_PER_SECOND, TIME_DIGIT_PADDING } from "@/constants/date-time.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { useAuth } from "@/hooks/use-auth";
 import { RoleEnum } from "@/types/staff.types";
+import { NotificationBell } from "./notification-bell";
 
-const PAD_LENGTH = 2;
-const CLOCK_INTERVAL = 1000;
-
-export function AdminHeader({
-    title = "",
-    subtitle = "",
-}: {
-    title?: string;
-    subtitle?: string;
-}) {
+export function AdminHeader({ title = "", subtitle = "" }: { title?: string; subtitle?: string }) {
     const { user } = useAuth();
     const [time, setTime] = useState("");
 
     useEffect(() => {
         const updateClock = () => {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(PAD_LENGTH, "0");
-            const minutes = String(now.getMinutes()).padStart(PAD_LENGTH, "0");
+            const hours = String(now.getHours()).padStart(TIME_DIGIT_PADDING, "0");
+            const minutes = String(now.getMinutes()).padStart(TIME_DIGIT_PADDING, "0");
             setTime(`${hours}:${minutes}`);
         };
 
         updateClock();
-        const interval = setInterval(updateClock, CLOCK_INTERVAL);
+        const interval = setInterval(updateClock, MILLISECONDS_PER_SECOND);
         return () => clearInterval(interval);
     }, []);
 
@@ -58,41 +51,34 @@ export function AdminHeader({
     };
 
     return (
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-line bg-white/86 px-8 py-4 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-slate-200 bg-cream/86 px-8 py-4 backdrop-blur-[12px]">
             <div className="min-w-0">
-                <h1 className="font-display text-[20px] font-extrabold tracking-tight leading-normal text-ink">
-                    {title || UI_TEXT.common.appName}
-                </h1>
-                {subtitle && (
-                    <p className="mt-0.5 text-[12px] font-medium text-muted">
-                        {subtitle}
-                    </p>
-                )}
+                <h1 className="font-display text-[20px] leading-normal font-extrabold tracking-tight text-ink">{title || UI_TEXT.common.appName}</h1>
+                {subtitle && <p className="mt-0.5 text-[12px] font-medium text-muted">{subtitle}</p>}
             </div>
 
-            <div className="flex items-center gap-4 shrink-0">
+            <div className="flex shrink-0 items-center gap-4">
                 {/* Live Time indicator */}
                 <div className="flex items-center gap-1.5 rounded-full border border-wine/12 bg-wine-soft px-3 py-1.5 text-[12px] font-bold text-wine-deep">
                     <Clock className="size-3.5" />
                     <span>{time || "12:00"}</span>
                 </div>
 
+                {/* Notification Bell Icon */}
+                <NotificationBell />
+
                 {/* User profile indicator */}
                 <div className="flex items-center gap-2.5 rounded-full border border-line bg-white px-3 py-1 shadow-xs">
                     <div className="text-right">
-                        <div className="font-bold text-[13px] leading-tight text-ink">
-                            {user?.fullName || UI_TEXT.common.appName}
-                        </div>
-                        <div className="text-[10.5px] font-medium text-muted">
-                            {getRoleLabel(user?.roles, user?.role)}
-                        </div>
+                        <div className="text-[13px] leading-tight font-bold text-ink">{user?.fullName || UI_TEXT.common.appName}</div>
+                        <div className="text-[10.5px] font-medium text-muted">{getRoleLabel(user?.roles, user?.role)}</div>
                     </div>
                     <Avatar
                         size="sm"
                         src={user?.avatarUrl || undefined}
                         initials={getInitials(user?.fullName)}
                         alt={user?.fullName}
-                        className="bg-linear-to-br from-wine-bright to-wine text-white font-extrabold"
+                        className="bg-linear-to-br from-wine-bright to-wine font-extrabold text-white"
                     />
                 </div>
             </div>

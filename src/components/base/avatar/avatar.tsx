@@ -31,9 +31,17 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
     ) => {
         const [isFailed, setIsFailed] = useState(false);
 
+        const isValidUrl = (url?: string) => {
+            if (!url) return false;
+            if (url.startsWith("https://.") || url.startsWith("http://.")) return false;
+            return true;
+        };
+
         const renderMainContent = () => {
-            if (src && !isFailed) {
-                return <Image data-avatar-img className="rounded-full object-cover" src={src} alt={alt || ""} onError={() => setIsFailed(true)} fill />;
+            if (src && isValidUrl(src) && !isFailed) {
+                return (
+                    <Image data-avatar-img className="rounded-full object-cover" src={src} alt={alt || ""} onError={() => setIsFailed(true)} unoptimized fill />
+                );
             }
 
             if (initials) {

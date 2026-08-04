@@ -384,26 +384,6 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                     )}
                                 />
                             </div>
-
-                            {/* Whitelist (Bypass OTP) Toggle */}
-                            <div className="mt-2 mb-2 flex items-center justify-between border-t border-slate-100 pt-4">
-                                <div>
-                                    <label className="text-sm font-bold text-slate-800">{UI_TEXT.staff.labelWhitelist}</label>
-                                    <p className="mt-0.5 text-[11.5px] leading-normal text-slate-500">{UI_TEXT.staff.descWhitelist}</p>
-                                </div>
-                                <Controller
-                                    name="whitelist"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <input
-                                            type="checkbox"
-                                            checked={field.value}
-                                            onChange={(e) => field.onChange(e.target.checked)}
-                                            className="size-5 cursor-pointer accent-wine"
-                                        />
-                                    )}
-                                />
-                            </div>
                         </div>
 
                         {/* Footer */}

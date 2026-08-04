@@ -32,23 +32,25 @@ const SelectValue = ({
     onClear,
     ref,
     items,
+    triggerClassName,
 }: SelectValueProps & { items?: SelectItemType[] }) => {
     const state = useContext(SelectStateContext);
     const selectedKey = state?.selectedKey ?? null;
-    const selectedItem = (items && selectedKey !== null)
-        ? (items.find((item) => String(item.id) === String(selectedKey)) || null)
-        : (state?.selectedItem?.value as SelectItemType | null);
+    const selectedItem =
+        items && selectedKey !== null
+            ? items.find((item) => String(item.id) === String(selectedKey)) || null
+            : (state?.selectedItem?.value as SelectItemType | null);
 
     const Icon = selectedItem?.icon || placeholderIcon;
     return (
         <AriaButton
             ref={ref}
             className={cx(
-                "relative flex w-full cursor-pointer items-center rounded-full bg-primary shadow-xs ring-1 ring-primary outline-hidden transition duration-100 ease-linear ring-inset",
-                (isFocused || isOpen) && !isDisabled && !isInvalid && "custom-input-focus ring-2 ring-brand",
-                isDisabled && "cursor-not-allowed bg-disabled_subtle text-disabled",
-                isInvalid && "ring-error_subtle",
-                isInvalid && (isFocused || isOpen) && "custom-input-focus ring-2 ring-error",
+                "relative flex w-full cursor-pointer items-center rounded-full border border-slate-200 bg-white shadow-none ring-0 transition duration-150 ease-linear outline-none hover:border-slate-300",
+                (isFocused || isOpen) && !isDisabled && !isInvalid && "border-wine ring-1 ring-wine/20 outline-none",
+                isDisabled && "cursor-not-allowed bg-slate-100 text-slate-400",
+                isInvalid && "border-red-500 ring-0 outline-none",
+                triggerClassName,
             )}
         >
             <AriaSelectValue<SelectItemType>
@@ -71,13 +73,11 @@ const SelectValue = ({
 
                 {selectedItem ? (
                     <section className="flex w-full min-w-0 flex-1 items-center gap-2">
-                        <p className="block min-w-0 truncate">{selectedItem.label}</p>
-                        {selectedItem.supportingText && (
-                            <p className="block min-w-0 truncate text-md text-tertiary">{selectedItem.supportingText}</p>
-                        )}
+                        <p className="block min-w-0 truncate text-md font-medium text-slate-800">{selectedItem.label}</p>
+                        {selectedItem.supportingText && <p className="block min-w-0 truncate text-sm text-slate-500">{selectedItem.supportingText}</p>}
                     </section>
                 ) : (
-                    <p className={cx("block min-w-0 flex-1 truncate text-md text-placeholder", isDisabled && "text-disabled")}>{placeholder}</p>
+                    <p className={cx("block min-w-0 flex-1 truncate text-md font-medium text-slate-400", isDisabled && "text-disabled")}>{placeholder}</p>
                 )}
 
                 {isClearable && selectedItem && !isDisabled ? (
@@ -109,16 +109,12 @@ const SelectValue = ({
                         <span className="ml-auto shrink-0">{trailingIcon}</span>
                     )
                 ) : (
-                    <ChevronDown
-                        aria-hidden="true"
-                        className={cx("ml-auto shrink-0 text-fg-quaternary", size === "sm" ? "size-4 stroke-[2.5px]" : "size-5")}
-                    />
+                    <ChevronDown aria-hidden="true" className={cx("ml-auto shrink-0 text-fg-quaternary", size === "sm" ? "size-4 stroke-[2.5px]" : "size-5")} />
                 )}
             </AriaSelectValue>
         </AriaButton>
     );
 };
-
 
 export { SelectContext };
 
@@ -132,6 +128,7 @@ const Select = ({
     hint,
     tooltip,
     className,
+    triggerClassName,
     isInvalid,
     trailingIcon,
     isClearable = true,
@@ -174,6 +171,7 @@ const Select = ({
                             placeholderIcon={placeholderIcon}
                             trailingIcon={trailingIcon}
                             isClearable={isClearable}
+                            triggerClassName={triggerClassName}
                             onClear={() => {
                                 handleSelectionChange(null);
                             }}

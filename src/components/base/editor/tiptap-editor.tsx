@@ -63,7 +63,7 @@ export function TiptapEditor({ value, onChange, placeholder, readOnly, hideToolb
         editorProps: {
             attributes: {
                 class: cx(
-                    "tiptap prose-headings:font-be-vietnam-pro prose-iframe:mx-auto prose-iframe:block prose prose-sm !max-w-none focus:outline-none sm:prose lg:prose-lg xl:prose-2xl prose-headings:text-slate-900 prose-table:mx-auto prose-img:!my-0 prose-img:!inline-block prose-img:!w-auto prose-img:!max-w-full prose-img:rounded-3xl [&_td_img]:!mx-auto [&_td_img]:!block",
+                    "tiptap prose-headings:font-be-vietnam-pro prose-iframe:mx-auto prose-iframe:block prose prose-sm !max-w-none focus:outline-none prose-headings:text-slate-900 prose-table:mx-auto prose-img:!my-0 prose-img:!inline-block prose-img:!w-auto prose-img:!max-w-full prose-img:rounded-3xl [&_td_img]:!mx-auto [&_td_img]:!block",
                     !hideToolbar && "min-h-[200px] p-4",
                     editorClassName,
                 ),

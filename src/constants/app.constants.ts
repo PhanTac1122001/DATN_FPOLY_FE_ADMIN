@@ -7,6 +7,7 @@ export const APP_CONFIG = {
     DEFAULT_LOCALE: "vi",
     CONTACT_EMAIL: "support@lms-portal.local",
     DATE_FORMAT_DISPLAY: "dd/MM/yyyy",
+    DEFAULT_THEME_COLOR: "#800020",
 } as const;
 
 /**

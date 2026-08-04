@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
-import { useAuth } from "@/hooks/use-auth";
-import { useAppRouter } from "@/hooks/use-app-router";
-import { StaffListView } from "./staff-list-view";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { useAppRouter } from "@/hooks/use-app-router";
+import { useAuth } from "@/hooks/use-auth";
+import { StaffListView } from "./staff-list-view";
 
 export function StaffListClientView() {
     const { user, isLoading } = useAuth();
@@ -32,7 +32,7 @@ export function StaffListClientView() {
     }
 
     return (
-        <AdminLayout title={UI_TEXT.staff.title} subtitle={UI_TEXT.staff.subtitle}>
+        <AdminLayout title={UI_TEXT.staff.title} subtitle={UI_TEXT.staff.subtitle} disableScroll={true}>
             <StaffListView />
         </AdminLayout>
     );

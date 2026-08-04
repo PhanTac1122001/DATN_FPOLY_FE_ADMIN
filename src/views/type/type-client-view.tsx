@@ -32,7 +32,7 @@ export function TypeClientView() {
     }
 
     return (
-        <AdminLayout title={UI_TEXT.trainingTypesEl.title} subtitle={UI_TEXT.trainingTypesEl.subtitle}>
+        <AdminLayout title={UI_TEXT.trainingTypesEl.title} subtitle={UI_TEXT.trainingTypesEl.subtitle} disableScroll={true}>
             <TypeListView />
         </AdminLayout>
     );

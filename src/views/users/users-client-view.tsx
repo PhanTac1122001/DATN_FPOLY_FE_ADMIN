@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
-import { useAuth } from "@/hooks/use-auth";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
+import { useAuth } from "@/hooks/use-auth";
 import { UsersView } from "./users-view";
 
 export function UsersClientView() {
@@ -27,7 +28,7 @@ export function UsersClientView() {
     if (!user) return null;
 
     return (
-        <AdminLayout title="Quản lý học viên" subtitle="Danh sách và cấu hình thông tin học tập của học viên">
+        <AdminLayout title={UI_TEXT.studentsPage.title} subtitle={UI_TEXT.studentsPage.subtitle} disableScroll={true}>
             <UsersView />
         </AdminLayout>
     );
