@@ -25,3 +25,15 @@ export function resolveHttpOrUnknownErrorMessage(error: unknown, fallback: strin
     }
     return fallback;
 }
+
+export function extractErrorMessages(error: unknown, fallback?: string): string {
+    if (!(error instanceof HttpError)) {
+        return error instanceof Error ? error.message : fallback || "Đã xảy ra lỗi. Vui lòng thử lại.";
+    }
+    const payload = error.payload as { message?: string | string[] } | undefined;
+    const msg = payload?.message;
+    if (Array.isArray(msg)) return msg.join(", ");
+    if (typeof msg === "string") return msg;
+    return error.message || fallback || "Đã xảy ra lỗi. Vui lòng thử lại.";
+}
+

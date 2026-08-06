@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Play, Plus, Save, ShieldAlert } from "lucide-react";
 import type { Route } from "next";
-import { useRouter } from "next/navigation";
+import { useAppRouter } from "@/hooks/use-app-router";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { SessionTypeModal } from "@/components/application/modals/session-type-modal";
 import { LessonEditorWrapper } from "@/components/application/type-detail-course/components/lesson-editor-wrapper";
@@ -24,7 +24,7 @@ import { type Lesson, type Session, SessionTypeEnum } from "@/types/material.typ
 import type { TypeDetailCourseViewProps } from "@/types/type.types";
 
 export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps) {
-    const router = useRouter();
+    const router = useAppRouter();
     const queryClient = useQueryClient();
 
     const [selectedLessonId, setSelectedLessonId] = useState("");
@@ -61,11 +61,12 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const [deletingSession, setDeletingSession] = useState<{ id: string; name: string } | null>(null);
 
     const [isLessonDirty, setIsLessonDirty] = useState(false);
+    const [lessonResetKey, setLessonResetKey] = useState(0);
     const [isConfirmUnsavedOpen, setIsConfirmUnsavedOpen] = useState(false);
     const [isSessionTypeModalOpen, setIsSessionTypeModalOpen] = useState(false);
     const [isSessionSelectModalOpen, setIsSessionSelectModalOpen] = useState(false);
     const [isCompletionRuleModalOpen, setIsCompletionRuleModalOpen] = useState(false);
-    const [isLessonRuleModalOpen, setIsLessonRuleModalOpen] = useState(false);
+    const [_isLessonRuleModalOpen, _setIsLessonRuleModalOpen] = useState(false);
     const [ruleTargetSession, setRuleTargetSession] = useState<SessionSelectItem | null>(null);
     const [ruleTargetLesson, setRuleTargetLesson] = useState<{ id: string; name: string } | null>(null);
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -125,7 +126,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const sessionSaveRef = useRef<(() => void) | null>(null);
 
     // Queries
-    const { data: courseInfo } = useQuery({
+    const { data: courseInfo, isLoading: isLoadingCourseInfo } = useQuery({
         queryKey: ["course-info", courseId, id],
         queryFn: async () => {
             if (id) {
@@ -152,7 +153,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
 
     const activeSystemId = id || courseInfo?.systemId;
 
-    const { data: courses = [] } = useQuery({
+    const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
         queryKey: ["courses", activeSystemId],
         queryFn: () => getCoursesBySystem(activeSystemId!),
         enabled: !!activeSystemId,
@@ -164,7 +165,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         enabled: !!courseId,
     });
 
-    const { data: quizzes = [] } = useQuery({
+    const { data: quizzes = [], isLoading: isLoadingQuizzes } = useQuery({
         queryKey: ["quizzes-list"],
         queryFn: getQuizzesList,
     });
@@ -229,7 +230,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         },
     });
 
-    const handleSelectSessionNode = (sesId: string) => {
+    const _handleSelectSessionNode = (sesId: string) => {
         executeWithUnsavedCheck(() => {
             setSelectedSessionId(sesId);
             setSelectedLessonId("");
@@ -239,7 +240,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         });
     };
 
-    const handleEditSessionNode = (ses: Session) => {
+    const _handleEditSessionNode = (ses: Session) => {
         executeWithUnsavedCheck(() => {
             setEditingSession(ses);
             setSelectedSessionId("");
@@ -266,7 +267,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         });
     };
 
-    const handleSelectLessonNode = (lessonId: string) => {
+    const _handleSelectLessonNode = (lessonId: string) => {
         executeWithUnsavedCheck(() => {
             setSelectedLessonId(lessonId);
             setSelectedSessionId("");
@@ -374,6 +375,16 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
 
     const currentCourse = courseInfo?.course || courses.find((c) => c.id === courseId);
 
+    const isInitialDataLoading = isLoadingCourseInfo || (!!activeSystemId && isLoadingCourses) || loadingSessions || isLoadingQuizzes;
+
+    if (isInitialDataLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-cream">
+                <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
+            </div>
+        );
+    }
+
     return (
         <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-50">
             {/* Top Workspace Header Bar */}
@@ -383,10 +394,12 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                         type="button"
                         onClick={() => {
                             executeWithUnsavedCheck(() => {
-                                if (activeSystemId) {
+                                if (typeof window !== "undefined" && window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
+                                    router.back();
+                                } else if (activeSystemId) {
                                     router.push(`/type/${activeSystemId}` as Route);
                                 } else {
-                                    router.push("/type" as Route);
+                                    router.push("/course" as Route);
                                 }
                             });
                         }}
@@ -407,10 +420,10 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             onClick={() => {
                                 setIsSessionSelectModalOpen(true);
                             }}
-                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 shadow-xs"
+                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-brand-300  px-4 py-2 text-xs font-bold text-brand-800 transition hover:bg-brand-50 shadow-xs"
                         >
-                            <ShieldAlert className="size-4 text-amber-600" />
-                            <span>Điều kiện hoàn thành</span>
+                            <ShieldAlert className="size-4 text-brand-600" />
+                            <span>{UI_TEXT.typeDetailCourse.completionConditions}</span>
                         </button>
                     )}
                     <Button
@@ -440,11 +453,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 <div className="flex h-full w-[340px] shrink-0 flex-col overflow-hidden bg-white p-4 min-[1440px]:w-[380px]">
                     {/* Scrollable list of sessions */}
                     <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-                        {loadingSessions ? (
-                            <div className="flex flex-1 items-center justify-center py-12">
-                                <div className="size-6 animate-spin rounded-full border-2 border-slate-200 border-t-wine" />
-                            </div>
-                        ) : sessions.length === 0 ? (
+                        {sessions.length === 0 ? (
                             <div className="flex flex-1 items-center justify-center py-6">
                                 <div className="w-full rounded-xl border border-red-100 bg-red-50/40 p-4 text-center">
                                     <p className="text-red-custom text-xs font-extrabold">{UI_TEXT.courseDetail.noSessions}</p>
@@ -616,6 +625,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                 </div>
                             ) : (
                                 <LessonEditorWrapper
+                                    key={`${selectedLessonId}-${lessonResetKey}`}
                                     lessonId={selectedLessonId}
                                     quizzes={quizzes}
                                     activeTab={selectedTab}
@@ -664,6 +674,10 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 onBackToSessionSelect={() => {
                     setIsCompletionRuleModalOpen(false);
                     setIsSessionSelectModalOpen(true);
+                }}
+                onSelectLessonForRule={(lesson) => {
+                    setIsCompletionRuleModalOpen(false);
+                    setRuleTargetLesson(lesson);
                 }}
             />
 
@@ -727,6 +741,15 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     setPendingAction(null);
                 }}
                 onConfirm={() => {
+                    queryClient.removeQueries({ queryKey: ["lesson-details-editor"] });
+                    setLessonResetKey((prev) => prev + 1);
+                    if (editingSession && savedSessionFields) {
+                        setEditSessionFields(savedSessionFields);
+                    }
+                    if (isAddingSession) {
+                        setNewSessionFields(initialSessionFields);
+                    }
+                    setIsLessonDirty(false);
                     if (pendingAction) {
                         const actionToRun = pendingAction;
                         setPendingAction(null);

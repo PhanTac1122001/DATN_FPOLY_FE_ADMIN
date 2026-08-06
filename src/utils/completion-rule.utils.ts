@@ -10,8 +10,8 @@ import type {
     RuleOperator,
 } from "@/types/completion-rule.types";
 
-const OPERATORS: RuleOperator[] = ["ALL", "ANY", "AT_LEAST_N"];
-const KINDS: RuleItemKind[] = ["BLOCK", "LESSON"];
+const ruleOperators: RuleOperator[] = ["ALL", "ANY", "AT_LEAST_N"];
+const ruleKinds: RuleItemKind[] = ["BLOCK", "LESSON"];
 
 export function toRuleItemKey(kind: RuleItemKind, id: string): string {
     return `${kind}:${id}`;
@@ -22,7 +22,7 @@ export function parseRuleItemKey(key: string): RuleItemRef | null {
     if (idx <= 0) return null;
     const kind = key.slice(0, idx) as RuleItemKind;
     const id = key.slice(idx + 1);
-    if (!KINDS.includes(kind) || !id) return null;
+    if (!ruleKinds.includes(kind) || !id) return null;
     return { kind, id };
 }
 
@@ -36,7 +36,7 @@ export function createDefaultGroupDraft(): RuleGroupDraft {
 }
 
 function normalizeOperator(value: unknown): RuleOperator {
-    return OPERATORS.includes(value as RuleOperator) ? (value as RuleOperator) : "ALL";
+    return ruleOperators.includes(value as RuleOperator) ? (value as RuleOperator) : "ALL";
 }
 
 function scopeModeFromItems(items: RuleItemRef[] | undefined, hasItemsKey: boolean): RuleItemScopeMode {
@@ -60,7 +60,7 @@ export function normalizeRuleFromApi(rule: CompletionRule | null | undefined): R
             .map((ref) => {
                 const kind = ref?.kind as RuleItemKind | undefined;
                 const id = ref?.id != null ? String(ref.id) : "";
-                if (!kind || !KINDS.includes(kind) || !id) return null;
+                if (!kind || !ruleKinds.includes(kind) || !id) return null;
                 return toRuleItemKey(kind, id);
             })
             .filter((k): k is string => !!k);
@@ -195,3 +195,12 @@ export function validateDraftsForSubmit(drafts: RuleGroupDraft[]): string | null
     }
     return null;
 }
+
+export function isDefaultLessonRule(rule: CompletionRule | null | undefined): boolean {
+    if (!rule || !Array.isArray(rule.groups) || rule.groups.length !== 1) return false;
+    const g = rule.groups[0];
+    if (g?.operator !== "ALL") return false;
+    if (g?.items !== undefined) return false;
+    return true;
+}
+

@@ -1,19 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookText, ChevronDown, ChevronRight, FileText, GripVertical, Pencil, ShieldCheck, Trash2, Video } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
-import { UI_TEXT } from "@/constants/ui-text.constants";
+import { coursewareService } from "@/services/courseware.service";
 import { deleteLessonReading, deleteLessonVideo, linkLessonQuiz } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import type { LessonNodeProps } from "@/types/courseware.types";
+
+import { BlockTypeEnum } from "@/constants/application.constants";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 
 export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLesson, onDelete, onEdit, onOpenCompletionRule, isDeletePending }: LessonNodeProps) {
     const queryClient = useQueryClient();
     const [isExpanded, setIsExpanded] = useState(false);
     const [deletingSubConfig, setDeletingSubConfig] = useState<"video" | "reading" | "quiz" | null>(null);
     const isSelected = lesson.id === selectedLessonId;
+
+    const { data: lessonBlocks = [] } = useQuery({
+        queryKey: ["lesson-blocks", lesson.id],
+        queryFn: () => coursewareService.getLessonBlocks(lesson.id),
+        enabled: !!lesson.id,
+    });
 
     const deleteSubConfigMutation = useMutation({
         mutationFn: async (type: "video" | "reading" | "quiz") => {
@@ -53,6 +62,26 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
         readingContent !== "Tài liệu bài đọc";
     const hasReadingConfig = !!(lesson.reading?.pdf?.trim() || lesson.pdf?.trim() || hasReadingContent || lesson.reading?.htmlUrl?.trim());
     const hasVideoConfig = !!(lesson.video?.url?.trim() || lesson.videoUrl?.trim());
+    const hasQuizConfig = !!(lesson.quizId?.trim() || (lesson as unknown as Record<string, unknown>).quiz);
+
+
+    const videoBlock = lessonBlocks.find((b) => b.type.toUpperCase() === BlockTypeEnum.VIDEO);
+    const readingBlock = lessonBlocks.find((b) => b.type.toUpperCase() === BlockTypeEnum.READING);
+    const quizBlock = lessonBlocks.find((b) => b.type.toUpperCase() === BlockTypeEnum.QUIZ);
+
+    const isVideoRequired = videoBlock
+        ? videoBlock.isRequired !== false
+        : hasVideoConfig && (lesson.video as unknown as Record<string, unknown>)?.isRequired !== false;
+
+    const isReadingRequired = readingBlock
+        ? readingBlock.isRequired !== false
+        : hasReadingConfig && (lesson.reading as unknown as Record<string, unknown>)?.isRequired !== false;
+
+    const isQuizRequired = quizBlock
+        ? quizBlock.isRequired !== false
+        : hasQuizConfig &&
+        ((lesson as unknown as Record<string, unknown>).quiz as Record<string, unknown> | undefined)?.isRequired !== false &&
+        (lesson as unknown as Record<string, unknown>).isQuizRequired !== false;
 
     return (
         <div className="flex w-full flex-col gap-1">
@@ -95,7 +124,7 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                                 onOpenCompletionRule(lesson);
                             }}
                             className="cursor-pointer p-1 text-slate-400 transition duration-150 hover:text-wine"
-                            title="Điều kiện hoàn thành bài học"
+                            title={UI_TEXT.lessonNode.completionRuleTooltip}
                         >
                             <ShieldCheck className="size-3.5 text-wine/80 hover:text-wine" />
                         </button>
@@ -143,19 +172,29 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                             <Video className="size-3.5 shrink-0" />
                             <span className="truncate">{UI_TEXT.lessonNode.videoConfig}</span>
                         </div>
-                        {hasVideoConfig && (
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeletingSubConfig("video");
-                                }}
-                                className={`shrink-0 cursor-pointer p-0.5 text-red-500 transition duration-150 hover:text-red-600 ${isSelected && selectedTab === "video" ? "opacity-100" : "opacity-0 group-hover/sub:opacity-100"}`}
-                                title={UI_TEXT.lessonNode.deleteVideoConfigTooltip}
-                            >
-                                <Trash2 className="size-3.5" />
-                            </button>
-                        )}
+                        <div className="flex shrink-0 items-center justify-end gap-1.5">
+                            {isVideoRequired && (
+                                <span className="rounded-md border border-red-100 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
+                                    {UI_TEXT.lessonNode.requiredTag}
+                                </span>
+                            )}
+                            {hasVideoConfig ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingSubConfig("video");
+                                    }}
+                                
+                                    className={`cursor-pointer p-0.5 text-red-500 transition duration-150 hover:text-red-600 ${isSelected && selectedTab === "video" ? "opacity-100" : "opacity-0 group-hover/sub:opacity-100"}`}
+                                    title={UI_TEXT.lessonNode.deleteVideoConfigTooltip}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                </button>
+                            ) : (
+                                <div className="w-[18px]" />
+                            )}
+                        </div>
                     </div>
 
                     <div
@@ -170,19 +209,28 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                             <FileText className="size-3.5 shrink-0" />
                             <span className="truncate">{UI_TEXT.lessonNode.readingConfig}</span>
                         </div>
-                        {hasReadingConfig && (
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeletingSubConfig("reading");
-                                }}
-                                className={`shrink-0 cursor-pointer p-0.5 text-red-500 transition duration-150 hover:text-red-600 ${isSelected && selectedTab === "reading" ? "opacity-100" : "opacity-0 group-hover/sub:opacity-100"}`}
-                                title={UI_TEXT.lessonNode.deleteReadingConfigTooltip}
-                            >
-                                <Trash2 className="size-3.5" />
-                            </button>
-                        )}
+                        <div className="flex shrink-0 items-center justify-end gap-1.5">
+                            {isReadingRequired && (
+                                <span className="rounded-md border border-red-100 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
+                                    {UI_TEXT.lessonNode.requiredTag}
+                                </span>
+                            )}
+                            {hasReadingConfig ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingSubConfig("reading");
+                                    }}
+                                    className={`cursor-pointer p-0.5 text-red-500 transition duration-150 hover:text-red-600 ${isSelected && selectedTab === "reading" ? "opacity-100" : "opacity-0 group-hover/sub:opacity-100"}`}
+                                    title={UI_TEXT.lessonNode.deleteReadingConfigTooltip}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                </button>
+                            ) : (
+                                <div className="w-[18px]" />
+                            )}
+                        </div>
                     </div>
 
                     <div
@@ -196,6 +244,29 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                             <BookText className="size-3.5 shrink-0" />
                             <span className="truncate">{UI_TEXT.lessonNode.quizConfig}</span>
+                        </div>
+                        <div className="flex shrink-0 items-center justify-end gap-1.5">
+                            {isQuizRequired && (
+                                <span className="shrink-0 rounded-md border border-red-100 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
+                                    {UI_TEXT.lessonNode.requiredTag}
+                                </span>
+                            )}
+                            {hasQuizConfig ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeletingSubConfig("quiz");
+                                    }}
+                                 
+                                    className={`cursor-pointer p-0.5 text-red-500 transition duration-150 hover:text-red-600 ${isSelected && selectedTab === "quiz" ? "opacity-100" : "opacity-0 group-hover/sub:opacity-100"}`}
+                                    title={UI_TEXT.lessonNode.deleteQuizTitle}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                </button>
+                            ) : (
+                                <div className="w-[18px]" />
+                            )}
                         </div>
                     </div>
                 </div>

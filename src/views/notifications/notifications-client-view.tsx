@@ -32,7 +32,7 @@ export function NotificationsClientView() {
     }
 
     return (
-        <AdminLayout title="Quản lý Thông báo" subtitle="Tạo, xem và quản lý danh sách thông báo realtime gửi tới sinh viên" disableScroll={true}>
+        <AdminLayout title={UI_TEXT.notifications.adminTitle} subtitle={UI_TEXT.notifications.adminSubtitle} disableScroll={true}>
             <NotificationsView />
         </AdminLayout>
     );

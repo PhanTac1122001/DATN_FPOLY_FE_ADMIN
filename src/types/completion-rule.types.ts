@@ -1,3 +1,8 @@
+export enum RuleOperatorEnum {
+    ALL = "ALL",
+    ANY = "ANY",
+    AT_LEAST_N = "AT_LEAST_N",
+}
 export type RuleOperator = "ALL" | "ANY" | "AT_LEAST_N";
 export type RuleItemKind = "BLOCK" | "LESSON";
 
@@ -62,4 +67,33 @@ export interface SessionCompletionRuleModalProps {
     sessionName?: string;
     sessions?: Array<{ id: string; name: string }>;
     onBackToSessionSelect?: () => void;
+    onSelectLessonForRule?: (lesson: { id: string; name: string }) => void;
 }
+
+export interface LessonCompletionRuleSectionProps {
+    lessonId: string;
+    onIsDirtyChange?: (dirty: boolean) => void;
+    onRegisterSave?: (saveFn: () => Promise<void>) => void;
+}
+
+export interface SessionSelectItem {
+    id: string;
+    name: string;
+    type?: string;
+}
+
+export interface SessionSelectModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    sessions: SessionSelectItem[];
+    onSelectSession: (session: SessionSelectItem) => void;
+}
+
+export interface LessonCompletionRuleModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    lessonId?: string;
+    lessonTitle?: string;
+    lessonName?: string;
+}
+

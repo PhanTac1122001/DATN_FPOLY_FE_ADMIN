@@ -1,3 +1,5 @@
+export type CourseRpointTabType = "linear" | "tiers" | "bonus";
+
 export interface AddRpointBonusModalProps {
     isOpen: boolean;
     onClose: () => void;

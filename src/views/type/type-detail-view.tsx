@@ -31,36 +31,9 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
 
             const courses = await getCoursesBySystem(id);
 
-            // Default initial mock courses if empty
-            const initialCourses =
-                courses.length > 0
-                    ? courses
-                    : [
-                          {
-                              id: "crs-001",
-                              courseCode: "MH-FRONTEND",
-                              name: "Lập trình Web Frontend nâng cao",
-                              hour: 45,
-                              category: UI_TEXT.trainingTypesEl.defaultCategory,
-                              description: UI_TEXT.trainingTypesEl.mockCourse1Desc,
-                              isVisible: true,
-                              position: 1,
-                          },
-                          {
-                              id: "crs-002",
-                              courseCode: "MH-BACKEND",
-                              name: "Lập trình Backend Node.js & NestJS",
-                              hour: 60,
-                              category: "Lập trình Backend",
-                              description: UI_TEXT.trainingTypesEl.mockCourse2Desc,
-                              isVisible: true,
-                              position: 2,
-                          },
-                      ];
-
             return {
                 system,
-                courses: initialCourses,
+                courses,
             };
         },
     });

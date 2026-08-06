@@ -106,6 +106,8 @@ export function ReadingConfigTab({
     const mainHtmlFileIndex = htmlFiles.findIndex((f) => f.name.toLowerCase().endsWith(".html") || f.name.toLowerCase().endsWith(".htm"));
     const mainHtmlFile = htmlFiles[mainHtmlFileIndex >= 0 ? mainHtmlFileIndex : 0] || htmlFiles[0];
     const activePreviewFile = htmlFiles[activeFileIndex] || mainHtmlFile;
+    const savedHtmlPreviewUrl = savedHtmlUrl || (file ? URL.createObjectURL(file) : pdfUrl || savedPdf || "");
+
 
     const getFilePath = (f: File) => {
         return f.webkitRelativePath || f.name;
@@ -157,7 +159,9 @@ export function ReadingConfigTab({
     const getAnswerText = (q: unknown) => {
         if (!q) return "";
         const qObj = q as Record<string, unknown>;
-        const val = qObj.answer ?? qObj.answerText ?? qObj.solution ?? qObj.explanation ?? "";
+        const opts = Array.isArray(qObj.options) ? qObj.options : [];
+        const firstOpt = opts[0] as Record<string, unknown> | undefined;
+        const val = qObj.answer ?? qObj.answerText ?? qObj.solution ?? qObj.explanation ?? firstOpt?.content ?? "";
         return stripHtml(typeof val === "string" ? val : String(val));
     };
 
@@ -242,12 +246,12 @@ export function ReadingConfigTab({
                                     <div className="flex shrink-0 items-center gap-2">
                                         {(htmlFiles.length > 0 && activePreviewFile
                                             ? URL.createObjectURL(activePreviewFile)
-                                            : savedHtmlUrl || (file ? URL.createObjectURL(file) : pdfUrl)) && (
+                                            : savedHtmlPreviewUrl) ? (
                                             <a
                                                 href={
                                                     htmlFiles.length > 0 && activePreviewFile
                                                         ? URL.createObjectURL(activePreviewFile)
-                                                        : savedHtmlUrl || (file ? URL.createObjectURL(file) : pdfUrl)
+                                                        : savedHtmlPreviewUrl
                                                 }
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -257,7 +261,7 @@ export function ReadingConfigTab({
                                                 <ExternalLink className="size-3.5" />
                                                 <span>{UI_TEXT.readingConfigTab.viewLink}</span>
                                             </a>
-                                        )}
+                                        ) : null}
                                         {htmlFiles.length > 0 && (
                                             <button
                                                 type="button"
@@ -339,13 +343,18 @@ export function ReadingConfigTab({
                                             sandbox="allow-scripts allow-popups"
                                         />
                                     )
-                                ) : (
+                                ) : savedHtmlPreviewUrl ? (
                                     <iframe
-                                        src={savedHtmlUrl || (file ? URL.createObjectURL(file) : pdfUrl)}
+                                        src={savedHtmlPreviewUrl}
                                         className="h-full w-full border-none"
                                         title={UI_TEXT.learningMaterials.previewTitle}
                                         sandbox="allow-scripts allow-popups"
                                     />
+                                ) : (
+                                    <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center text-slate-400">
+                                        <FileCode className="size-10 text-slate-300" />
+                                        <p className="text-xs font-medium">{UI_TEXT.learningMaterials.emptyReadingTitle}</p>
+                                    </div>
                                 )}
                             </div>
                         </div>

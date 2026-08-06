@@ -1,12 +1,15 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useAuth } from "@/hooks/use-auth";
 import type { TypeDetailCourseClientViewProps } from "@/types/type.types";
-import { TypeDetailCourseView } from "./type-detail-course-view";
+
+const TypeDetailCourseView = lazy(() =>
+    import("./type-detail-course-view").then((mod) => ({ default: mod.TypeDetailCourseView }))
+);
 
 export function TypeDetailCourseClientView({ courseId }: TypeDetailCourseClientViewProps) {
     const { user, isLoading } = useAuth();
@@ -32,7 +35,7 @@ export function TypeDetailCourseClientView({ courseId }: TypeDetailCourseClientV
         <AdminLayout title={UI_TEXT.learningMaterials.title} subtitle={UI_TEXT.learningMaterials.subtitle} disableScroll={true} hideSidebarAndHeader={true}>
             <Suspense
                 fallback={
-                    <div className="flex h-[300px] items-center justify-center">
+                    <div className="flex min-h-screen items-center justify-center bg-cream">
                         <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
                     </div>
                 }

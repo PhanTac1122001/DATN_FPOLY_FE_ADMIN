@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ChevronDown, ChevronRight, FileText, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
-import { Button } from "@/components/base/buttons/button";
 import { TiptapEditor } from "@/components/base/editor";
-import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { BlockTypeEnum } from "@/constants/application.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { coursewareService } from "@/services/courseware.service";
 import { toast } from "@/services/toast.service";
 import type { CoursewareBlockEntity } from "@/types/completion-rule.types";
 import { NEW_PRACTICE_ID_FLAG, type SessionPracticeEditorProps, SubmissionTypeEnum } from "@/types/courseware.types";
-import { PracticeFormFields } from "./practice-form-fields";
+import { PracticeFormModal } from "../modals/practice-form-modal";
 
 export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPracticeEditorProps) {
     const queryClient = useQueryClient();
@@ -20,28 +19,16 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
     const [deletingPractice, setDeletingPractice] = useState<CoursewareBlockEntity | null>(null);
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
-    // Modal form fields
-    const [practiceTitle, setPracticeTitle] = useState("Bài thực hành cấp buổi");
-    const [submissionType, setSubmissionType] = useState<"LINK" | "FILE" | "TEXT">(SubmissionTypeEnum.LINK);
-    const [content, setContent] = useState("");
-    const [resources, setResources] = useState<{ label: string; url: string }[]>([]);
-    const [isRequired, setIsRequired] = useState(true);
-
     const { data: sessionBlocks = [] } = useQuery({
         queryKey: ["session-blocks", session.id],
         queryFn: () => coursewareService.getSessionBlocks(session.id),
         enabled: !!session.id,
     });
 
-    const practiceBlocks = sessionBlocks.filter((b) => b.type === "PRACTICE" || b.type === "ASSIGNMENT");
+    const practiceBlocks = sessionBlocks.filter((b) => b.type === BlockTypeEnum.PRACTICE || b.type === BlockTypeEnum.HOMEWORK);
 
     const openCreateModal = useCallback(() => {
         setEditingPractice(null);
-        setPracticeTitle("Bài thực hành cấp buổi");
-        setSubmissionType(SubmissionTypeEnum.LINK);
-        setContent("");
-        setResources([]);
-        setIsRequired(true);
         setIsModalOpen(true);
     }, []);
 
@@ -59,56 +46,8 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
 
     const openEditModal = (b: CoursewareBlockEntity) => {
         setEditingPractice(b);
-        setPracticeTitle(b.title || "Bài thực hành cấp buổi");
-        const payload = b.payload || {};
-        setSubmissionType((payload.submissionType as "LINK" | "FILE" | "TEXT") || SubmissionTypeEnum.LINK);
-        setContent((payload.content as string) || "");
-        const rawRes = payload.resources as Array<{ label?: string; url?: string }> | undefined;
-        setResources(rawRes ? rawRes.map((r) => ({ label: r.label || "", url: r.url || "" })) : []);
-        setIsRequired(b.isRequired !== false);
         setIsModalOpen(true);
     };
-
-    const saveMutation = useMutation({
-        mutationFn: async () => {
-            const cleanResources = resources.filter((r) => r.url.trim() !== "");
-            const payload = {
-                submissionType,
-                content: content.trim(),
-                resources: cleanResources,
-            };
-
-            if (editingPractice) {
-                return coursewareService.updateBlock(editingPractice.id, {
-                    title: practiceTitle.trim() || "Bài thực hành cấp buổi",
-                    isRequired,
-                    payload,
-                });
-            } else {
-                return coursewareService.createSessionBlock(session.id, {
-                    type: "PRACTICE",
-                    title: practiceTitle.trim() || "Bài thực hành cấp buổi",
-                    isRequired,
-                    payload,
-                    completionCriteria: {
-                        requireSubmission: true,
-                    },
-                });
-            }
-        },
-        onSuccess: () => {
-            toast.success(
-                UI_TEXT.courseClassModal.toastCreateSuccessTitle,
-                editingPractice ? UI_TEXT.practiceEditor.toastUpdateSuccess : UI_TEXT.practiceEditor.toastCreateSuccess,
-            );
-            queryClient.invalidateQueries({ queryKey: ["session-blocks", session.id] });
-            queryClient.invalidateQueries({ queryKey: ["sessions", session.courseId] });
-            setIsModalOpen(false);
-        },
-        onError: () => {
-            toast.error(UI_TEXT.courseClassModal.toastCreateErrorTitle, UI_TEXT.practiceEditor.toastSaveError);
-        },
-    });
 
     const deleteMutation = useMutation({
         mutationFn: async (practice: CoursewareBlockEntity) => {
@@ -212,14 +151,11 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                                                                 ? UI_TEXT.practiceEditor.submitTypeText
                                                                 : UI_TEXT.practiceEditor.submitTypeLink}
                                                     </span>
-                                                    <span
-                                                        className={`rounded-md px-2.5 py-0.5 text-xs font-bold ${b.isRequired
-                                                                ? "bg-red-50 text-red-600 border border-red-100"
-                                                                : "bg-slate-100 text-slate-500"
-                                                            }`}
-                                                    >
-                                                        {b.isRequired ? "Bắt buộc buổi" : "Tùy chọn"}
-                                                    </span>
+                                                    {b.isRequired && (
+                                                        <span className="rounded-md bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-600 border border-red-100">
+                                                            {UI_TEXT.practiceEditor.requiredSessionTag}
+                                                        </span>
+                                                    )}
                                                     {bResources.length > 0 && (
                                                         <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
                                                             {bResources.length}
@@ -302,79 +238,15 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
             </div>
 
             {/* Create/Edit Practice Modal */}
-            <CustomModal.Root open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <CustomModal.Content className="w-full max-w-3xl !rounded-[28px]">
-                    <Dialog className="custom-scrollbar relative flex max-h-[90vh] flex-col gap-6 overflow-y-auto rounded-[28px] bg-white p-7 shadow-2xl outline-none sm:p-8">
-                        <button
-                            type="button"
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute top-5 right-5 z-10 cursor-pointer rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                        >
-                            <X className="size-5" />
-                        </button>
-
-                        <div className="flex flex-col items-center gap-1">
-                            <h3 className="text-center text-lg font-black text-slate-800">
-                                {editingPractice ? UI_TEXT.practiceEditor.editModalTitle : UI_TEXT.practiceEditor.createModalTitle}
-                            </h3>
-                            <p className="text-center text-xs font-semibold text-slate-400 sm:text-sm">{UI_TEXT.practiceEditor.modalDescription}</p>
-                        </div>
-
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">Tên bài thực hành</label>
-                                <input
-                                    type="text"
-                                    value={practiceTitle}
-                                    onChange={(e) => setPracticeTitle(e.target.value)}
-                                    placeholder="Nhập tên bài thực hành..."
-                                    className="w-full rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold focus:border-wine focus:outline-none"
-                                    required
-                                />
-                            </div>
-
-                            <PracticeFormFields
-                                submissionType={submissionType}
-                                setSubmissionType={setSubmissionType}
-                                content={content}
-                                setContent={setContent}
-                                resources={resources}
-                                setResources={setResources}
-                            />
-
-                            <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 border border-slate-200/80">
-                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
-                                    <input
-                                        type="checkbox"
-                                        checked={isRequired}
-                                        onChange={(e) => setIsRequired(e.target.checked)}
-                                        className="accent-wine size-4"
-                                    />
-                                    <span>Bắt buộc hoàn thành bài tập này để chốt buổi (isRequired)</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="mt-2 flex w-full items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsModalOpen(false)}
-                                className="w-1/3 cursor-pointer rounded-full border border-slate-200 bg-slate-50 py-2.5 text-center text-sm font-bold text-slate-600 transition hover:bg-slate-100 active:scale-[0.98]"
-                            >
-                                {UI_TEXT.practiceEditor.cancelBtn}
-                            </button>
-                            <Button
-                                onClick={() => saveMutation.mutate()}
-                                isLoading={saveMutation.isPending}
-                                disabled={!content.trim() || !practiceTitle.trim()}
-                                className="hover:bg-wine-hover w-2/3 cursor-pointer rounded-full border-none bg-wine py-2.5 text-center text-sm font-black text-white transition active:scale-[0.98]"
-                            >
-                                {editingPractice ? UI_TEXT.practiceEditor.saveBtn : UI_TEXT.practiceEditor.addBtn}
-                            </Button>
-                        </div>
-                    </Dialog>
-                </CustomModal.Content>
-            </CustomModal.Root>
+            <PracticeFormModal
+                mode={editingPractice ? "edit" : "create"}
+                isOpen={isModalOpen}
+                onOpenChange={setIsModalOpen}
+                sessionId={session.id}
+                courseId={session.courseId}
+                sessionName={session.name}
+                initialData={editingPractice}
+            />
 
             {/* Confirm Delete Modal */}
             <ConfirmModal

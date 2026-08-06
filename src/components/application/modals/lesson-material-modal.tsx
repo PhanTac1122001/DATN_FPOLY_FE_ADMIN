@@ -11,6 +11,7 @@ import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { configureLessonReading, configureLessonVideo, getLessonDetails, getQuizzesList, linkLessonQuiz } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
+import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { type EmbeddedOption, type EmbeddedQuestion, EmbeddedQuestionTypeEnum, type Lesson, type Quiz } from "@/types/material.types";
 import { PreviewPlayer } from "./preview-player";
 
@@ -63,36 +64,32 @@ export function LessonMaterialModal({ isOpen, onClose, lesson }: { isOpen: boole
                     <div className="mt-3 flex shrink-0 border-b border-slate-100">
                         <button
                             onClick={() => setActiveTab("video")}
-                            className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-bold transition ${
-                                activeTab === "video" ? "border-wine text-wine" : "border-transparent text-slate-500 hover:text-slate-700"
-                            }`}
+                            className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-bold transition ${activeTab === "video" ? "border-wine text-wine" : "border-transparent text-slate-500 hover:text-slate-700"
+                                }`}
                         >
                             <Film className="size-4" />
                             {UI_TEXT.lessonMaterialModal.tabVideo}
                         </button>
                         <button
                             onClick={() => setActiveTab("quiz")}
-                            className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-bold transition ${
-                                activeTab === "quiz" ? "border-wine text-wine" : "border-transparent text-slate-500 hover:text-slate-700"
-                            }`}
+                            className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-bold transition ${activeTab === "quiz" ? "border-wine text-wine" : "border-transparent text-slate-500 hover:text-slate-700"
+                                }`}
                         >
                             <HelpCircle className="size-4" />
                             {UI_TEXT.lessonMaterialModal.tabQuiz}
                         </button>
                         <button
                             onClick={() => setActiveTab("reading")}
-                            className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-bold transition ${
-                                activeTab === "reading" ? "border-wine text-wine" : "border-transparent text-slate-500 hover:text-slate-700"
-                            }`}
+                            className={`flex cursor-pointer items-center gap-1.5 border-b-2 px-4 py-2.5 text-xs font-bold transition ${activeTab === "reading" ? "border-wine text-wine" : "border-transparent text-slate-500 hover:text-slate-700"
+                                }`}
                         >
                             <Book className="size-4" />
                             {UI_TEXT.lessonMaterialModal.tabReading}
                         </button>
                         <button
                             onClick={() => setActiveTab("preview")}
-                            className={`ml-auto flex cursor-pointer items-center gap-1.5 rounded-t-lg border-b-2 bg-slate-50 px-4 py-2.5 text-xs font-bold transition hover:bg-slate-100 ${
-                                activeTab === "preview" ? "border-wine bg-wine/5 text-wine" : "border-transparent text-slate-600"
-                            }`}
+                            className={`ml-auto flex cursor-pointer items-center gap-1.5 rounded-t-lg border-b-2 bg-slate-50 px-4 py-2.5 text-xs font-bold transition hover:bg-slate-100 ${activeTab === "preview" ? "border-wine bg-wine/5 text-wine" : "border-transparent text-slate-600"
+                                }`}
                         >
                             <Eye className="size-4" />
                             {UI_TEXT.learningMaterials.tabPreview}
@@ -120,6 +117,14 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
     // Simple Embedded Question creator state
     const [questions, setQuestions] = useState<EmbeddedQuestion[]>(lesson.video?.questions || []);
     const [expandedQuestionIndices, setExpandedQuestionIndices] = useState<number[]>([0]);
+    const [deleteQuestionIndex, setDeleteQuestionIndex] = useState<number | null>(null);
+
+    const [submitted, setSubmitted] = useState(false);
+
+    useEffect(() => {
+        setQuestions(lesson.video?.questions || []);
+        setSubmitted(false);
+    }, [lesson.video?.questions, lesson.id]);
 
     const videoMutation = useMutation({
         mutationFn: () => {
@@ -200,7 +205,7 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
             {/* Video Questions form array */}
             <div className="mt-2 border-t border-slate-100 pt-4">
                 <div className="mb-3 flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-500 uppercase">{UI_TEXT.lessonMaterialModal.embeddedQuestionsTitle}</label>
+                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.lessonMaterialModal.embeddedQuestionsTitle}</label>
                     <button
                         type="button"
                         onClick={addQuestion}
@@ -238,10 +243,7 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
                                         type="button"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const copy = [...questions];
-                                            copy.splice(idx, 1);
-                                            setQuestions(copy);
-                                            setExpandedQuestionIndices(expandedQuestionIndices.filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i)));
+                                            setDeleteQuestionIndex(idx);
                                         }}
                                         className="cursor-pointer rounded p-1 text-slate-400 transition hover:text-red-500"
                                         title={UI_TEXT.lessonMaterialModal.deleteEmbeddedQuestion}
@@ -253,10 +255,10 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
                                 {/* Body */}
                                 {isExpanded && (
                                     <div className="flex flex-col gap-3 border-t border-slate-100/60 p-3.5 pt-3">
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <div className="col-span-2 flex flex-col gap-1">
-                                                <label className="text-[10px] font-bold text-slate-400">
-                                                    {UI_TEXT.lessonMaterialModal.questionContentLabel}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="col-span-2 flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-700">
+                                                    {UI_TEXT.lessonMaterialModal.questionContentLabel} <span className="text-red-500">*</span>
                                                 </label>
                                                 <input
                                                     type="text"
@@ -267,11 +269,20 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
                                                         setQuestions(copy);
                                                     }}
                                                     placeholder={UI_TEXT.lessonMaterialModal.placeholderQuestionContent}
-                                                    className="shadow-xxs rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                    className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                        submitted && !(q.content || "").trim()
+                                                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                            : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                    }`}
                                                 />
+                                                {submitted && !(q.content || "").trim() && (
+                                                    <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                                )}
                                             </div>
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-[10px] font-bold text-slate-400">{UI_TEXT.lessonMaterialModal.timePointLabel}</label>
+                                            <div className="flex flex-col gap-1.5">
+                                                <label className="text-xs font-bold text-slate-700">
+                                                    {UI_TEXT.lessonMaterialModal.timePointLabel} <span className="text-red-500">*</span>
+                                                </label>
                                                 <input
                                                     type="number"
                                                     value={q.timeInVideo}
@@ -285,15 +296,22 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
                                                         setQuestions(copy);
                                                     }}
                                                     onFocus={(e) => e.target.select()}
-                                                    className="shadow-xxs rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                    className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                        submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0)
+                                                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                            : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                    }`}
                                                 />
+                                                {submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0) && (
+                                                    <p className="mt-0.5 text-[11px] font-medium text-red-500">Thời điểm không hợp lệ.</p>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="mt-2 flex flex-col gap-2.5">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase">
+                                                <label className="text-xs font-bold text-slate-700">
                                                     {UI_TEXT.lessonMaterialModal.optionsListLabel}
-                                                </span>
+                                                </label>
                                                 {(q.options?.length ?? 0) < maxOptionsCount && (
                                                     <button
                                                         type="button"
@@ -317,7 +335,7 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
                                                     return (
                                                         <div
                                                             key={optIdx}
-                                                            className={`relative flex flex-col gap-2 rounded-xl border bg-white p-3 transition duration-150 ${
+                                                            className={`relative flex flex-col gap-2.5 rounded-2xl border bg-white p-3.5 transition duration-150 ${
                                                                 isCorrect ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200"
                                                             }`}
                                                         >
@@ -333,53 +351,62 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
                                                                         copy[idx] = { ...copy[idx], options: targetOptions };
                                                                         setQuestions(copy);
                                                                     }}
-                                                                    className="flex cursor-pointer items-center justify-center"
+                                                                    className="flex cursor-pointer items-center gap-1.5"
                                                                 >
                                                                     {isCorrect ? (
                                                                         <CheckCircle2 className="size-4 fill-emerald-100 text-emerald-600" />
                                                                     ) : (
                                                                         <Circle className="size-4 text-slate-400" />
                                                                     )}
+                                                                    <span className={`text-[11px] font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}>
+                                                                        {isCorrect
+                                                                            ? UI_TEXT.lessonMaterialModal.optionCorrect
+                                                                            : UI_TEXT.lessonMaterialModal.optionIncorrect}
+                                                                    </span>
                                                                 </button>
-                                                                <span className={`text-[10px] font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}>
-                                                                    {isCorrect
-                                                                        ? UI_TEXT.lessonMaterialModal.optionCorrect
-                                                                        : UI_TEXT.lessonMaterialModal.optionIncorrect}
-                                                                </span>
+                                                                {(q.options?.length ?? 0) > minOptionsCount && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const copy = [...questions];
+                                                                            const targetOptions = (copy[idx].options || []).filter((_, oIdx) => oIdx !== optIdx);
+                                                                            if (isCorrect && targetOptions.length > 0) {
+                                                                                targetOptions[0] = { ...targetOptions[0], isCorrect: true };
+                                                                            }
+                                                                            copy[idx] = { ...copy[idx], options: targetOptions };
+                                                                            setQuestions(copy);
+                                                                        }}
+                                                                        className="cursor-pointer p-0.5 text-slate-400 transition hover:text-red-500"
+                                                                        title={UI_TEXT.lessonMaterialModal.deleteOption}
+                                                                    >
+                                                                        <Trash2 className="size-3.5" />
+                                                                    </button>
+                                                                )}
                                                             </div>
-                                                            <input
-                                                                type="text"
-                                                                value={opt.content}
-                                                                onChange={(e) => {
-                                                                    const copy = [...questions];
-                                                                    const targetOptions = (copy[idx].options || []).map((o, oIdx) =>
-                                                                        oIdx === optIdx ? { ...o, content: e.target.value } : o,
-                                                                    );
-                                                                    copy[idx] = { ...copy[idx], options: targetOptions };
-                                                                    setQuestions(copy);
-                                                                }}
-                                                                placeholder={UI_TEXT.lessonMaterialModal.placeholderOptionText}
-                                                                className="w-full border-none bg-transparent p-0 pr-6 text-[11px] font-bold text-slate-700 focus:outline-none"
-                                                            />
-                                                            {(q.options?.length ?? 0) > minOptionsCount && (
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
+                                                            <div className="flex flex-col gap-1">
+                                                                <input
+                                                                    type="text"
+                                                                    value={opt.content}
+                                                                    onChange={(e) => {
                                                                         const copy = [...questions];
-                                                                        const targetOptions = (copy[idx].options || []).filter((_, oIdx) => oIdx !== optIdx);
-                                                                        if (isCorrect && targetOptions.length > 0) {
-                                                                            targetOptions[0] = { ...targetOptions[0], isCorrect: true };
-                                                                        }
+                                                                        const targetOptions = (copy[idx].options || []).map((o, oIdx) =>
+                                                                            oIdx === optIdx ? { ...o, content: e.target.value } : o,
+                                                                        );
                                                                         copy[idx] = { ...copy[idx], options: targetOptions };
                                                                         setQuestions(copy);
                                                                     }}
-                                                                    className="absolute right-2.5 bottom-2.5 cursor-pointer rounded p-0.5 text-slate-400 transition hover:text-red-500"
-                                                                    title={UI_TEXT.lessonMaterialModal.deleteOption}
-                                                                >
-                                                                    <Trash2 className="size-3" />
-                                                                </button>
-                                                            )}
+                                                                    placeholder={UI_TEXT.lessonMaterialModal.placeholderOptionText}
+                                                                    className={`w-full rounded-full border bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                                        submitted && !(opt.content || "").trim()
+                                                                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                                            : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                                    }`}
+                                                                />
+                                                                {submitted && !(opt.content || "").trim() && (
+                                                                    <p className="px-1 text-[10px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -395,13 +422,48 @@ function VideoConfigTab({ lesson, onSave }: { lesson: Lesson; onSave: (l: Lesson
 
             <div className="mt-2 flex justify-end border-t border-slate-100 pt-4">
                 <Button
-                    onClick={() => videoMutation.mutate()}
+                    onClick={() => {
+                        setSubmitted(true);
+                        const hasInvalidQuestion = questions.some((q) => {
+                            const isQContentEmpty = !(q.content || "").trim();
+                            const isTimeInv = q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0;
+                            const isOptEmpty = (q.options || []).some((o) => !(o.content || "").trim());
+                            return isQContentEmpty || isTimeInv || isOptEmpty;
+                        });
+                        if (hasInvalidQuestion) {
+                            toast.error(UI_TEXT.lessonMaterialModal.toastSaveError, "Vui lòng nhập đầy đủ thông tin các câu hỏi nhúng");
+                            return;
+                        }
+                        videoMutation.mutate();
+                    }}
                     isLoading={videoMutation.isPending}
                     className="border-none bg-wine py-1.5 text-xs font-bold text-white"
                 >
                     {UI_TEXT.lessonMaterialModal.saveVideoBtn}
                 </Button>
             </div>
+
+            {/* Confirm Delete Question Modal */}
+            <ConfirmModal
+                isOpen={deleteQuestionIndex !== null}
+                onClose={() => setDeleteQuestionIndex(null)}
+                onConfirm={() => {
+                    if (deleteQuestionIndex !== null) {
+                        const copy = [...questions];
+                        copy.splice(deleteQuestionIndex, 1);
+                        setQuestions(copy);
+                        setExpandedQuestionIndices((prev) =>
+                            prev.filter((i) => i !== deleteQuestionIndex).map((i) => (i > deleteQuestionIndex ? i - 1 : i))
+                        );
+                        setDeleteQuestionIndex(null);
+                    }
+                }}
+                title="Xác nhận xóa"
+                message="Bạn có chắc chắn muốn xóa câu hỏi nhúng này không?"
+                confirmText="Xóa"
+                cancelText="Hủy"
+                variant="danger"
+            />
         </div>
     );
 }
@@ -717,9 +779,8 @@ function SearchableQuizSelect({ value, onChange, quizzes }: { value: string; onC
                 <input
                     ref={inputRef}
                     type="text"
-                    className={`w-full bg-transparent py-2.5 pr-9 pl-9 text-xs font-bold placeholder-slate-400 focus:outline-none ${
-                        !isOpen && value ? "text-slate-900" : "text-slate-700"
-                    }`}
+                    className={`w-full bg-transparent py-2.5 pr-9 pl-9 text-xs font-bold placeholder-slate-400 focus:outline-none ${!isOpen && value ? "text-slate-900" : "text-slate-700"
+                        }`}
                     placeholder={isOpen ? UI_TEXT.lessonMaterialModal.placeholderSearchQuiz : value ? "" : UI_TEXT.lessonMaterialModal.placeholderSelectQuiz}
                     value={isOpen ? searchTerm : value ? selectedTitle : ""}
                     onChange={(e) => {
@@ -798,9 +859,8 @@ function SearchableQuizSelect({ value, onChange, quizzes }: { value: string; onC
                                                     setIsOpen(false);
                                                     setSearchTerm("");
                                                 }}
-                                                className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition ${
-                                                    isSelected ? "bg-wine/5 font-bold text-wine" : "font-semibold text-slate-700 hover:bg-slate-50"
-                                                }`}
+                                                className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition ${isSelected ? "bg-wine/5 font-bold text-wine" : "font-semibold text-slate-700 hover:bg-slate-50"
+                                                    }`}
                                             >
                                                 <span className="truncate">{q.title || `${UI_TEXT.lessonMaterialModal.quizSetPrefix} ${q.id}`}</span>
                                                 {isSelected && <span className="ml-2 size-1.5 shrink-0 rounded-full bg-wine" />}

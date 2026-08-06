@@ -11,14 +11,16 @@ import {
     type YTGlobal,
     type YTPlayer,
 } from "@/types/courseware.types";
+import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { LinkVideoModal, SelectVideoSourceModal } from "../modals/select-video-source-modal";
 
 export type { VideoQuestion, VideoQuestionOption };
 
-export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFile, questions, setQuestions, onRegisterOpenModal }: VideoConfigTabProps) {
+export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFile, questions, setQuestions, onDelete: _onDelete, onRegisterOpenModal, submitted = false }: VideoConfigTabProps) {
     const [, setVideoType] = useState<"link" | "file" | "">("");
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+    const [deleteQuestionIndex, setDeleteQuestionIndex] = useState<number | null>(null);
     const [tempLink, setTempLink] = useState("");
     const [expandedQuestionIndices, setExpandedQuestionIndices] = useState<number[]>([0]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -274,7 +276,7 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
             {hasVideo && (
                 <div className="pt-4">
                     <div className="mb-3 flex items-center justify-between">
-                        <label className="text-sm font-medium text-slate-500">{UI_TEXT.learningMaterials.embeddedQuestionsTitle}</label>
+                        <label className="text-sm font-bold text-slate-700">{UI_TEXT.learningMaterials.embeddedQuestionsTitle}</label>
                         <button
                             type="button"
                             onClick={addQuestion}
@@ -315,10 +317,7 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                             type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                const copy = [...questions];
-                                                copy.splice(idx, 1);
-                                                setQuestions(copy);
-                                                setExpandedQuestionIndices(expandedQuestionIndices.filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i)));
+                                                setDeleteQuestionIndex(idx);
                                             }}
                                             className="cursor-pointer p-1 text-red-500 transition hover:text-red-600"
                                             title={UI_TEXT.videoConfigTab.deleteQuestionTooltip}
@@ -330,10 +329,10 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                     {/* Body */}
                                     {isExpanded && (
                                         <div className="flex flex-col gap-3 border-t border-slate-100/60 p-3.5 pt-3">
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="col-span-2 flex flex-col gap-1">
-                                                    <label className="text-[10px] font-medium text-slate-400">
-                                                        {UI_TEXT.videoConfigTab.questionContentLabel}
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="col-span-2 flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-700">
+                                                        {UI_TEXT.videoConfigTab.questionContentLabel} <span className="text-red-500">*</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -344,11 +343,20 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                             setQuestions(copy);
                                                         }}
                                                         placeholder={UI_TEXT.videoConfigTab.questionContentPlaceholder}
-                                                        className="shadow-xxs rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                            submitted && !(q.content || "").trim()
+                                                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                                : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                        }`}
                                                     />
+                                                    {submitted && !(q.content || "").trim() && (
+                                                        <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                                    )}
                                                 </div>
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-[10px] font-medium text-slate-400">{UI_TEXT.videoConfigTab.timestampLabel}</label>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-xs font-bold text-slate-700">
+                                                        {UI_TEXT.videoConfigTab.timestampLabel} <span className="text-red-500">*</span>
+                                                    </label>
                                                     <input
                                                         type="number"
                                                         value={q.timeInVideo}
@@ -362,13 +370,20 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                             setQuestions(copy);
                                                         }}
                                                         onFocus={(e) => e.target.select()}
-                                                        className="shadow-xxs rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                            submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0)
+                                                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                                : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                        }`}
                                                     />
+                                                    {submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0) && (
+                                                        <p className="mt-0.5 text-[11px] font-medium text-red-500">Thời điểm không hợp lệ.</p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="mt-2 flex flex-col gap-2.5">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-medium text-slate-400">{UI_TEXT.videoConfigTab.optionsListTitle}</span>
+                                                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.videoConfigTab.optionsListTitle}</label>
                                                     {q.options.length < maxOptionsCount && (
                                                         <button
                                                             type="button"
@@ -377,7 +392,7 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                                 copy[idx].options.push({ content: "", isCorrect: false });
                                                                 setQuestions(copy);
                                                             }}
-                                                            className="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-[9px] font-bold text-blue-600 transition hover:bg-slate-100 hover:text-blue-700"
+                                                            className="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1 text-[9px] font-bold text-blue-600 transition hover:bg-slate-100 hover:text-blue-700"
                                                         >
                                                             <Plus className="size-3 text-blue-600" />
                                                             <span>{UI_TEXT.videoConfigTab.addOptionBtn}</span>
@@ -390,7 +405,7 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                         return (
                                                             <div
                                                                 key={optIdx}
-                                                                className={`relative flex flex-col gap-2 rounded-xl border bg-white p-3 transition duration-150 ${
+                                                                className={`relative flex flex-col gap-2.5 rounded-2xl border bg-white p-3.5 transition duration-150 ${
                                                                     isCorrect ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200"
                                                                 }`}
                                                             >
@@ -404,49 +419,58 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                                             });
                                                                             setQuestions(copy);
                                                                         }}
-                                                                        className="flex cursor-pointer items-center justify-center"
+                                                                        className="flex cursor-pointer items-center gap-1.5"
                                                                     >
                                                                         {isCorrect ? (
                                                                             <CheckCircle2 className="size-4 fill-emerald-100 text-emerald-600" />
                                                                         ) : (
                                                                             <Circle className="size-4 text-slate-400" />
                                                                         )}
+                                                                        <span
+                                                                            className={`text-[11px] font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}
+                                                                        >
+                                                                            {isCorrect ? UI_TEXT.videoConfigTab.correctText : UI_TEXT.videoConfigTab.incorrectText}
+                                                                        </span>
                                                                     </button>
-                                                                    <span
-                                                                        className={`text-[10px] font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}
-                                                                    >
-                                                                        {isCorrect ? UI_TEXT.videoConfigTab.correctText : UI_TEXT.videoConfigTab.incorrectText}
-                                                                    </span>
+                                                                    {q.options.length > minOptionsCount && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                const copy = [...questions];
+                                                                                copy[idx].options.splice(optIdx, 1);
+                                                                                if (isCorrect && copy[idx].options.length > 0) {
+                                                                                    copy[idx].options[0].isCorrect = true;
+                                                                                }
+                                                                                setQuestions(copy);
+                                                                            }}
+                                                                            className="cursor-pointer p-0.5 text-red-500 transition hover:text-red-600"
+                                                                            title={UI_TEXT.videoConfigTab.deleteOptionTooltip}
+                                                                        >
+                                                                            <Trash2 className="size-3.5" />
+                                                                        </button>
+                                                                    )}
                                                                 </div>
-                                                                <input
-                                                                    type="text"
-                                                                    value={opt.content}
-                                                                    onChange={(e) => {
-                                                                        const copy = [...questions];
-                                                                        copy[idx].options[optIdx].content = e.target.value;
-                                                                        setQuestions(copy);
-                                                                    }}
-                                                                    placeholder={UI_TEXT.videoConfigTab.optionContentPlaceholder}
-                                                                    className="w-full border-none bg-transparent p-0 pr-6 text-[11px] font-bold text-slate-700 focus:outline-none"
-                                                                />
-                                                                {q.options.length > minOptionsCount && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
+                                                                <div className="flex flex-col gap-1">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={opt.content}
+                                                                        onChange={(e) => {
                                                                             const copy = [...questions];
-                                                                            copy[idx].options.splice(optIdx, 1);
-                                                                            if (isCorrect && copy[idx].options.length > 0) {
-                                                                                copy[idx].options[0].isCorrect = true;
-                                                                            }
+                                                                            copy[idx].options[optIdx].content = e.target.value;
                                                                             setQuestions(copy);
                                                                         }}
-                                                                        className="absolute right-2.5 bottom-2.5 cursor-pointer p-0.5 text-red-500 transition hover:text-red-600"
-                                                                        title={UI_TEXT.videoConfigTab.deleteOptionTooltip}
-                                                                    >
-                                                                        <Trash2 className="size-3" />
-                                                                    </button>
-                                                                )}
+                                                                        placeholder={UI_TEXT.videoConfigTab.optionContentPlaceholder}
+                                                                        className={`w-full rounded-full border bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                                            submitted && !(opt.content || "").trim()
+                                                                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                                                : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                                        }`}
+                                                                    />
+                                                                    {submitted && !(opt.content || "").trim() && (
+                                                                        <p className="px-1 text-[10px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
@@ -460,6 +484,28 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                     </div>
                 </div>
             )}
+
+            {/* Confirm Delete Question Modal */}
+            <ConfirmModal
+                isOpen={deleteQuestionIndex !== null}
+                onClose={() => setDeleteQuestionIndex(null)}
+                onConfirm={() => {
+                    if (deleteQuestionIndex !== null) {
+                        const copy = [...questions];
+                        copy.splice(deleteQuestionIndex, 1);
+                        setQuestions(copy);
+                        setExpandedQuestionIndices((prev) =>
+                            prev.filter((i) => i !== deleteQuestionIndex).map((i) => (i > deleteQuestionIndex ? i - 1 : i))
+                        );
+                        setDeleteQuestionIndex(null);
+                    }
+                }}
+                title="Xác nhận xóa"
+                message="Bạn có chắc chắn muốn xóa câu hỏi nhúng này không?"
+                confirmText="Xóa"
+                cancelText="Hủy"
+                variant="danger"
+            />
         </div>
     );
 }

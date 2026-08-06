@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookText, ChevronDown, ChevronRight, Code2, File, FileText, GripVertical, HelpCircle, Map, Plus, ScrollText } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
+import { BlockTypeEnum } from "@/constants/application.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { coursewareService } from "@/services/courseware.service";
 import {
@@ -46,7 +47,7 @@ export function SessionNode({
         enabled: !!session.id,
     });
 
-    const practiceBlocks = sessionBlocks.filter((b) => b.type === "PRACTICE" || b.type === "ASSIGNMENT");
+    const practiceBlocks = sessionBlocks.filter((b) => b.type === BlockTypeEnum.PRACTICE || b.type === BlockTypeEnum.HOMEWORK);
 
     const deletePracticeMutation = useMutation({
         mutationFn: (p: SessionPractice) => {
@@ -420,14 +421,11 @@ export function SessionNode({
                                             {b.title || `${UI_TEXT.sessionNode.practiceTabPrefix}${pIdx + 1}`}
                                         </span>
                                     </div>
-                                    <span
-                                        className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${b.isRequired
-                                                ? "bg-red-50 text-red-600 border border-red-100"
-                                                : "bg-slate-100 text-slate-500"
-                                            }`}
-                                    >
-                                        {b.isRequired ? "Bắt buộc" : "Tùy chọn"}
-                                    </span>
+                                    {b.isRequired && (
+                                        <span className="shrink-0 rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">
+                                            {UI_TEXT.sessionNode.requiredTag}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         );

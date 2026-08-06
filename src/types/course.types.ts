@@ -122,3 +122,10 @@ export interface CourseFormModalProps {
     initialData?: CourseItem | null;
     onSubmit: (payload: CreateCoursePayload) => Promise<void>;
 }
+
+export interface CategoryManagementModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSelectCategory?: (category: string) => void;
+    selectedCategory?: string;
+}

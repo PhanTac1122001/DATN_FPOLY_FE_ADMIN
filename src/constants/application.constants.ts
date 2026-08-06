@@ -23,6 +23,27 @@ export const DAY_ABBREV_LENGTH = 2;
 // Cell Constants
 export const FIRST_DAY_OF_MONTH = 1;
 export const LAST_DAY_OF_MONTH_OFFSET = 0;
+export const MODAL_Z_INDEX = 50;
+
+export enum BlockTypeEnum {
+    PRACTICE = "PRACTICE",
+    HOMEWORK = "HOMEWORK",
+    ASSIGNMENT = "ASSIGNMENT",
+    LESSON = "LESSON",
+    VIDEO = "VIDEO",
+    READING = "READING",
+    QUIZ = "QUIZ",
+    MINDMAP_SUBMISSION = "MINDMAP_SUBMISSION",
+    FILE = "FILE",
+    LINK = "LINK",
+    EMBED = "EMBED",
+    MINDMAP = "MINDMAP",
+}
+
+export enum CompletionModeEnum {
+    AUTO_ON_OPEN = "AUTO_ON_OPEN",
+    ACKNOWLEDGE = "ACKNOWLEDGE",
+}
 export const SUNDAY_INDEX = 0;
 export const SATURDAY_INDEX = 6;
 

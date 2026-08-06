@@ -66,6 +66,7 @@ export interface Lesson {
     video?: VideoMaterial | null;
     reading?: ReadingMaterial | null;
     quizId?: string | null;
+    sequentialBlocks?: boolean;
     completionLogic?: LessonCompletionLogic;
 }
 

@@ -87,6 +87,8 @@ export function QuizConfigTab({
         if (onRegisterOpenModal) {
             onRegisterOpenModal(() => {
                 setTempQuizId(quizId);
+                setModalSearchTerm("");
+                setIsSelectModalOpen(true);
             });
         }
     }, [onRegisterOpenModal, quizId]);
@@ -224,19 +226,8 @@ export function QuizConfigTab({
             <div className="flex flex-col gap-3">
                 {quizId !== "" && selectedQuiz ? (
                     <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div className="border-b border-slate-100 pb-3">
                             <label className="text-sm font-medium text-slate-500">{UI_TEXT.learningMaterials.linkedQuizLabel}</label>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setTempQuizId(quizId);
-                                    setModalSearchTerm("");
-                                    setIsSelectModalOpen(true);
-                                }}
-                                className="cursor-pointer text-xs font-bold text-wine transition hover:underline"
-                            >
-                                {UI_TEXT.learningMaterials.changeQuizButton}
-                            </button>
                         </div>
                         <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-xs">
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-wine/10 text-wine">
@@ -250,8 +241,8 @@ export function QuizConfigTab({
                                     <span className="text-xs font-medium text-slate-400">
                                         {String(
                                             (selectedQuiz as Record<string, unknown>).questionsCount ||
-                                                ((selectedQuiz as Record<string, unknown>).questions as unknown[])?.length ||
-                                                0,
+                                            ((selectedQuiz as Record<string, unknown>).questions as unknown[])?.length ||
+                                            0,
                                         )}{" "}
                                         {UI_TEXT.learningMaterials.questionsCountLabel}
                                     </span>
@@ -288,13 +279,11 @@ export function QuizConfigTab({
 
             {quizId !== "" && (
                 <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
-                    <div className="mb-1 flex items-center justify-between">
-                        <h4 className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                            <span>{UI_TEXT.quizConfigTab.questionDetailTitle}</span>
-                        </h4>
+                    <div className="mb-3 flex items-center justify-between">
+                        <label className="text-sm font-bold text-slate-700">{UI_TEXT.quizConfigTab.questionDetailTitle}</label>
                         {quizDetails?.questions && (
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                                {localQuestions.length}
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                                {localQuestions.length}{" "}
                                 {UI_TEXT.quizConfigTab.questionsCountSuffix}
                             </span>
                         )}
@@ -316,27 +305,27 @@ export function QuizConfigTab({
                                 return (
                                     <div
                                         key={idx}
-                                        className="shadow-xxs overflow-hidden rounded-xl border border-slate-100 bg-white transition-all duration-150"
+                                        className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xs transition-all duration-150"
                                     >
                                         {/* Header */}
                                         <div
                                             onClick={() => toggleQuestion(idx)}
-                                            className="flex cursor-pointer items-center justify-between bg-slate-50/50 p-3 transition duration-150 select-none hover:bg-slate-50"
+                                            className="flex cursor-pointer items-center justify-between bg-slate-50/50 p-3.5 transition duration-150 select-none hover:bg-slate-50"
                                         >
                                             <div className="flex min-w-0 flex-1 items-center gap-2">
                                                 {isExpanded ? (
-                                                    <ChevronDown className="size-3.5 shrink-0 text-slate-400" />
+                                                    <ChevronDown className="size-4 shrink-0 text-slate-400" />
                                                 ) : (
-                                                    <ChevronRight className="size-3.5 shrink-0 text-slate-400" />
+                                                    <ChevronRight className="size-4 shrink-0 text-slate-400" />
                                                 )}
                                                 <span className="shrink-0 text-xs font-bold text-slate-700">
-                                                    {UI_TEXT.videoConfigTab.questionIndexPrefix}
+                                                    {UI_TEXT.videoConfigTab.questionIndex}
                                                     {idx + 1}
                                                 </span>
-                                                <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                                                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                                                     {displayType}
                                                 </span>
-                                                <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                                                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                                                     {q.points}
                                                     {UI_TEXT.quizConfigTab.pointsSuffix}
                                                 </span>
@@ -361,9 +350,9 @@ export function QuizConfigTab({
 
                                         {/* Body */}
                                         {isExpanded && (
-                                            <div className="flex flex-col gap-3 border-t border-slate-100/60 bg-slate-50/10 p-3.5">
+                                            <div className="flex flex-col gap-3 border-t border-slate-100/60 bg-slate-50/10 p-3.5 pt-3">
                                                 <div className="flex flex-col gap-1.5">
-                                                    <label className="text-[10px] font-medium text-slate-400">
+                                                    <label className="text-xs font-bold text-slate-700">
                                                         {UI_TEXT.quizConfigTab.questionContentLabel}
                                                     </label>
                                                     <textarea
@@ -371,22 +360,22 @@ export function QuizConfigTab({
                                                         onChange={(e) => handleQuestionContentChange(idx, e.target.value)}
                                                         placeholder={UI_TEXT.quizConfigTab.questionContentPlaceholder}
                                                         rows={2}
-                                                        className="shadow-xxs resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                        className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 shadow-2xs transition duration-150 focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                     />
                                                 </div>
 
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="flex flex-col gap-1.5">
-                                                        <label className="text-[10px] font-medium text-slate-400">
+                                                        <label className="text-xs font-bold text-slate-700">
                                                             {UI_TEXT.quizConfigTab.questionTypeLabel}
                                                         </label>
-                                                        <div className="flex h-[38px] w-full items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner">
+                                                        <div className="flex h-[42px] w-full items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleQuestionTypeChange(idx, QuestionTypeEnum.SINGLE_CHOICE)}
                                                                 className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
                                                                     q.type === QuestionTypeEnum.SINGLE_CHOICE || !q.type
-                                                                        ? "bg-blue-600 text-white shadow-xs"
+                                                                        ? "bg-wine text-white shadow-xs"
                                                                         : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
                                                                 }`}
                                                             >
@@ -400,7 +389,7 @@ export function QuizConfigTab({
                                                                 onClick={() => handleQuestionTypeChange(idx, QuestionTypeEnum.MULTIPLE_CHOICE)}
                                                                 className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
                                                                     q.type === QuestionTypeEnum.MULTIPLE_CHOICE
-                                                                        ? "bg-blue-600 text-white shadow-xs"
+                                                                        ? "bg-wine text-white shadow-xs"
                                                                         : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
                                                                 }`}
                                                             >
@@ -412,26 +401,26 @@ export function QuizConfigTab({
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col gap-1.5">
-                                                        <label className="text-[10px] font-medium text-slate-400">{UI_TEXT.quizConfigTab.pointsLabel}</label>
+                                                        <label className="text-xs font-bold text-slate-700">{UI_TEXT.quizConfigTab.pointsLabel}</label>
                                                         <input
                                                             type="number"
                                                             value={q.points}
                                                             onChange={(e) => handleQuestionPointsChange(idx, Number(e.target.value))}
-                                                            className="shadow-xxs rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-800 shadow-2xs transition duration-150 focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                         />
                                                     </div>
                                                 </div>
 
                                                 <div className="mt-1 flex flex-col gap-2.5">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] font-medium text-slate-400">{UI_TEXT.quizConfigTab.optionsListTitle}</span>
+                                                        <label className="text-xs font-bold text-slate-700">{UI_TEXT.quizConfigTab.optionsListTitle}</label>
                                                         {(!q.options || q.options.length < maxQuizOptionsLimit) && (
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleAddOption(idx)}
-                                                                className="flex cursor-pointer items-center gap-1 rounded-full border border-slate-100 bg-slate-50 px-2.5 py-1 text-[9px] font-bold text-blue-600 transition hover:bg-slate-100 hover:text-blue-700"
+                                                                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-wine transition hover:bg-slate-100 hover:text-wine-hover"
                                                             >
-                                                                <Plus className="size-3 text-blue-600" />
+                                                                <Plus className="size-3.5 text-wine" />
                                                                 <span>{UI_TEXT.quizConfigTab.addOptionBtn}</span>
                                                             </button>
                                                         )}
@@ -443,7 +432,7 @@ export function QuizConfigTab({
                                                             return (
                                                                 <div
                                                                     key={optIdx}
-                                                                    className={`relative flex flex-col gap-2 rounded-xl border bg-white p-3 transition duration-150 ${
+                                                                    className={`relative flex flex-col gap-2.5 rounded-2xl border bg-white p-3.5 transition duration-150 ${
                                                                         isCorrect ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200"
                                                                     }`}
                                                                 >
@@ -461,7 +450,7 @@ export function QuizConfigTab({
                                                                         </button>
                                                                         <div className="flex items-center gap-1.5">
                                                                             <span
-                                                                                className={`text-[10px] font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}
+                                                                                className={`text-xs font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}
                                                                             >
                                                                                 {isCorrect
                                                                                     ? UI_TEXT.quizConfigTab.correctText
@@ -474,7 +463,7 @@ export function QuizConfigTab({
                                                                                     className="cursor-pointer p-0.5 text-red-500 transition hover:text-red-600"
                                                                                     title={UI_TEXT.quizConfigTab.deleteOptionTooltip}
                                                                                 >
-                                                                                    <Trash2 className="size-3" />
+                                                                                    <Trash2 className="size-3.5" />
                                                                                 </button>
                                                                             )}
                                                                         </div>
@@ -484,7 +473,7 @@ export function QuizConfigTab({
                                                                         value={opt.content}
                                                                         onChange={(e) => handleOptionContentChange(idx, optIdx, e.target.value)}
                                                                         placeholder={`${UI_TEXT.quizConfigTab.optionContentPlaceholderPrefix}${optIdx + 1}...`}
-                                                                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 transition duration-150 focus:border-slate-300 focus:outline-none"
+                                                                        className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-800 shadow-2xs transition duration-150 focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                                     />
                                                                 </div>
                                                             );

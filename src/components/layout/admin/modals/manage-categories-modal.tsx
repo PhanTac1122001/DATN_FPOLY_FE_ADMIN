@@ -6,11 +6,11 @@ import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { DEFAULT_CATEGORY_COLOR } from "@/constants/notification.constants";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 import { notificationService } from "@/services/notification.service";
 import { toast } from "@/services/toast.service";
 import type { ManageCategoriesModalProps, NotificationCategory } from "@/types/notification.types";
-
-const DEFAULT_HEX_COLOR = "#8A2535";
 
 export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCategoriesModalProps) {
     const [categories, setCategories] = useState<NotificationCategory[]>([]);
@@ -23,8 +23,18 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
     const [editingCode, setEditingCode] = useState("");
     const [code, setCode] = useState("");
     const [label, setLabel] = useState("");
-    const [tone, setTone] = useState(DEFAULT_HEX_COLOR);
+    const [tone, setTone] = useState(DEFAULT_CATEGORY_COLOR);
     const [requiresTargetStudents, setRequiresTargetStudents] = useState(false);
+
+    const resetForm = () => {
+        setIsEditing(false);
+        setEditingCode("");
+        setCode("");
+        setLabel("");
+        setTone(DEFAULT_CATEGORY_COLOR);
+        setRequiresTargetStudents(false);
+        setError("");
+    };
 
     const fetchCategories = async () => {
         setLoading(true);
@@ -35,7 +45,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
             setCategories(items);
         } catch (err) {
             console.error("Failed to list categories", err);
-            setError("Không thể tải danh sách thể loại");
+            setError(UI_TEXT.manageCategoriesModal?.errLoadCategories || "Không thể tải danh sách thể loại");
         } finally {
             setLoading(false);
         }
@@ -48,38 +58,28 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
         }
     }, [isOpen]);
 
-    const resetForm = () => {
-        setIsEditing(false);
-        setEditingCode("");
-        setCode("");
-        setLabel("");
-        setTone(DEFAULT_HEX_COLOR);
-        setRequiresTargetStudents(false);
-        setError("");
-    };
-
     const handleEditClick = (cat: NotificationCategory) => {
         setIsEditing(true);
         setEditingCode(cat.code);
         setCode(cat.code);
         setLabel(cat.label);
-        setTone(cat.tone && cat.tone.startsWith("#") ? cat.tone : DEFAULT_HEX_COLOR);
+        setTone(cat.tone && cat.tone.startsWith("#") ? cat.tone : DEFAULT_CATEGORY_COLOR);
         setRequiresTargetStudents(cat.requiresTargetStudents || false);
         setError("");
     };
 
     const handleDelete = async (catCode: string) => {
-        if (!confirm(`Bạn có chắc chắn muốn xóa thể loại "${catCode}"?`)) return;
+        if (!confirm(`${UI_TEXT.manageCategoriesModal.confirmDeletePrefix}${catCode}${UI_TEXT.manageCategoriesModal.confirmDeleteSuffix}`)) return;
         try {
             setSubmitting(true);
             await notificationService.deleteCategory(catCode);
-            toast.success("Xóa thể loại thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.manageCategoriesModal.toastDeleteSuccess);
             await fetchCategories();
             onSuccess();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Không thể xóa thể loại";
+            const msg = err instanceof Error ? err.message : UI_TEXT.manageCategoriesModal.errDeleteFailed;
             setError(msg);
-            toast.error(msg);
+            toast.error(UI_TEXT.common.errorTitle, msg);
         } finally {
             setSubmitting(false);
         }
@@ -89,7 +89,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
         e.preventDefault();
         setError("");
         if (!code.trim() || !label.trim()) {
-            setError("Mã và tên thể loại không được để trống");
+            setError(UI_TEXT.manageCategoriesModal.errCodeAndLabelRequired);
             return;
         }
 
@@ -103,27 +103,27 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                 await notificationService.updateCategory(editingCode, {
                     label: label.trim(),
                     sortOrder: autoSortOrder,
-                    tone: tone.trim() || DEFAULT_HEX_COLOR,
+                    tone: tone.trim() || DEFAULT_CATEGORY_COLOR,
                     requiresTargetStudents,
                 });
-                toast.success("Cập nhật thể loại thành công");
+                toast.success(UI_TEXT.common.successTitle, UI_TEXT.manageCategoriesModal.toastUpdateSuccess);
             } else {
                 await notificationService.createCategory({
                     code: code.trim().toUpperCase(),
                     label: label.trim(),
                     sortOrder: autoSortOrder,
-                    tone: tone.trim() || DEFAULT_HEX_COLOR,
+                    tone: tone.trim() || DEFAULT_CATEGORY_COLOR,
                     requiresTargetStudents,
                 });
-                toast.success("Thêm thể loại mới thành công");
+                toast.success(UI_TEXT.common.successTitle, UI_TEXT.manageCategoriesModal.toastCreateSuccess);
             }
             resetForm();
             await fetchCategories();
             onSuccess();
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Không thể lưu thể loại";
+            const msg = err instanceof Error ? err.message : UI_TEXT.manageCategoriesModal.errSaveFailed;
             setError(msg);
-            toast.error(msg);
+            toast.error(UI_TEXT.common.errorTitle, msg);
         } finally {
             setSubmitting(false);
         }
@@ -135,7 +135,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                 <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
                         <Heading slot="title" className="text-xl font-bold text-slate-900">
-                            Quản lý Thể loại Thông báo
+                            {UI_TEXT.manageCategoriesModal.modalTitle}
                         </Heading>
                         <button
                             type="button"
@@ -154,7 +154,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                         <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                    {isEditing ? `Chỉnh sửa thể loại: ${editingCode}` : "Thêm thể loại mới"}
+                                    {isEditing ? `${UI_TEXT.manageCategoriesModal.editCategoryPrefix}${editingCode}` : UI_TEXT.manageCategoriesModal.addNewTypeHeader}
                                 </h4>
                                 {isEditing && (
                                     <button
@@ -162,7 +162,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                         onClick={resetForm}
                                         className="text-xs font-bold text-wine hover:underline cursor-pointer"
                                     >
-                                        + Thêm mới
+                                        {UI_TEXT.manageCategoriesModal.addNewBtn}
                                     </button>
                                 )}
                             </div>
@@ -171,40 +171,40 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                 <Input
                                     label={
                                         <span>
-                                            Mã thể loại <span className="font-bold text-red-500">*</span>
+                                            {UI_TEXT.manageCategoriesModal.categoryCodeLabel} <span className="font-bold text-red-500">*</span>
                                         </span>
                                     }
                                     isDisabled={isEditing}
                                     value={code}
                                     onChange={(val: string) => setCode(val)}
-                                    placeholder="VD: GIAO_VU"
+                                    placeholder={UI_TEXT.manageCategoriesModal.codePlaceholder}
                                 />
 
                                 <Input
                                     label={
                                         <span>
-                                            Tên hiển thị <span className="font-bold text-red-500">*</span>
+                                            {UI_TEXT.manageCategoriesModal.displayLabelLabel} <span className="font-bold text-red-500">*</span>
                                         </span>
                                     }
                                     value={label}
                                     onChange={(val: string) => setLabel(val)}
-                                    placeholder="VD: Giáo vụ"
+                                    placeholder={UI_TEXT.manageCategoriesModal.displayLabelPlaceholder}
                                 />
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-semibold text-slate-700">Màu hiển thị (Hex Color)</label>
+                                <label className="text-sm font-semibold text-slate-700">{UI_TEXT.manageCategoriesModal.displayColorLabel}</label>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="color"
-                                        value={tone.startsWith("#") ? tone : DEFAULT_HEX_COLOR}
+                                        value={tone.startsWith("#") ? tone : DEFAULT_CATEGORY_COLOR}
                                         onChange={(e) => setTone(e.target.value)}
                                         className="size-10 cursor-pointer rounded-xl border border-slate-200 bg-white p-1"
                                     />
                                     <Input
                                         value={tone}
                                         onChange={(val: string) => setTone(val)}
-                                        placeholder="#8A2535"
+                                        placeholder={DEFAULT_CATEGORY_COLOR}
                                         className="flex-1 font-mono"
                                     />
                                 </div>
@@ -218,7 +218,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                         onChange={(e) => setRequiresTargetStudents(e.target.checked)}
                                         className="size-4 accent-wine"
                                     />
-                                    Yêu cầu chọn học viên cá nhân (studentIds)
+                                    {UI_TEXT.manageCategoriesModal.requireStudentsCheckboxLabel}
                                 </label>
                             </div>
 
@@ -231,21 +231,23 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                     className="border-none bg-wine font-bold text-white hover:bg-wine-deep"
                                     iconLeading={!submitting ? <Plus className="size-4" /> : undefined}
                                 >
-                                    {isEditing ? "Cập nhật thể loại" : "Thêm thể loại"}
+                                    {isEditing ? UI_TEXT.manageCategoriesModal.updateBtn : UI_TEXT.manageCategoriesModal.addBtn}
                                 </Button>
                             </div>
                         </form>
 
                         {/* List Categories */}
                         <div className="space-y-2">
-                            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Danh sách thể loại ({categories.length})</h4>
+                            <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                {UI_TEXT.manageCategoriesModal.categoryListPrefix}{categories.length}{UI_TEXT.manageCategoriesModal.categoryListSuffix}
+                            </h4>
 
                             {loading ? (
                                 <div className="flex items-center justify-center p-6 text-xs text-slate-400">
-                                    <Loader2 className="size-4 animate-spin mr-2" /> Đang tải...
+                                    <Loader2 className="size-4 animate-spin mr-2" /> {UI_TEXT.manageCategoriesModal.loading}
                                 </div>
                             ) : categories.length === 0 ? (
-                                <div className="p-4 text-center text-xs text-slate-400">Chưa có thể loại nào.</div>
+                                <div className="p-4 text-center text-xs text-slate-400">{UI_TEXT.manageCategoriesModal.empty}</div>
                             ) : (
                                 <div className="max-h-48 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 bg-white">
                                     {categories.map((cat) => (
@@ -253,7 +255,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className="size-4 shrink-0 rounded-full border border-slate-200"
-                                                    style={{ backgroundColor: cat.tone && cat.tone.startsWith("#") ? cat.tone : DEFAULT_HEX_COLOR }}
+                                                    style={{ backgroundColor: cat.tone && cat.tone.startsWith("#") ? cat.tone : DEFAULT_CATEGORY_COLOR }}
                                                     title={cat.tone}
                                                 />
                                                 <div>
@@ -264,7 +266,7 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                                         </span>
                                                         {cat.requiresTargetStudents && (
                                                             <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
-                                                                Cá nhân
+                                                                {UI_TEXT.manageCategoriesModal.personalTag}
                                                             </span>
                                                         )}
                                                     </div>
@@ -275,14 +277,14 @@ export function ManageCategoriesModal({ isOpen, onClose, onSuccess }: ManageCate
                                                 <button
                                                     onClick={() => handleEditClick(cat)}
                                                     className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                                                    title="Sửa thể loại"
+                                                    title={UI_TEXT.manageCategoriesModal.editTooltip}
                                                 >
                                                     <Edit2 className="size-3.5" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(cat.code)}
                                                     className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                                                    title="Xóa thể loại"
+                                                    title={UI_TEXT.manageCategoriesModal.deleteTooltip}
                                                 >
                                                     <Trash2 className="size-3.5" />
                                                 </button>

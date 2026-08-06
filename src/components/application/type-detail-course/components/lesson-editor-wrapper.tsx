@@ -132,11 +132,15 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
         const rawReadingQs = details.reading?.questions || [];
         const loadedReadingQs: ReadingQuestion[] = rawReadingQs.map((q) => {
             const qObj = q as unknown as Record<string, unknown>;
+            const opts = Array.isArray(qObj.options) ? qObj.options : [];
+            const firstOpt = opts[0] as Record<string, unknown> | undefined;
+            const contentText = String(qObj.question || qObj.content || "");
+            const answerText = String(qObj.answer || firstOpt?.content || "");
             return {
                 id: String(qObj.id || qObj._id || ""),
-                question: String(qObj.question || qObj.content || ""),
-                answer: String(qObj.answer || ""),
-                content: String(qObj.question || qObj.content || ""),
+                question: contentText,
+                answer: answerText,
+                content: contentText,
             };
         });
         setReadingQuestions(loadedReadingQs);
@@ -144,7 +148,10 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
         setIsPdfDeleted(false);
         setReadingVersion((prev) => prev + 1);
         setIsQuizQuestionsDirty(false);
+        setSubmitted(false);
     };
+
+    const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
         if (lessonDetails) {
@@ -222,11 +229,15 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
         const raw = lessonDetails?.reading?.questions || [];
         return raw.map((q) => {
             const qObj = q as unknown as Record<string, unknown>;
+            const opts = Array.isArray(qObj.options) ? qObj.options : [];
+            const firstOpt = opts[0] as Record<string, unknown> | undefined;
+            const contentText = String(qObj.question || qObj.content || "");
+            const answerText = String(qObj.answer || firstOpt?.content || "");
             return {
                 id: String(qObj.id || qObj._id || ""),
-                question: String(qObj.question || qObj.content || ""),
-                answer: String(qObj.answer || ""),
-                content: String(qObj.question || qObj.content || ""),
+                question: contentText,
+                answer: answerText,
+                content: contentText,
             };
         });
     }, [lessonDetails?.reading?.questions]);
@@ -250,8 +261,25 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
     }, [isCurrentTabDirty, onIsDirtyChange]);
 
     const handleSaveAll = useCallback(async () => {
+        setSubmitted(true);
         setIsSaving(true);
         try {
+            // Check embedded video questions validation
+            if (activeTab === "video") {
+                const hasInvalidVideoQuestion = videoQuestions.some((q) => {
+                    const isQContentEmpty = !(q.content || "").trim();
+                    const isTimeInv = q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0;
+                    const isOptEmpty = (q.options || []).some((o) => !(o.content || "").trim());
+                    return isQContentEmpty || isTimeInv || isOptEmpty;
+                });
+
+                if (hasInvalidVideoQuestion) {
+                    toast.error(UI_TEXT.learningMaterials.toastErrorTitle, "Vui lòng nhập đầy đủ thông tin các câu hỏi nhúng");
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
             const promises = [];
 
             // 1. Check if video info is dirty
@@ -270,11 +298,20 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                     const qObj = q as Record<string, unknown>;
                     const textVal = String(qObj.content || qObj.question || qObj.title || qObj.text || qObj.questionText || "");
                     const ansVal = String(qObj.answer || qObj.answerText || qObj.solution || qObj.explanation || "");
+                    const options = Array.isArray(qObj.options) && qObj.options.length > 0
+                        ? qObj.options
+                        : ansVal
+                            ? [{ content: ansVal, isCorrect: true }]
+                            : [];
                     return {
                         ...(qObj.id ? { id: String(qObj.id) } : {}),
+                        ...(qObj._id ? { _id: String(qObj._id) } : {}),
                         content: textVal,
                         question: textVal,
                         answer: ansVal,
+                        type: qObj.type || "SINGLE_CHOICE",
+                        points: qObj.points ?? 1,
+                        options,
                     };
                 });
 
@@ -346,25 +383,26 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
             setIsSaving(false);
         }
     }, [
-        isVideoDirty,
-        isReadingDirty,
-        videoUrl,
-        videoFile,
-        videoDuration,
-        videoQuestions,
-        readingContent,
-        readingFile,
-        readingHtmlFiles,
-        readingPdfUrl,
-        readingQuestions,
-        quizId,
-        isQuizQuestionsDirty,
-        lessonId,
-        localLesson,
-        queryClient,
-        isQuizLinkDirty,
-        quizSaveRef,
-    ]);
+            activeTab,
+            isVideoDirty,
+            isReadingDirty,
+            videoUrl,
+            videoFile,
+            videoDuration,
+            videoQuestions,
+            readingContent,
+            readingFile,
+            readingHtmlFiles,
+            readingPdfUrl,
+            readingQuestions,
+            quizId,
+            isQuizQuestionsDirty,
+            lessonId,
+            localLesson,
+            queryClient,
+            isQuizLinkDirty,
+            quizSaveRef,
+        ]);
 
     useEffect(() => {
         if (onRegisterSave) {
@@ -404,8 +442,8 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                                     type="button"
                                     onClick={() => setReadingSubTab("document")}
                                     className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${readingSubTab === "document"
-                                            ? "bg-wine text-white shadow-xs"
-                                            : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
+                                        ? "bg-wine text-white shadow-xs"
+                                        : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
                                         }`}
                                 >
                                     <FileText className={`size-3.5 ${readingSubTab === "document" ? "text-white" : "text-slate-400"}`} />
@@ -415,8 +453,8 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                                     type="button"
                                     onClick={() => setReadingSubTab("questions")}
                                     className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${readingSubTab === "questions"
-                                            ? "bg-wine text-white shadow-xs"
-                                            : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
+                                        ? "bg-wine text-white shadow-xs"
+                                        : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
                                         }`}
                                 >
                                     <HelpCircle className={`size-3.5 ${readingSubTab === "questions" ? "text-white" : "text-slate-400"}`} />
@@ -508,6 +546,7 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                             setFile={setVideoFile}
                             questions={videoQuestions}
                             setQuestions={setVideoQuestions}
+                            submitted={submitted}
                             onDelete={() => triggerDelete("video")}
                             onRegisterOpenModal={(fn) => {
                                 openVideoModalRef.current = fn;

@@ -6,6 +6,7 @@ import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 import {
     addCourseCategory,
     deleteCourseCategory,
@@ -13,13 +14,7 @@ import {
     updateCourseCategory,
 } from "@/services/course.service";
 import { toast } from "@/services/toast.service";
-
-export interface CategoryManagementModalProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSelectCategory?: (category: string) => void;
-    selectedCategory?: string;
-}
+import type { CategoryManagementModalProps } from "@/types/course.types";
 
 export function CategoryManagementModal({
     isOpen,
@@ -43,14 +38,14 @@ export function CategoryManagementModal({
         mutationFn: addCourseCategory,
         onSuccess: (addedName) => {
             queryClient.invalidateQueries({ queryKey: ["course-categories"] });
-            toast.success("Thành công", "Đã thêm danh mục mới thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.categoryManagementModal.toastAddSuccess);
             setNewCategoryInput("");
             if (onSelectCategory && addedName) {
                 onSelectCategory(addedName);
             }
         },
         onError: (error: Error) => {
-            toast.error("Lỗi", error.message || "Không thể thêm danh mục");
+            toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.categoryManagementModal.toastAddError);
         },
     });
 
@@ -60,7 +55,7 @@ export function CategoryManagementModal({
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ["course-categories"] });
             queryClient.invalidateQueries({ queryKey: ["courses"] });
-            toast.success("Thành công", "Đã cập nhật danh mục thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.categoryManagementModal.toastUpdateSuccess);
             setEditingCategory(null);
             setEditingValue("");
             if (onSelectCategory && selectedCategory === variables.oldName) {
@@ -68,7 +63,7 @@ export function CategoryManagementModal({
             }
         },
         onError: (error: Error) => {
-            toast.error("Lỗi", error.message || "Không thể cập nhật danh mục");
+            toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.categoryManagementModal.toastUpdateError);
         },
     });
 
@@ -77,11 +72,11 @@ export function CategoryManagementModal({
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["course-categories"] });
             queryClient.invalidateQueries({ queryKey: ["courses"] });
-            toast.success("Thành công", "Đã xóa danh mục thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.categoryManagementModal.toastDeleteSuccess);
             setDeletingCategory(null);
         },
         onError: (error: Error) => {
-            toast.error("Lỗi", error.message || "Không thể xóa danh mục");
+            toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.categoryManagementModal.toastDeleteError);
         },
     });
 
@@ -90,7 +85,7 @@ export function CategoryManagementModal({
         const trimmed = newCategoryInput.trim();
         if (!trimmed) return;
         if (categories.includes(trimmed)) {
-            toast.error("Lỗi", "Danh mục này đã tồn tại");
+            toast.error(UI_TEXT.common.errorTitle, UI_TEXT.categoryManagementModal.toastExistsError);
             return;
         }
         await addCategoryMutation.mutateAsync(trimmed);
@@ -129,10 +124,10 @@ export function CategoryManagementModal({
                     {/* Header */}
                     <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
                         <Heading slot="title" className="text-xl font-bold text-slate-900">
-                            Quản lý Danh mục Môn học
+                            {UI_TEXT.categoryManagementModal.modalTitle}
                         </Heading>
                         <p className="mt-1 text-xs text-slate-500">
-                            Thêm, chỉnh sửa, xóa hoặc chọn danh mục môn học cho môn học hiện tại
+                            {UI_TEXT.categoryManagementModal.modalSubtitle}
                         </p>
                         <button
                             type="button"
@@ -148,7 +143,7 @@ export function CategoryManagementModal({
                         {/* Add category form */}
                         <form onSubmit={handleAdd} className="flex items-center gap-2">
                             <Input
-                                placeholder="Nhập tên danh mục môn học mới..."
+                                placeholder={UI_TEXT.categoryManagementModal.inputPlaceholder}
                                 value={newCategoryInput}
                                 onChange={(val) => setNewCategoryInput(val)}
                                 className="flex-1"
@@ -159,20 +154,20 @@ export function CategoryManagementModal({
                                 className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-wine px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-wine/90 disabled:opacity-50"
                             >
                                 <Plus className="size-4" />
-                                <span>Thêm danh mục</span>
+                                <span>{UI_TEXT.categoryManagementModal.addBtn}</span>
                             </button>
                         </form>
 
                         {/* List categories */}
                         <div className="flex flex-col gap-2 pt-2">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                Danh sách danh mục ({categories.length})
+                                {UI_TEXT.categoryManagementModal.listHeaderPrefix}{categories.length}{UI_TEXT.categoryManagementModal.listHeaderSuffix}
                             </h4>
 
                             {isLoading ? (
-                                <div className="py-8 text-center text-sm text-slate-400">Đang tải danh mục...</div>
+                                <div className="py-8 text-center text-sm text-slate-400">{UI_TEXT.categoryManagementModal.loading}</div>
                             ) : categories.length === 0 ? (
-                                <div className="py-8 text-center text-sm text-slate-400">Chưa có danh mục nào</div>
+                                <div className="py-8 text-center text-sm text-slate-400">{UI_TEXT.categoryManagementModal.empty}</div>
                             ) : (
                                 <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-slate-50/50">
                                     {categories.map((cat) => {
@@ -196,7 +191,7 @@ export function CategoryManagementModal({
                                                             onClick={() => handleSaveEdit(cat)}
                                                             disabled={updateCategoryMutation.isPending}
                                                             className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white"
-                                                            title="Lưu thay đổi"
+                                                            title={UI_TEXT.categoryManagementModal.saveTooltip}
                                                         >
                                                             <Check className="size-4" />
                                                         </button>
@@ -204,7 +199,7 @@ export function CategoryManagementModal({
                                                             type="button"
                                                             onClick={() => setEditingCategory(null)}
                                                             className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800"
-                                                            title="Hủy"
+                                                            title={UI_TEXT.categoryManagementModal.cancelTooltip}
                                                         >
                                                             <X className="size-4" />
                                                         </button>
@@ -215,28 +210,28 @@ export function CategoryManagementModal({
                                                             <span className="text-sm font-bold text-slate-800">{cat}</span>
                                                             {isSelected && (
                                                                 <span className="inline-flex items-center rounded-full bg-wine/10 px-2.5 py-0.5 text-[11px] font-bold text-wine">
-                                                                    Đang chọn
+                                                                    {UI_TEXT.categoryManagementModal.selectedBadge}
                                                                 </span>
                                                             )}
                                                         </div>
 
                                                         {deletingCategory === cat ? (
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-xs text-rose-600 font-semibold">Xác nhận xóa?</span>
+                                                                <span className="text-xs text-rose-600 font-semibold">{UI_TEXT.categoryManagementModal.confirmDeleteText}</span>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleConfirmDelete(cat)}
                                                                     disabled={deleteCategoryMutation.isPending}
                                                                     className="rounded-full bg-rose-600 px-3 py-1 text-xs font-bold text-white shadow-xs transition hover:bg-rose-700 disabled:opacity-50"
                                                                 >
-                                                                    Xóa
+                                                                    {UI_TEXT.categoryManagementModal.deleteBtn}
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setDeletingCategory(null)}
                                                                     className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-50"
                                                                 >
-                                                                    Hủy
+                                                                    {UI_TEXT.categoryManagementModal.cancelBtn}
                                                                 </button>
                                                             </div>
                                                         ) : (
@@ -247,14 +242,14 @@ export function CategoryManagementModal({
                                                                         onClick={() => handleSelect(cat)}
                                                                         className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold transition ${isSelected ? "bg-wine text-white shadow-xs" : "border border-wine/30 text-wine hover:bg-wine hover:text-white"}`}
                                                                     >
-                                                                        {isSelected ? "Đã chọn" : "Chọn"}
+                                                                        {isSelected ? UI_TEXT.categoryManagementModal.selectedBtn : UI_TEXT.categoryManagementModal.selectBtn}
                                                                     </button>
                                                                 )}
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleStartEdit(cat)}
                                                                     className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-amber-50 hover:text-amber-600"
-                                                                    title="Sửa danh mục"
+                                                                    title={UI_TEXT.categoryManagementModal.editTooltip}
                                                                 >
                                                                     <Pencil className="size-4" />
                                                                 </button>
@@ -262,7 +257,7 @@ export function CategoryManagementModal({
                                                                     type="button"
                                                                     onClick={() => setDeletingCategory(cat)}
                                                                     className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                                                                    title="Xóa danh mục"
+                                                                    title={UI_TEXT.categoryManagementModal.deleteTooltip}
                                                                 >
                                                                     <Trash2 className="size-4" />
                                                                 </button>

@@ -1,5 +1,3 @@
-"use client";
-
 import { BookText, ExternalLink, File, FileText, HelpCircle, Map, ScrollText } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import type { SessionViewerWrapperProps } from "@/types/material.types";
@@ -49,7 +47,65 @@ export function SessionViewerWrapper({ session, activeTab, selectedPracticeId }:
                         <Map className="size-8 text-slate-300" />
                         <h4 className="text-xs font-bold text-slate-800">{UI_TEXT.sessionViewer.labelNoConfigTitle}</h4>
                     </div>
-                ) : activeTab === "mindmap" && hasMindmap ? (
+                ) : activeTab === "mindmap" ? (
+                    <div className="animate-fadeIn flex h-full min-h-0 flex-1 flex-col">
+                        {hasMindmap ? (
+                            (() => {
+                                const embedInfo = getEmbeddableUrl(session.mindmap || "");
+                                return embedInfo.canEmbed ? (
+                                    <div className="flex h-full flex-1 flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="max-w-[400px] truncate text-[10px] font-semibold text-slate-400">
+                                                {UI_TEXT.sessionViewer.labelPathPrefix}{" "}
+                                                <a href={session.mindmap} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                                                    {session.mindmap}
+                                                </a>
+                                            </span>
+                                            <a
+                                                href={session.mindmap}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black text-slate-700 transition duration-150 hover:bg-slate-100"
+                                            >
+                                                {UI_TEXT.sessionViewer.btnOpenInNewTab} <ExternalLink className="size-3" />
+                                            </a>
+                                        </div>
+                                        <div className="w-full flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                            <iframe
+                                                src={embedInfo.embedUrl}
+                                                className="h-full w-full border-none"
+                                                title={UI_TEXT.sessionViewer.iframeMindmapPreview}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 p-8 text-center">
+                                        <div className="flex size-16 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400">
+                                            <Map className="size-7 text-slate-400" />
+                                        </div>
+                                        <div className="flex max-w-[360px] flex-col gap-1">
+                                            <h4 className="text-sm font-black text-slate-800">{UI_TEXT.sessionViewer.labelNoMindmapTitle}</h4>
+                                            <p className="text-xs leading-relaxed font-semibold text-slate-400">{UI_TEXT.sessionViewer.labelEmbedSecurityDesc}</p>
+                                        </div>
+                                        <a
+                                            href={session.mindmap}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:bg-wine-hover flex cursor-pointer items-center gap-1.5 rounded-full bg-wine px-6 py-2.5 text-xs font-black text-white shadow-md shadow-wine/20 transition duration-150 active:scale-[0.98]"
+                                        >
+                                            {UI_TEXT.sessionViewer.btnOpenLinkMindmap} <ExternalLink className="size-3.5" />
+                                        </a>
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 p-8 text-center">
+                                <Map className="size-8 text-slate-300" />
+                                <h4 className="text-xs font-bold text-slate-800">{UI_TEXT.sessionViewer.noMindmapTitle}</h4>
+                            </div>
+                        )}
+                    </div>
+                ) : activeTab === "pdf" && hasPdf ? (
                     <div className="animate-fadeIn flex h-full min-h-0 flex-1 flex-col">
                         {(() => {
                             const embedInfo = getEmbeddableUrl(session.mindmap || "");

@@ -10,6 +10,8 @@ import type {
     UpdateStaffNotificationDto,
 } from "@/types/notification.types";
 
+const defaultLimit = 10;
+
 export const notificationService = {
     listStaffNotifications: async (params?: { limit?: number; offset?: number }): Promise<PaginatedNotificationsResponse> => {
         const query = new URLSearchParams();
@@ -23,11 +25,11 @@ export const notificationService = {
             return {
                 items: Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : [],
                 totalItems: typeof raw.totalItems === "number" ? raw.totalItems : raw.items?.length || 0,
-                limit: raw.limit || params?.limit || 10,
+                limit: raw.limit || params?.limit || defaultLimit,
                 offset: raw.offset || params?.offset || 0,
             };
         }
-        return { items: [], totalItems: 0, limit: 10, offset: 0 };
+        return { items: [], totalItems: 0, limit: defaultLimit, offset: 0 };
     },
 
     createStaffNotification: async (dto: CreateStaffNotificationDto): Promise<LmsNotificationEntity> => {

@@ -238,7 +238,7 @@ export async function updateSession(
 
 export async function updateLesson(
     id: string,
-    body: Partial<{ name: string; position: number; video: unknown; reading: unknown; quiz: unknown; quizId: string }>,
+    body: Partial<{ name: string; position: number; sequentialBlocks: boolean; video: unknown; reading: unknown; quiz: unknown; quizId: string }>,
 ): Promise<Lesson> {
     const res = await httpClient<any>(`/api/staff/lessons/${id}`, {
         method: HttpMethod.PUT,

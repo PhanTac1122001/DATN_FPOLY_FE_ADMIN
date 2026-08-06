@@ -19,7 +19,7 @@ function mapBackendToCourseItem(raw: CourseBackendEntity): CourseItem {
         category: raw.scoringMethod || "",
         description: raw.description,
         learningOutcomes: raw.learningOutcomes,
-        accessMode: raw.accessMode || "SEQUENTIAL",
+        accessMode: raw.whitelist !== undefined ? (raw.whitelist ? "OPEN" : "SEQUENTIAL") : raw.accessMode || "SEQUENTIAL",
         isVisible: raw.isVisible ?? true,
         position: raw.position,
         hour: raw.hour,
@@ -42,6 +42,7 @@ function mapPayloadToCreateDto(payload: CreateCoursePayload) {
         description: payload.description,
         learningOutcomes: payload.learningOutcomes,
         accessMode: payload.accessMode || "SEQUENTIAL",
+        whitelist: payload.accessMode === "OPEN",
         isVisible: payload.isVisible ?? true,
         scoringMethod: payload.category || "FULL_PROJECT",
         position: payload.position,
@@ -69,7 +70,7 @@ async function syncCourseScoringFormula(courseId: string, grading?: CourseGradin
     await deleteCourseScoringFormula(courseId);
 }
 
-let dynamicCategories: string[] = [];
+const dynamicCategories: string[] = [];
 
 export async function getCourseCategories(): Promise<string[]> {
     try {
@@ -176,7 +177,10 @@ export async function updateCourse(id: string, payload: UpdateCoursePayload): Pr
     if (payload.code) dto.courseCode = payload.code;
     if (payload.description !== undefined) dto.description = payload.description;
     if (payload.learningOutcomes !== undefined) dto.learningOutcomes = payload.learningOutcomes;
-    if (payload.accessMode) dto.accessMode = payload.accessMode;
+    if (payload.accessMode) {
+        dto.accessMode = payload.accessMode;
+        dto.whitelist = payload.accessMode === "OPEN";
+    }
     if (payload.isVisible !== undefined) dto.isVisible = payload.isVisible;
     if (payload.category) dto.scoringMethod = payload.category;
     if (payload.position !== undefined) dto.position = payload.position;

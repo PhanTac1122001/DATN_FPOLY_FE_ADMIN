@@ -1,13 +1,50 @@
-"use client";
-
-import { BookText, Play, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookText, FileText, HelpCircle, Play, X } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { SessionKindEnum } from "@/constants/class.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { sessionTypeService } from "@/services/session-type.service";
 import type { EditSessionModalProps } from "@/types/course.types";
+import type { SessionTypeOption } from "@/types/courseware.types";
+import { SessionTypeEnum } from "@/types/material.types";
 
 export function EditSessionModal({ isOpen, onOpenChange, editingSession, setEditingSession, onSubmit, isPending }: EditSessionModalProps) {
+    const [availableTypes, setAvailableTypes] = useState<SessionTypeOption[]>([
+        { id: SessionTypeEnum.LY_THUYET, label: UI_TEXT.addSessionModal.sessionTypeTheory, code: SessionTypeEnum.LY_THUYET },
+        { id: SessionTypeEnum.THUC_HANH, label: UI_TEXT.addSessionModal.sessionTypePractice, code: SessionTypeEnum.THUC_HANH },
+        { id: SessionTypeEnum.BAI_TAP, label: UI_TEXT.addSessionModal.sessionTypeExercise, code: SessionTypeEnum.BAI_TAP },
+        { id: SessionTypeEnum.KIEM_TRA, label: UI_TEXT.addSessionModal.sessionTypeQuiz, code: SessionTypeEnum.KIEM_TRA },
+    ]);
+    const [typesFromApi, setTypesFromApi] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        sessionTypeService
+            .getAll(false)
+            .then((data) => {
+                if (data && data.length > 0) {
+                    const mapped: SessionTypeOption[] = data
+                        .filter((t) => t.isActive)
+                        .map((t) => ({
+                            id: t.id,
+                            label: t.name,
+                            code: t.code,
+                        }));
+                    if (mapped.length > 0) {
+                        setAvailableTypes(mapped);
+                        setTypesFromApi(true);
+                    }
+                }
+            })
+            .catch((err) => {
+                console.warn("Could not load backend session types, using default types:", err);
+            });
+    }, [isOpen]);
+
+    const selectedTypeId = editingSession?.typeId;
+    const selectedTypeCode = editingSession?.type;
+
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onOpenChange}>
             <CustomModal.Content className="w-full max-w-3xl !rounded-[20px]">
@@ -48,36 +85,40 @@ export function EditSessionModal({ isOpen, onOpenChange, editingSession, setEdit
                                         </div>
                                         <div className="col-span-2 flex flex-col gap-1.5">
                                             <label className="text-xs font-medium text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
-                                            <div className="flex h-[38px] w-full items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setEditingSession((prev) => (prev ? { ...prev, type: SessionKindEnum.THEORY } : null))}
-                                                    className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
-                                                        (editingSession.type || SessionKindEnum.THEORY) === SessionKindEnum.THEORY
-                                                            ? "bg-blue-600 text-white shadow-xs"
-                                                            : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                                                    }`}
-                                                >
-                                                    <BookText
-                                                        className={`size-3.5 ${(editingSession.type || SessionKindEnum.THEORY) === SessionKindEnum.THEORY ? "text-white" : "text-slate-400"}`}
-                                                    />
-                                                    <span>{UI_TEXT.courseDetail.sessionTypeTheory}</span>
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setEditingSession((prev) => (prev ? { ...prev, type: SessionKindEnum.PRACTICE } : null))}
-                                                    className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
-                                                        editingSession.type === SessionKindEnum.PRACTICE
-                                                            ? "bg-blue-600 text-white shadow-xs"
-                                                            : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                                                    }`}
-                                                >
-                                                    <Play
-                                                        className={`size-3.5 ${editingSession.type === SessionKindEnum.PRACTICE ? "text-white" : "text-slate-400"}`}
-                                                    />
-                                                    <span>{UI_TEXT.courseDetail.sessionTypePractice}</span>
-                                                </button>
+                                            <div className="flex w-full flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50 p-1.5">
+                                                {availableTypes.map((t) => {
+                                                    const isSelected = typesFromApi
+                                                        ? selectedTypeId === t.id || (!selectedTypeId && selectedTypeCode === t.code)
+                                                        : (selectedTypeCode || SessionKindEnum.THEORY) === t.id;
+                                                    return (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setEditingSession((prev) =>
+                                                                    prev
+                                                                        ? {
+                                                                              ...prev,
+                                                                              typeId: typesFromApi ? t.id : prev.typeId,
+                                                                              type: t.code || t.id,
+                                                                          }
+                                                                        : null,
+                                                                )
+                                                            }
+                                                            className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all ${
+                                                                isSelected
+                                                                    ? "border-wine bg-wine text-white shadow-xs"
+                                                                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                                                            }`}
+                                                        >
+                                                            {(t.code || t.id) === SessionTypeEnum.LY_THUYET && <BookText className="size-3.5" />}
+                                                            {(t.code || t.id) === SessionTypeEnum.THUC_HANH && <Play className="size-3.5" />}
+                                                            {(t.code || t.id) === SessionTypeEnum.BAI_TAP && <FileText className="size-3.5" />}
+                                                            {(t.code || t.id) === SessionTypeEnum.KIEM_TRA && <HelpCircle className="size-3.5" />}
+                                                            <span>{t.label}</span>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                         <div className="col-span-2 flex flex-col gap-1.5">

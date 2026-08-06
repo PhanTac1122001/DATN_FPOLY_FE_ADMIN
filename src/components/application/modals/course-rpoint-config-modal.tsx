@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Award, Info, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
+import { AlertCircle, Award, Info, RotateCcw, Save, Trash2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
-import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -14,16 +13,14 @@ import {
     setCourseRpointFormula,
 } from "@/services/auto-rpoint.service";
 import { toast } from "@/services/toast.service";
-import type { CourseRpointConfigModalProps, RpointFormula, RpointTier } from "@/types/rpoint.types";
+import type { CourseRpointConfigModalProps, CourseRpointTabType, RpointFormula, RpointTier } from "@/types/rpoint.types";
 import { cloneRpointFormula } from "@/utils/rpoint-formula.utils";
-
-type TabType = "linear" | "tiers" | "bonus";
 
 export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, courseTitle }: CourseRpointConfigModalProps) {
     const queryClient = useQueryClient();
     const [formula, setFormula] = useState<RpointFormula | null>(null);
     const [isDefault, setIsDefault] = useState(true);
-    const [activeTab, setActiveTab] = useState<TabType>("linear");
+    const [activeTab, setActiveTab] = useState<CourseRpointTabType>("linear");
 
     const t = UI_TEXT.courseRpointModal;
 
@@ -276,10 +273,14 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                             <>
                                 {/* Validation Error Banner */}
                                 {validationErrors.length > 0 && (
-                                    <div className="flex flex-col gap-1 rounded-2xl border border-rose-200 bg-rose-50/70 text-xs text-rose-700">
+                                    <div className="flex flex-col gap-1 p-4 rounded-2xl border border-rose-200 bg-rose-50/70 text-xs text-rose-700">
                                         <div className="flex items-center gap-2 font-bold text-rose-800">
                                             <AlertCircle className="size-4 shrink-0" />
-                                            <span>Công thức chưa hợp lệ ({validationErrors.length} lỗi):</span>
+                                            <span>
+                                                {t.invalidFormulaPrefix}
+                                                {validationErrors.length}
+                                                {t.errorsSuffix}
+                                            </span>
                                         </div>
                                         <ul className="ml-6 list-disc space-y-0.5 font-medium">
                                             {validationErrors.map((err, idx) => (
@@ -291,10 +292,10 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
 
                                 {/* TAB 1: Linear Groups (Chuyên cần) */}
                                 {activeTab === "linear" && (
-                                    <div className="flex flex-col gap-6">
+                                    <div className="flex flex-col gap-8">
                                         {/* Attendance */}
                                         <div className="flex flex-col gap-3 rounded-2xl ">
-                                            <h3 className="text-xs font-extrabold tracking-wider text-slate-700 uppercase">
+                                            <h3 className="text-xs font-bold text-slate-800">
                                                 {t.attendanceSection}
                                             </h3>
                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -329,7 +330,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
 
                                         {/* Assignment */}
                                         <div className="flex flex-col gap-3 rounded-2xl ">
-                                            <h3 className="text-xs font-extrabold tracking-wider text-slate-700 uppercase">
+                                            <h3 className="text-xs font-bold text-slate-800">
                                                 {t.assignmentSection}
                                             </h3>
                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -361,16 +362,11 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                )}
 
-                                {/* TAB 2: Tier Groups (E-learning / Vi phạm) */}
-                                {activeTab === "tiers" && (
-                                    <div className="flex flex-col gap-8">
                                         {/* Preparation Tiers */}
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center justify-between gap-4">
-                                                <h3 className="text-xs font-extrabold tracking-wider text-slate-700 uppercase">
+                                                <h3 className="text-xs font-bold text-slate-800">
                                                     {t.preparationSection}
                                                 </h3>
                                                 <div className="flex items-center gap-2">
@@ -389,7 +385,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
 
                                             <div className="overflow-hidden rounded-2xl border border-slate-200">
                                                 <table className="w-full text-left text-xs">
-                                                    <thead className="bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                                    <thead className="bg-slate-50 text-[11px] font-bold text-slate-500">
                                                         <tr>
                                                             <th className="w-28 px-4 py-3 whitespace-nowrap">{t.thMinCount}</th>
                                                             <th className="w-48 px-4 py-3 whitespace-nowrap">{t.thDeduction}</th>
@@ -423,7 +419,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                                             className="w-24 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-rose-600 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
                                                                         />
                                                                     </td>
-                                                                    <td className="px-4 py-2.5 align-middle font-mono font-bold text-slate-700">
+                                                                    <td className="px-4 py-2.5 align-middle font-bold text-slate-700">
                                                                         {tier.score} / {formula.preparation.max}
                                                                     </td>
                                                                     <td className="w-28 px-4 py-2.5 align-middle text-center">
@@ -443,20 +439,18 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => addTierRow("preparation")}
-                                                className="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-wine hover:underline"
-                                            >
-                                                <Plus className="size-4" />
-                                                <span>{t.addTierBtn}</span>
-                                            </button>
-                                        </div>
 
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB 2: Tier Groups (E-learning / Vi phạm) */}
+                                {activeTab === "tiers" && (
+                                    <div className="flex flex-col gap-8">
                                         {/* Compliance Tiers */}
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center justify-between gap-4">
-                                                <h3 className="text-xs font-extrabold tracking-wider text-slate-700 uppercase">
+                                                <h3 className="text-xs font-bold text-slate-800">
                                                     {t.complianceSection}
                                                 </h3>
                                                 <div className="flex items-center gap-2">
@@ -475,7 +469,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
 
                                             <div className="overflow-hidden rounded-2xl border border-slate-200">
                                                 <table className="w-full text-left text-xs">
-                                                    <thead className="bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                                    <thead className="bg-slate-50 text-[11px] font-bold text-slate-500">
                                                         <tr>
                                                             <th className="w-28 px-4 py-3 whitespace-nowrap">{t.thMinCount}</th>
                                                             <th className="w-48 px-4 py-3 whitespace-nowrap">{t.thDeduction}</th>
@@ -509,7 +503,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                                             className="w-24 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-rose-600 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
                                                                         />
                                                                     </td>
-                                                                    <td className="px-4 py-2.5 align-middle font-mono font-bold text-slate-700">
+                                                                    <td className="px-4 py-2.5 align-middle font-bold text-slate-700">
                                                                         {tier.score} / {formula.compliance.max}
                                                                     </td>
                                                                     <td className="w-28 px-4 py-2.5 align-middle text-center">
@@ -529,14 +523,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => addTierRow("compliance")}
-                                                className="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-wine hover:underline"
-                                            >
-                                                <Plus className="size-4" />
-                                                <span>{t.addTierBtn}</span>
-                                            </button>
+
                                         </div>
                                     </div>
                                 )}
@@ -545,7 +532,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                 {activeTab === "bonus" && (
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center justify-between gap-4">
-                                            <h3 className="text-xs font-extrabold tracking-wider text-slate-700 uppercase">
+                                            <h3 className="text-xs font-bold text-slate-800">
                                                 {t.bonusSection}
                                             </h3>
                                             <div className="flex items-center gap-2">
@@ -596,7 +583,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                 className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-wine-deep disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Save className="size-4 shrink-0" />
-                                <span>{saveMutation.isPending ? "Đang lưu..." : t.saveBtn}</span>
+                                <span>{saveMutation.isPending ? t.saving : t.saveBtn}</span>
                             </button>
                         </div>
                     </div>

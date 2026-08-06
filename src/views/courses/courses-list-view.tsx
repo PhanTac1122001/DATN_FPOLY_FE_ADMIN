@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, Calculator, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Award, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { CourseFormModal } from "@/components/application/modals/course-form-modal";
@@ -37,33 +37,33 @@ export function CoursesListView() {
     const createMutation = useMutation({
         mutationFn: createCourse,
         onSuccess: () => {
-            toast.success("Thành công", "Tạo môn học mới thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.coursesList.toastCreateSuccess);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
         },
         onError: (error: Error) => {
-            toast.error("Lỗi", error.message || "Không thể tạo môn học");
+            toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.coursesList.toastCreateError);
         },
     });
 
     const updateMutation = useMutation({
         mutationFn: ({ id, payload }: { id: string; payload: CreateCoursePayload }) => updateCourse(id, payload),
         onSuccess: () => {
-            toast.success("Thành công", "Cập nhật môn học thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.coursesList.toastUpdateSuccess);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
         },
         onError: (error: Error) => {
-            toast.error("Lỗi", error.message || "Không thể cập nhật môn học");
+            toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.coursesList.toastUpdateError);
         },
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteCourse,
         onSuccess: () => {
-            toast.success("Thành công", "Xóa môn học thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.coursesList.toastDeleteSuccess);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
         },
         onError: (error: Error) => {
-            toast.error("Lỗi", error.message || "Không thể xóa môn học");
+            toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.coursesList.toastDeleteError);
         },
     });
 
@@ -121,70 +121,47 @@ export function CoursesListView() {
 
                 {/* Table */}
                 <div className="flex-1 overflow-auto">
-                    <table className="w-full min-w-[850px] table-auto border-collapse text-left text-sm text-ink">
+                    <table className="w-full min-w-[650px] table-auto border-collapse text-left text-sm text-ink">
                         <thead>
                             <tr className="border-b border-line bg-slate-50/50 text-[11px] font-bold tracking-wider text-muted uppercase">
                                 <th className="w-16 px-6 py-4 text-center">{UI_TEXT.coursesPage.thStt}</th>
-                                <th className="w-32 px-6 py-4">{UI_TEXT.coursesPage.thCode}</th>
+                                <th className="w-48 px-6 py-4">{UI_TEXT.coursesPage.thCode}</th>
                                 <th className="px-6 py-4">{UI_TEXT.coursesPage.thTitle}</th>
-                                <th className="px-6 py-4">{UI_TEXT.coursesPage.thFormula}</th>
-                                <th className="w-44 px-6 py-4 text-center">{UI_TEXT.coursesPage.thActions}</th>
+                                <th className="w-48 px-6 py-4 text-center">{UI_TEXT.coursesPage.thActions}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-muted">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-muted">
                                         {UI_TEXT.coursesPage.loading}
                                     </td>
                                 </tr>
                             ) : paginatedCourses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-muted">
+                                    <td colSpan={4} className="px-6 py-12 text-center text-muted">
                                         {UI_TEXT.coursesPage.noDataTitle}
                                     </td>
                                 </tr>
                             ) : (
                                 paginatedCourses.map((item, index) => (
-                                    <tr key={item.id} className="group transition duration-150 hover:bg-slate-50">
-                                        <td className="border-b border-line px-6 py-4 text-center font-bold text-muted group-last:border-b-0">
+                                    <tr key={item.id} className="group transition duration-150 hover:bg-slate-50/80">
+                                        <td className="border-b border-line px-6 py-4 text-center font-bold text-slate-400 group-last:border-b-0">
                                             {(page - 1) * limit + index + 1}
                                         </td>
-                                        <td className="border-b border-line px-6 py-4 font-mono font-bold text-wine group-last:border-b-0">{item.code}</td>
-                                        <td className="border-b border-line px-6 py-4 font-bold text-ink group-last:border-b-0">
-                                            <div>{item.title}</div>
-                                            {item.description && <div className="mt-0.5 text-xs font-normal text-muted">{item.description}</div>}
+                                        <td className="border-b border-line px-6 py-4 group-last:border-b-0 whitespace-nowrap">
+                                            <span className="inline-flex items-center rounded-lg bg-wine/5 px-2.5 py-1 font-mono text-xs font-bold text-wine border border-wine/10 whitespace-nowrap">
+                                                {item.code}
+                                            </span>
                                         </td>
                                         <td className="border-b border-line px-6 py-4 group-last:border-b-0">
-                                            {item.gradingFormula.useCustomFormula !== false ? (
-                                                <div className="flex items-center gap-2 text-xs font-medium text-muted">
-                                                    <Calculator className="size-3.5 text-wine shrink-0" />
-                                                    <span>
-                                                        {UI_TEXT.coursesPage.formulaCc}
-                                                        {item.gradingFormula.attendanceWeight}
-                                                        {UI_TEXT.coursesPage.formulaQuiz}
-                                                        {item.gradingFormula.quizWeight}
-                                                        {UI_TEXT.coursesPage.formulaExam}
-                                                        {item.gradingFormula.examWeight}
-                                                        {UI_TEXT.coursesPage.formulaPass}
-                                                        {item.gradingFormula.passScore}
-                                                        {UI_TEXT.coursesPage.formulaSuffix}
-                                                    </span>
-                                                </div>
-                                            ) : item.category ? (
-                                                <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
-                                                    <Calculator className="size-3.5 text-wine shrink-0" />
-                                                    <span>{item.category}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs font-medium text-muted">{UI_TEXT.coursesPage.notEnabled}</span>
-                                            )}
+                                            <div className="font-bold text-slate-900 text-sm">{item.title}</div>
                                         </td>
                                         <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <Link
                                                     href={`/elearning/${item.id}` as Route}
-                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-wine/10 text-wine transition duration-200 hover:scale-105 hover:bg-wine hover:text-white"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-200 hover:scale-105 hover:bg-indigo-600 hover:text-white"
                                                     title={UI_TEXT.coursesPage.elearningTooltip}
                                                 >
                                                     <Eye className="size-4" />
@@ -200,7 +177,7 @@ export function CoursesListView() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditClick(item)}
-                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-amber-50 text-amber-600 transition duration-200 hover:bg-amber-500 hover:text-white"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
                                                     title={UI_TEXT.coursesPage.btnEdit}
                                                 >
                                                     <Pencil className="size-4" />

@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
-import { BookText, FileText, HelpCircle, Play, ShieldAlert, Tag, Trash2 } from "lucide-react";
+import { BookText, FileText, HelpCircle, Layers, Play, Tag, Trash2 } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { sessionTypeService } from "@/services/session-type.service";
 import type { SessionFormProps, SessionTypeOption } from "@/types/courseware.types";
@@ -17,7 +15,7 @@ export function SessionForm({
     onRegisterSave,
     isDirty,
     onOpenManageTypes,
-    onOpenCompletionRule,
+    onOpenCompletionRule: _onOpenCompletionRule,
 }: SessionFormProps) {
     const formRef = useRef<HTMLFormElement>(null);
 
@@ -40,6 +38,7 @@ export function SessionForm({
                             id: t.id,
                             label: t.name,
                             code: t.code,
+                            defaultBlocks: t.defaultBlocks,
                         }));
                     if (mapped.length > 0) {
                         setAvailableTypes(mapped);
@@ -64,6 +63,10 @@ export function SessionForm({
 
     const title = mode === "create" ? UI_TEXT.courseDetail.addSessionTitle : UI_TEXT.courseDetail.editSessionTitle;
     const description = mode === "create" ? UI_TEXT.courseDetail.addSessionDescription : UI_TEXT.courseDetail.editSessionDescription;
+
+    const selectedType = availableTypes.find((t) =>
+        typesFromApi ? fields.typeId === t.id || (!fields.typeId && fields.type === t.code) : (fields.type || SessionTypeEnum.LY_THUYET) === t.id,
+    );
 
     return (
         <div className="relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6 shadow-xs">
@@ -127,9 +130,7 @@ export function SessionForm({
 
                                 <div className="flex w-full flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-1.5">
                                     {availableTypes.map((t) => {
-                                        const isSelected = typesFromApi
-                                            ? fields.typeId === t.id || (!fields.typeId && fields.type === t.code)
-                                            : (fields.type || SessionTypeEnum.LY_THUYET) === t.id;
+                                        const isSelected = selectedType?.id === t.id;
                                         return (
                                             <button
                                                 key={t.id}
@@ -157,6 +158,35 @@ export function SessionForm({
                                     })}
                                 </div>
                             </div>
+
+                            {mode === "create" && selectedType?.defaultBlocks && selectedType.defaultBlocks.length > 0 && (
+                                <div className="col-span-2 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                                    <div className="flex items-center gap-1.5 font-extrabold text-blue-900">
+                                        <Layers className="size-4 text-blue-600" />
+                                        <span>{UI_TEXT.addSessionModal.autoBlocksHint}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                        {selectedType.defaultBlocks.map((b, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="flex items-center gap-2 rounded-xl border border-blue-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs"
+                                            >
+                                                <span>{b.title}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">({b.type})</span>
+                                                {b.isRequired ? (
+                                                    <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">
+                                                        {UI_TEXT.sessionNode.requiredTag}
+                                                    </span>
+                                                ) : (
+                                                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+                                                        {UI_TEXT.sessionForm.optionalTag}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="col-span-2 flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.sessionDescLabel}</label>

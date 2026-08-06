@@ -4,20 +4,57 @@ import { FileText, Link as LinkIcon, Pencil, Plus, Trash2 } from "lucide-react";
 import { TiptapEditor } from "@/components/base/editor";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { type PracticeFormFieldsProps, SubmissionTypeEnum } from "@/types/courseware.types";
+import { isValidUrl } from "@/utils/url.utils";
 
-export function PracticeFormFields({ submissionType, setSubmissionType, content, setContent, resources, setResources }: PracticeFormFieldsProps) {
+export function PracticeFormFields({
+    practiceTitle,
+    setPracticeTitle,
+    submissionType,
+    setSubmissionType,
+    content,
+    setContent,
+    resources,
+    setResources,
+    submitted = false,
+}: PracticeFormFieldsProps) {
+    const isTitleInvalid = submitted && setPracticeTitle !== undefined && !practiceTitle?.trim();
+    const isContentInvalid = submitted && !content?.trim();
+
     return (
         <div className="flex flex-col gap-4">
+            {/* Practice Title (if supported) */}
+            {setPracticeTitle !== undefined && (
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                        {UI_TEXT.practiceEditor.practiceTitleLabel} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={practiceTitle || ""}
+                        onChange={(e) => setPracticeTitle(e.target.value)}
+                        placeholder={UI_TEXT.practiceEditor.placeholderTitle}
+                        className={`w-full rounded-full border bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 ${
+                            isTitleInvalid
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                        }`}
+                        autoFocus
+                    />
+                    {isTitleInvalid && (
+                        <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                    )}
+                </div>
+            )}
             {/* Submission Type */}
             <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-700">
+                <label className="text-xs font-bold text-slate-700">
                     {UI_TEXT.practiceFormFields.submissionTypeLabel} <span className="text-red-500">{"*"}</span>
                 </label>
-                <div className="flex h-[42px] w-full items-center gap-1 rounded-xl border border-slate-200/80 bg-slate-100/90 p-1">
+                <div className="flex h-[42px] w-full items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1">
                     <button
                         type="button"
                         onClick={() => setSubmissionType(SubmissionTypeEnum.LINK)}
-                        className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${
+                        className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
                             submissionType === SubmissionTypeEnum.LINK
                                 ? "bg-wine text-white shadow-xs"
                                 : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
@@ -29,7 +66,7 @@ export function PracticeFormFields({ submissionType, setSubmissionType, content,
                     <button
                         type="button"
                         onClick={() => setSubmissionType(SubmissionTypeEnum.FILE)}
-                        className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${
+                        className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
                             submissionType === SubmissionTypeEnum.FILE
                                 ? "bg-wine text-white shadow-xs"
                                 : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
@@ -41,7 +78,7 @@ export function PracticeFormFields({ submissionType, setSubmissionType, content,
                     <button
                         type="button"
                         onClick={() => setSubmissionType(SubmissionTypeEnum.TEXT)}
-                        className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${
+                        className={`flex h-full flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
                             submissionType === SubmissionTypeEnum.TEXT
                                 ? "bg-wine text-white shadow-xs"
                                 : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
@@ -55,21 +92,26 @@ export function PracticeFormFields({ submissionType, setSubmissionType, content,
 
             {/* TiptapEditor Content */}
             <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-700">
+                <label className="text-xs font-bold text-slate-700">
                     {UI_TEXT.practiceFormFields.contentLabel} <span className="text-red-500">{"*"}</span>
                 </label>
                 <TiptapEditor
                     value={content}
                     onChange={setContent}
                     placeholder={UI_TEXT.practiceFormFields.contentPlaceholder}
-                    className="min-h-[160px] w-full overflow-hidden rounded-xl border border-slate-200 bg-white"
+                    className={`min-h-[160px] w-full overflow-hidden rounded-xl border bg-white ${
+                        isContentInvalid ? "border-red-500" : "border-slate-200"
+                    }`}
                 />
+                {isContentInvalid && (
+                    <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                )}
             </div>
 
             {/* Resources List */}
             <div className="flex flex-col gap-2 pt-1">
                 <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-slate-700">{UI_TEXT.practiceFormFields.resourcesLabel}</label>
+                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.practiceFormFields.resourcesLabel}</label>
                     <button
                         type="button"
                         onClick={() => setResources((prev) => [...prev, { label: "", url: "" }])}
@@ -79,40 +121,54 @@ export function PracticeFormFields({ submissionType, setSubmissionType, content,
                     </button>
                 </div>
                 <div className="flex flex-col gap-2">
-                    {resources.map((resource, resIdx) => (
-                        <div key={resIdx} className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 p-2">
-                            <input
-                                type="text"
-                                value={resource.label}
-                                onChange={(e) => {
-                                    const newRes = [...resources];
-                                    newRes[resIdx].label = e.target.value;
-                                    setResources(newRes);
-                                }}
-                                placeholder={UI_TEXT.practiceFormFields.resourceLabelPlaceholder}
-                                className="w-1/2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold focus:border-wine focus:outline-none"
-                            />
-                            <input
-                                type="text"
-                                value={resource.url}
-                                onChange={(e) => {
-                                    const newRes = [...resources];
-                                    newRes[resIdx].url = e.target.value;
-                                    setResources(newRes);
-                                }}
-                                placeholder={UI_TEXT.practiceFormFields.resourceUrlPlaceholder}
-                                className="w-1/2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold focus:border-wine focus:outline-none"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setResources(resources.filter((_, rIdx) => rIdx !== resIdx))}
-                                className="shrink-0 cursor-pointer rounded-lg p-1.5 text-red-500 transition hover:bg-red-50 hover:text-red-600"
-                                title={UI_TEXT.practiceFormFields.deleteResourceTooltip}
-                            >
-                                <Trash2 className="size-3.5" />
-                            </button>
-                        </div>
-                    ))}
+                    {resources.map((resource, resIdx) => {
+                        const isUrlInvalid = submitted && resource.url.trim() !== "" && !isValidUrl(resource.url.trim());
+                        return (
+                            <div key={resIdx} className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50 p-2">
+                                    <input
+                                        type="text"
+                                        value={resource.label}
+                                        onChange={(e) => {
+                                            const newRes = [...resources];
+                                            newRes[resIdx].label = e.target.value;
+                                            setResources(newRes);
+                                        }}
+                                        placeholder={UI_TEXT.practiceFormFields.resourceLabelPlaceholder}
+                                        className="w-1/2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={resource.url}
+                                        onChange={(e) => {
+                                            const newRes = [...resources];
+                                            newRes[resIdx].url = e.target.value;
+                                            setResources(newRes);
+                                        }}
+                                        placeholder={UI_TEXT.practiceFormFields.resourceUrlPlaceholder}
+                                        className={`w-1/2 rounded-full border bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 ${
+                                            isUrlInvalid
+                                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                        }`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setResources(resources.filter((_, rIdx) => rIdx !== resIdx))}
+                                        className="shrink-0 cursor-pointer rounded-lg p-1.5 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                                        title={UI_TEXT.practiceFormFields.deleteResourceTooltip}
+                                    >
+                                        <Trash2 className="size-3.5" />
+                                    </button>
+                                </div>
+                                {isUrlInvalid && (
+                                    <p className="mt-0.5 pl-3 text-[11px] font-medium text-red-500">
+                                        Đường dẫn tài liệu phải là link hợp lệ (Ví dụ: https://example.com)
+                                    </p>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

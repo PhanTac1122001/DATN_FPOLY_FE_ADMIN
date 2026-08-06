@@ -10,6 +10,7 @@ import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { CreateNotificationModal } from "@/components/layout/admin/modals/create-notification-modal";
 import { ManageCategoriesModal } from "@/components/layout/admin/modals/manage-categories-modal";
 import { NotificationDetailModal } from "@/components/layout/admin/modals/notification-detail-modal";
+import { ALL_CATEGORY_KEY, DEFAULT_NOTIFICATION_CATEGORIES } from "@/constants/notification.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { notificationService } from "@/services/notification.service";
 import { toast } from "@/services/toast.service";
@@ -17,22 +18,14 @@ import type { LmsNotificationEntity, NotificationCategory } from "@/types/notifi
 
 const defaultLimit = 10;
 
-const DEFAULT_CATEGORIES: NotificationCategory[] = [
-    { code: "GIAO_VU", label: "Giáo vụ", sortOrder: 1, isActive: true, requiresTargetStudents: false },
-    { code: "HOC_VU", label: "Học vụ", sortOrder: 2, isActive: true, requiresTargetStudents: false },
-    { code: "HOC_BONG", label: "Học bổng", sortOrder: 3, isActive: true, requiresTargetStudents: false },
-    { code: "SU_KIEN", label: "Sự kiện", sortOrder: 4, isActive: true, requiresTargetStudents: false },
-    { code: "CA_NHAN", label: "Cá nhân", sortOrder: 5, isActive: true, requiresTargetStudents: true },
-];
-
 export function NotificationsView() {
     const [notifications, setNotifications] = useState<LmsNotificationEntity[]>([]);
     const [categories, setCategories] = useState<NotificationCategory[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+    const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORY_KEY);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(defaultLimit);
-    const [totalItems, setTotalItems] = useState(0);
+    const [_totalItems, setTotalItems] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     const [selectedNotification, setSelectedNotification] = useState<LmsNotificationEntity | null>(null);
@@ -57,14 +50,14 @@ export function NotificationsView() {
             if (catRes.status === "fulfilled") {
                 const val = catRes.value;
                 const items = Array.isArray(val?.items) ? val.items : Array.isArray(val) ? val : [];
-                const cats = items.length > 0 ? items : DEFAULT_CATEGORIES;
+                const cats = items.length > 0 ? items : DEFAULT_NOTIFICATION_CATEGORIES;
                 setCategories(cats);
             } else {
-                setCategories(DEFAULT_CATEGORIES);
+                setCategories(DEFAULT_NOTIFICATION_CATEGORIES);
             }
         } catch (err) {
             console.error("Failed to fetch notifications list", err);
-            setCategories(DEFAULT_CATEGORIES);
+            setCategories(DEFAULT_NOTIFICATION_CATEGORIES);
         } finally {
             setIsLoading(false);
         }
@@ -79,11 +72,11 @@ export function NotificationsView() {
         if (!confirm(UI_TEXT.notifications.confirmDelete)) return;
         try {
             await notificationService.deleteStaffNotification(id);
-            toast.success("Xóa thông báo thành công");
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.notifications.toastDeleteSuccess);
             fetchData();
         } catch (err) {
             console.error("Failed to delete notification", err);
-            toast.error("Không thể xóa thông báo");
+            toast.error(UI_TEXT.common.errorTitle, UI_TEXT.notifications.toastDeleteError);
         }
     };
 
@@ -102,7 +95,7 @@ export function NotificationsView() {
 
     // Filter notifications locally by search & category
     const filteredNotifications = notifications.filter((item) => {
-        const matchesCategory = selectedCategory === "ALL" || item.categoryCode === selectedCategory;
+        const matchesCategory = selectedCategory === ALL_CATEGORY_KEY || item.categoryCode === selectedCategory;
         const query = search.toLowerCase();
         const matchesSearch =
             !query ||
@@ -112,28 +105,25 @@ export function NotificationsView() {
         return matchesCategory && matchesSearch;
     });
 
-    const total = filteredNotifications.length;
-    const totalPages = Math.ceil(total / limit) || 1;
+    const totalPages = Math.ceil(filteredNotifications.length / limit) || 1;
     const paginatedNotifications = filteredNotifications.slice((page - 1) * limit, page * limit);
 
     return (
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-hidden">
-            {/* Filter Bar & Table Wrapper */}
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
-                {/* Header Controls */}
-                <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex flex-1 flex-col overflow-hidden bg-cream">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-xs">
+                {/* Search & Actions Header */}
+                <div className="flex flex-col gap-4 border-b border-line p-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="w-full sm:w-80">
                         <SearchFilters
                             search={search}
                             onSearchChange={(val) => {
                                 setSearch(val);
                                 setPage(1);
                             }}
-                            searchPlaceholder="Tìm kiếm tiêu đề, nội dung thông báo..."
+                            searchPlaceholder={UI_TEXT.notifications.filterPlaceholder}
                         />
                     </div>
-
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                         <Button
                             color="secondary-gray"
                             size="md"
@@ -141,7 +131,7 @@ export function NotificationsView() {
                             className="gap-2 font-bold text-slate-700"
                             iconLeading={<Tag className="size-4" />}
                         >
-                            <span>Quản lý thể loại</span>
+                            <span>{UI_TEXT.notifications.manageCategoriesBtn}</span>
                         </Button>
                         <Button
                             color="secondary-gray"
@@ -151,7 +141,7 @@ export function NotificationsView() {
                             className="gap-2 font-bold text-slate-700"
                             iconLeading={<RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />}
                         >
-                            <span>Làm mới</span>
+                            <span>{UI_TEXT.notifications.refreshBtn}</span>
                         </Button>
                         <Button
                             color="primary"
@@ -170,14 +160,14 @@ export function NotificationsView() {
                     <div className="flex flex-wrap items-center gap-2 border-b border-line bg-slate-50/50 px-6 py-3">
                         <button
                             onClick={() => {
-                                setSelectedCategory("ALL");
+                                setSelectedCategory(ALL_CATEGORY_KEY);
                                 setPage(1);
                             }}
                             className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
-                                selectedCategory === "ALL" ? "bg-wine-bright text-white shadow-xs" : "bg-white text-slate-600 hover:bg-slate-100"
+                                selectedCategory === ALL_CATEGORY_KEY ? "bg-wine-bright text-white shadow-xs" : "bg-white text-slate-600 hover:bg-slate-100"
                             }`}
                         >
-                            Tất cả ({notifications.length})
+                            {UI_TEXT.notifications.allTab}{notifications.length}{UI_TEXT.notifications.closeParen}
                         </button>
                         {categories.map((cat) => {
                             const count = notifications.filter((n) => n.categoryCode === cat.code).length;
@@ -204,11 +194,11 @@ export function NotificationsView() {
                     <table className="w-full min-w-[900px] table-auto border-collapse text-left text-sm text-ink">
                         <thead>
                             <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
-                                <th className="w-16 px-6 py-4 text-center">STT</th>
-                                <th className="px-6 py-4">Thông báo</th>
-                                <th className="w-40 px-6 py-4">Danh mục</th>
-                                <th className="w-44 px-6 py-4">Đối tượng nhận</th>
-                                <th className="w-44 px-6 py-4 text-center whitespace-nowrap">Thời gian tạo</th>
+                                <th className="w-16 px-6 py-4 text-center">{UI_TEXT.notifications.thStt}</th>
+                                <th className="px-6 py-4">{UI_TEXT.notifications.thTitle}</th>
+                                <th className="w-40 px-6 py-4">{UI_TEXT.notifications.thCategory}</th>
+                                <th className="w-44 px-6 py-4">{UI_TEXT.notifications.thRecipient}</th>
+                                <th className="w-44 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.notifications.thCreatedAt}</th>
                                 <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
                             </tr>
                         </thead>
@@ -218,14 +208,14 @@ export function NotificationsView() {
                                     <td colSpan={6} className="px-6 py-12 text-center text-muted">
                                         <div className="flex items-center justify-center gap-2">
                                             <div className="size-5 animate-spin rounded-full border-2 border-slate-300 border-t-wine" />
-                                            <span>Đang tải thông báo...</span>
+                                            <span>{UI_TEXT.notifications.loading}</span>
                                         </div>
                                     </td>
                                 </tr>
                             ) : paginatedNotifications.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-12 text-center text-muted">
-                                        Không tìm thấy thông báo nào.
+                                        {UI_TEXT.notifications.empty}
                                     </td>
                                 </tr>
                             ) : (
@@ -249,12 +239,12 @@ export function NotificationsView() {
                                                 {isTargeted ? (
                                                     <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
                                                         <Users className="size-3.5" />
-                                                        <span>{item.targetStudentIds?.length} học viên</span>
+                                                        <span>{item.targetStudentIds?.length} {UI_TEXT.notifications.studentsSuffix}</span>
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                                                         <Radio className="size-3.5" />
-                                                        <span>Tất cả học viên</span>
+                                                        <span>{UI_TEXT.notifications.allStudents}</span>
                                                     </span>
                                                 )}
                                             </td>
@@ -275,7 +265,7 @@ export function NotificationsView() {
                                                                         (state.isFocused || state.isHovered ? "[&>div]:!bg-blue-50" : "")
                                                                     }
                                                                 >
-                                                                    <span>Xem chi tiết</span>
+                                                                    <span>{UI_TEXT.notifications.viewDetail}</span>
                                                                 </Dropdown.Item>
                                                                 <Dropdown.Separator className="my-1 bg-line" />
                                                                 <Dropdown.Item
@@ -286,7 +276,7 @@ export function NotificationsView() {
                                                                         (state.isFocused || state.isHovered ? "[&>div]:!bg-red-50" : "")
                                                                     }
                                                                 >
-                                                                    <span>Xóa thông báo</span>
+                                                                    <span>{UI_TEXT.notifications.deleteNotification}</span>
                                                                 </Dropdown.Item>
                                                             </Dropdown.Menu>
                                                         </Dropdown.Popover>
@@ -302,9 +292,9 @@ export function NotificationsView() {
                 </div>
 
                 {/* Pagination */}
-                {total > 0 && (
+                {filteredNotifications.length > 0 && (
                     <TablePagination
-                        total={total}
+                        total={filteredNotifications.length}
                         page={page}
                         totalPages={totalPages}
                         limit={limit}

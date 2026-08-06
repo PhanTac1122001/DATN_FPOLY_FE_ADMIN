@@ -5,6 +5,12 @@ export interface SessionTypeOption {
     id: string;
     label: string;
     code?: string;
+    defaultBlocks?: Array<{
+        type: string;
+        title: string;
+        isRequired: boolean;
+        completionCriteria?: Record<string, unknown>;
+    }>;
 }
 
 export interface SessionFields {
@@ -91,12 +97,15 @@ export enum SubmissionTypeEnum {
 }
 
 export interface PracticeFormFieldsProps {
+    practiceTitle?: string;
+    setPracticeTitle?: (title: string) => void;
     submissionType: "LINK" | "FILE" | "TEXT";
     setSubmissionType: (type: "LINK" | "FILE" | "TEXT") => void;
     content: string;
     setContent: (content: string) => void;
     resources: { label: string; url: string }[];
     setResources: React.Dispatch<React.SetStateAction<{ label: string; url: string }[]>>;
+    submitted?: boolean;
 }
 
 export enum QuestionTypeEnum {
@@ -128,6 +137,7 @@ export interface VideoConfigTabProps {
     setQuestions: (q: VideoQuestion[]) => void;
     onDelete?: () => void;
     onRegisterOpenModal?: (fn: () => void) => void;
+    submitted?: boolean;
 }
 
 export interface SessionFormProps {

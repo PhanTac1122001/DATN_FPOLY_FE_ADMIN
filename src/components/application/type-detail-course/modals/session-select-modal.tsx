@@ -4,19 +4,10 @@ import { useMemo, useState } from "react";
 import { ChevronRight, Layers, Search, ShieldAlert, X } from "lucide-react";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import type { SessionSelectItem, SessionSelectModalProps } from "@/types/completion-rule.types";
 
-export interface SessionSelectItem {
-    id: string;
-    name: string;
-    type?: string;
-}
-
-export interface SessionSelectModalProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    sessions: SessionSelectItem[];
-    onSelectSession: (session: SessionSelectItem) => void;
-}
+export type { SessionSelectItem };
 
 export function SessionSelectModal({
     isOpen,
@@ -50,9 +41,9 @@ export function SessionSelectModal({
                                 <ShieldAlert className="size-5" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">Chọn Buổi học để Cấu hình Điều kiện</h3>
+                                <h3 className="text-lg font-bold text-slate-900">{UI_TEXT.sessionSelectModal.title}</h3>
                                 <p className="text-xs font-medium text-slate-500">
-                                    Vui lòng chọn một buổi học bên dưới để thiết lập điều kiện hoàn thành bắt buộc
+                                    {UI_TEXT.sessionSelectModal.subtitle}
                                 </p>
                             </div>
                         </div>
@@ -69,7 +60,7 @@ export function SessionSelectModal({
                         {/* Search Bar */}
                         <div className="relative">
                             <Input
-                                placeholder="Tìm kiếm theo tên buổi học..."
+                                placeholder={UI_TEXT.sessionSelectModal.placeholder}
                                 value={searchQuery}
                                 onChange={(val) => setSearchQuery(val)}
                                 className="pl-10"
@@ -82,16 +73,16 @@ export function SessionSelectModal({
                             {filteredSessions.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                     <Layers className="size-8 opacity-40" />
-                                    <p className="mt-2 text-xs font-medium">Không tìm thấy buổi học nào</p>
+                                    <p className="mt-2 text-xs font-medium">{UI_TEXT.sessionSelectModal.empty}</p>
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse text-sm">
                                     <thead>
                                         <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold uppercase tracking-wider text-slate-600">
-                                            <th className="py-3.5 px-4.5 w-16 text-center">STT</th>
-                                            <th className="py-3.5 px-4.5">Tên Buổi học (Session)</th>
-                                            <th className="py-3.5 px-4.5 w-40">Loại buổi</th>
-                                            <th className="py-3.5 px-4.5 w-40 text-right">Thao tác</th>
+                                            <th className="py-3.5 px-4.5 w-16 text-center">{UI_TEXT.sessionSelectModal.thStt}</th>
+                                            <th className="py-3.5 px-4.5">{UI_TEXT.sessionSelectModal.thSessionName}</th>
+                                            <th className="py-3.5 px-4.5 w-40">{UI_TEXT.sessionSelectModal.thType}</th>
+                                            <th className="py-3.5 px-4.5 w-40 text-right">{UI_TEXT.sessionSelectModal.thActions}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -125,7 +116,7 @@ export function SessionSelectModal({
                                                         }}
                                                         className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-wine/10 px-4 py-1.5 text-sm font-bold text-wine transition hover:bg-wine hover:text-white"
                                                     >
-                                                        <span>Cấu hình</span>
+                                                        <span>{UI_TEXT.sessionSelectModal.configureBtn}</span>
                                                         <ChevronRight className="size-4" />
                                                     </button>
                                                 </td>
@@ -140,14 +131,14 @@ export function SessionSelectModal({
                     {/* Footer */}
                     <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                         <span className="text-xs font-bold text-slate-500">
-                            Tổng số: {filteredSessions.length} buổi học
+                            {UI_TEXT.sessionSelectModal.totalPrefix}{filteredSessions.length}{UI_TEXT.sessionSelectModal.totalSuffix}
                         </span>
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
                             className="cursor-pointer rounded-full border border-slate-200 bg-white px-6 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
                         >
-                            Đóng
+                            {UI_TEXT.sessionSelectModal.closeBtn}
                         </button>
                     </div>
                 </Dialog>
