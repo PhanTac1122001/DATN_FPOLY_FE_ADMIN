@@ -274,7 +274,7 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                 });
 
                 if (hasInvalidVideoQuestion) {
-                    toast.error(UI_TEXT.learningMaterials.toastErrorTitle, "Vui lòng nhập đầy đủ thông tin các câu hỏi nhúng");
+                    toast.error(UI_TEXT.learningMaterials.toastErrorTitle, UI_TEXT.learningMaterials.invalidEmbeddedQuestions);
                     setIsSaving(false);
                     return;
                 }
@@ -298,11 +298,8 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                     const qObj = q as Record<string, unknown>;
                     const textVal = String(qObj.content || qObj.question || qObj.title || qObj.text || qObj.questionText || "");
                     const ansVal = String(qObj.answer || qObj.answerText || qObj.solution || qObj.explanation || "");
-                    const options = Array.isArray(qObj.options) && qObj.options.length > 0
-                        ? qObj.options
-                        : ansVal
-                            ? [{ content: ansVal, isCorrect: true }]
-                            : [];
+                    const options =
+                        Array.isArray(qObj.options) && qObj.options.length > 0 ? qObj.options : ansVal ? [{ content: ansVal, isCorrect: true }] : [];
                     return {
                         ...(qObj.id ? { id: String(qObj.id) } : {}),
                         ...(qObj._id ? { _id: String(qObj._id) } : {}),
@@ -383,26 +380,26 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
             setIsSaving(false);
         }
     }, [
-            activeTab,
-            isVideoDirty,
-            isReadingDirty,
-            videoUrl,
-            videoFile,
-            videoDuration,
-            videoQuestions,
-            readingContent,
-            readingFile,
-            readingHtmlFiles,
-            readingPdfUrl,
-            readingQuestions,
-            quizId,
-            isQuizQuestionsDirty,
-            lessonId,
-            localLesson,
-            queryClient,
-            isQuizLinkDirty,
-            quizSaveRef,
-        ]);
+        activeTab,
+        isVideoDirty,
+        isReadingDirty,
+        videoUrl,
+        videoFile,
+        videoDuration,
+        videoQuestions,
+        readingContent,
+        readingFile,
+        readingHtmlFiles,
+        readingPdfUrl,
+        readingQuestions,
+        quizId,
+        isQuizQuestionsDirty,
+        lessonId,
+        localLesson,
+        queryClient,
+        isQuizLinkDirty,
+        quizSaveRef,
+    ]);
 
     useEffect(() => {
         if (onRegisterSave) {
@@ -441,10 +438,11 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                                 <button
                                     type="button"
                                     onClick={() => setReadingSubTab("document")}
-                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${readingSubTab === "document"
-                                        ? "bg-wine text-white shadow-xs"
-                                        : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                                        }`}
+                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${
+                                        readingSubTab === "document"
+                                            ? "bg-wine text-white shadow-xs"
+                                            : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
+                                    }`}
                                 >
                                     <FileText className={`size-3.5 ${readingSubTab === "document" ? "text-white" : "text-slate-400"}`} />
                                     <span>{UI_TEXT.learningMaterials.labelTabReadingDoc}</span>
@@ -452,17 +450,19 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                                 <button
                                     type="button"
                                     onClick={() => setReadingSubTab("questions")}
-                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${readingSubTab === "questions"
-                                        ? "bg-wine text-white shadow-xs"
-                                        : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                                        }`}
+                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${
+                                        readingSubTab === "questions"
+                                            ? "bg-wine text-white shadow-xs"
+                                            : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
+                                    }`}
                                 >
                                     <HelpCircle className={`size-3.5 ${readingSubTab === "questions" ? "text-white" : "text-slate-400"}`} />
                                     <span>{UI_TEXT.learningMaterials.labelTabReadingQs}</span>
                                     {readingQuestions.length > 0 && (
                                         <span
-                                            className={`py-0.2 ml-1 rounded-full px-1.5 text-[10px] font-extrabold ${readingSubTab === "questions" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-                                                }`}
+                                            className={`py-0.2 ml-1 rounded-full px-1.5 text-[10px] font-extrabold ${
+                                                readingSubTab === "questions" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                                            }`}
                                         >
                                             {readingQuestions.length}
                                         </span>
@@ -617,10 +617,10 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                     deleteTarget === "video"
                         ? UI_TEXT.learningMaterials.confirmDeleteVideoDesc
                         : deleteTarget === "reading"
-                            ? UI_TEXT.learningMaterials.confirmDeleteReadingDesc
-                            : deleteTarget === "quiz"
-                                ? UI_TEXT.learningMaterials.confirmDeleteQuizDesc
-                                : ""
+                          ? UI_TEXT.learningMaterials.confirmDeleteReadingDesc
+                          : deleteTarget === "quiz"
+                            ? UI_TEXT.learningMaterials.confirmDeleteQuizDesc
+                            : ""
                 }
                 confirmText={UI_TEXT.learningMaterials.confirmDeleteButton}
                 cancelText={UI_TEXT.courseDetail.cancelButton}

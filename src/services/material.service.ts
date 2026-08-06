@@ -1,6 +1,8 @@
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
-import type { Course, Lesson, Quiz, Session } from "@/types/material.types";
+import type { Course, Quiz, Session } from "@/types/material.types";
+
+export * from "./lesson.service";
 
 export async function getCoursesBySystem(systemId: string): Promise<Course[]> {
     const res = await httpClient<any>(`/api/staff/courses/system/${systemId}`, { method: HttpMethod.GET });
@@ -17,9 +19,7 @@ export async function getSessionById(sessionId: string): Promise<Session> {
     return res.data || res;
 }
 
-export async function createSession(
-    body: Omit<Session, "id" | "createdAt" | "position"> & { position?: number; typeId?: string },
-): Promise<Session> {
+export async function createSession(body: Omit<Session, "id" | "createdAt" | "position"> & { position?: number; typeId?: string }): Promise<Session> {
     const { type, typeId, ...rest } = body as Session & { position?: number; typeId?: string };
     // Chỉ gửi typeId (hoặc type legacy). Gửi cả hai → 400.
     const payload: Record<string, unknown> = { ...rest };
@@ -33,73 +33,6 @@ export async function createSession(
         method: HttpMethod.POST,
         body: JSON.stringify(payload),
     });
-    return res.data || res;
-}
-
-export async function getLessonsBySession(sessionId: string): Promise<Lesson[]> {
-    const res = await httpClient<any>(`/api/staff/lessons/session/${sessionId}`, { method: HttpMethod.GET });
-    return res.data || res || [];
-}
-
-export async function createLesson(body: {
-    name: string;
-    sessionId: string;
-    courseId: string;
-    position?: number;
-}): Promise<Lesson> {
-    if (!body.courseId) {
-        throw new Error("courseId is required when creating a lesson");
-    }
-    const res = await httpClient<any>("/api/staff/lessons", {
-        method: HttpMethod.POST,
-        body: JSON.stringify(body),
-    });
-    return res.data || res;
-}
-
-export async function configureLessonVideo(lessonId: string, formData: FormData): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/video`, {
-        method: HttpMethod.POST,
-        body: formData,
-    });
-    return res.data || res;
-}
-
-export async function deleteLessonVideo(lessonId: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/video`, {
-        method: HttpMethod.DELETE,
-    });
-    return res.data || res;
-}
-
-export async function configureLessonReading(lessonId: string, formData: FormData): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading`, {
-        method: HttpMethod.POST,
-        body: formData,
-    });
-    return res.data || res;
-}
-
-export async function configureLessonReadingHtml(lessonId: string, formData: FormData): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading-html`, {
-        method: HttpMethod.POST,
-        body: formData,
-    });
-    return res.data || res;
-}
-
-export async function deleteLessonReading(lessonId: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading`, {
-        method: HttpMethod.DELETE,
-    });
-    try {
-        await httpClient<any>(`/api/staff/lessons/${lessonId}`, {
-            method: HttpMethod.PUT,
-            body: JSON.stringify({ pdf: "" }),
-        });
-    } catch (e) {
-        console.error("Failed to clear root pdf field", e);
-    }
     return res.data || res;
 }
 
@@ -141,14 +74,6 @@ export async function deleteSessionPracticeById(sessionId: string, practiceId: s
     return res.data || res;
 }
 
-export async function linkLessonQuiz(lessonId: string, quizId: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/quiz`, {
-        method: HttpMethod.PUT,
-        body: JSON.stringify({ quizId }),
-    });
-    return res.data || res;
-}
-
 export async function getQuizzesList(): Promise<Quiz[]> {
     const res = await httpClient<any>("/api/staff/quizzes", { method: HttpMethod.GET });
     return res.data || res || [];
@@ -167,11 +92,6 @@ export async function updateQuiz(
         method: HttpMethod.PUT,
         body: JSON.stringify(body),
     });
-    return res.data || res;
-}
-
-export async function getLessonDetails(id: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.GET });
     return res.data || res;
 }
 
@@ -212,14 +132,7 @@ export async function deleteSession(id: string): Promise<void> {
     await httpClient<any>(`/api/staff/sessions/${id}`, { method: HttpMethod.DELETE });
 }
 
-export async function deleteLesson(id: string): Promise<void> {
-    await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.DELETE });
-}
-
-export async function updateSession(
-    id: string,
-    body: Partial<Omit<Session, "id" | "createdAt">> & { typeId?: string },
-): Promise<Session> {
+export async function updateSession(id: string, body: Partial<Omit<Session, "id" | "createdAt">> & { typeId?: string }): Promise<Session> {
     const { type, typeId, ...rest } = body as Partial<Session> & { typeId?: string };
     const payload: Record<string, unknown> = { ...rest };
     if (typeId) {
@@ -232,17 +145,6 @@ export async function updateSession(
     const res = await httpClient<any>(`/api/staff/sessions/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(payload),
-    });
-    return res.data || res;
-}
-
-export async function updateLesson(
-    id: string,
-    body: Partial<{ name: string; position: number; sequentialBlocks: boolean; video: unknown; reading: unknown; quiz: unknown; quizId: string }>,
-): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${id}`, {
-        method: HttpMethod.PUT,
-        body: JSON.stringify(body),
     });
     return res.data || res;
 }

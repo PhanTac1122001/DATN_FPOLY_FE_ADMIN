@@ -5,9 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BookText, ChevronRight, Code2, FileText, X } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
-import { BlockTypeEnum } from "@/constants/application.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { coursewareService } from "@/services/courseware.service";
 import { createHomework } from "@/services/homework.service";
 import { toast } from "@/services/toast.service";
 import { type AddLessonModalProps } from "@/types/courseware.types";
@@ -251,14 +249,14 @@ export function AddLessonModal({
                                 <div className="flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-slate-700">
-                                            {UI_TEXT.addLessonModal.lessonNameLabel} <span className="text-red-500">*</span>
+                                            {UI_TEXT.addLessonModal.lessonNameLabel} <span className="text-red-500">{"*"}</span>
                                         </label>
                                         <input
                                             type="text"
                                             value={lessonName}
                                             onChange={(e) => setLessonName(e.target.value)}
                                             placeholder={UI_TEXT.courseDetail.lessonNamePlaceholder}
-                                            className={`w-full rounded-full border bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 ${
+                                            className={`w-full rounded-full border bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:outline-none ${
                                                 submitted && !lessonName.trim()
                                                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
                                                     : "border-slate-200 focus:border-wine focus:ring-wine/10"
@@ -266,7 +264,7 @@ export function AddLessonModal({
                                             autoFocus
                                         />
                                         {submitted && !lessonName.trim() && (
-                                            <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                            <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.common.fieldRequired}</p>
                                         )}
                                     </div>
                                 </div>
@@ -276,14 +274,14 @@ export function AddLessonModal({
                                 <div className="flex flex-col gap-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs font-bold text-slate-700">
-                                            {UI_TEXT.addLessonModal.homeworkTitleLabel} <span className="text-red-500">*</span>
+                                            {UI_TEXT.addLessonModal.homeworkTitleLabel} <span className="text-red-500">{"*"}</span>
                                         </label>
                                         <input
                                             type="text"
                                             value={homeworkTitle}
                                             onChange={(e) => setHomeworkTitle(e.target.value)}
                                             placeholder={UI_TEXT.addLessonModal.homeworkTitlePlaceholder}
-                                            className={`w-full rounded-full border bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 ${
+                                            className={`w-full rounded-full border bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:ring-2 focus:outline-none ${
                                                 submitted && !homeworkTitle.trim()
                                                     ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
                                                     : "border-slate-200 focus:border-wine focus:ring-wine/10"
@@ -291,7 +289,7 @@ export function AddLessonModal({
                                             autoFocus
                                         />
                                         {submitted && !homeworkTitle.trim() && (
-                                            <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                            <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.common.fieldRequired}</p>
                                         )}
                                     </div>
 
@@ -302,7 +300,7 @@ export function AddLessonModal({
                                             onChange={(e) => setHomeworkDescription(e.target.value)}
                                             placeholder={UI_TEXT.addLessonModal.homeworkDescPlaceholder}
                                             rows={3}
-                                            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10"
+                                            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                         />
                                     </div>
 
@@ -313,7 +311,7 @@ export function AddLessonModal({
                                             value={homeworkCriteria}
                                             onChange={(e) => setHomeworkCriteria(e.target.value)}
                                             placeholder={UI_TEXT.addLessonModal.homeworkCriteriaPlaceholder}
-                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10"
+                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                         />
                                     </div>
 
@@ -324,7 +322,7 @@ export function AddLessonModal({
                                             value={homeworkSampleLink}
                                             onChange={(e) => setHomeworkSampleLink(e.target.value)}
                                             placeholder={UI_TEXT.addLessonModal.homeworkSampleLinkPlaceholder}
-                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10"
+                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-800 focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                         />
                                     </div>
                                 </div>
@@ -347,11 +345,11 @@ export function AddLessonModal({
                                         ? isPending
                                             ? UI_TEXT.addLessonModal.submittingText
                                             : mode === "edit"
-                                                ? UI_TEXT.addLessonModal.saveBtn
-                                                : UI_TEXT.courseDetail.confirmButton
+                                              ? UI_TEXT.addLessonModal.saveBtn
+                                              : UI_TEXT.courseDetail.confirmButton
                                         : createHomeworkMutation.isPending
-                                            ? UI_TEXT.addLessonModal.submittingText
-                                            : UI_TEXT.addLessonModal.addHomeworkBtn}
+                                          ? UI_TEXT.addLessonModal.submittingText
+                                          : UI_TEXT.addLessonModal.addHomeworkBtn}
                                 </Button>
                             </div>
                         </form>

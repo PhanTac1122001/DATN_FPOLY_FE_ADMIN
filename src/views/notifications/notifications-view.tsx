@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Eye, Plus, Radio, RefreshCw, Tag, Trash2, Users } from "lucide-react";
+import { Edit2, Eye, Plus, Radio, RefreshCw, Tag, Trash2, Users } from "lucide-react";
 import { TablePagination } from "@/components/application/pagination/table-pagination";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Button } from "@/components/base/buttons/button";
@@ -29,6 +29,7 @@ export function NotificationsView() {
     const [isLoading, setIsLoading] = useState(true);
 
     const [selectedNotification, setSelectedNotification] = useState<LmsNotificationEntity | null>(null);
+    const [editingNotification, setEditingNotification] = useState<LmsNotificationEntity | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -83,6 +84,17 @@ export function NotificationsView() {
     const handleViewDetail = (item: LmsNotificationEntity) => {
         setSelectedNotification(item);
         setIsDetailOpen(true);
+    };
+
+    const handleEdit = (item: LmsNotificationEntity, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setEditingNotification(item);
+        setIsCreateOpen(true);
+    };
+
+    const handleCreateNew = () => {
+        setEditingNotification(null);
+        setIsCreateOpen(true);
     };
 
     const formatDate = (dateStr: string) => {
@@ -146,7 +158,7 @@ export function NotificationsView() {
                         <Button
                             color="primary"
                             size="md"
-                            onClick={() => setIsCreateOpen(true)}
+                            onClick={handleCreateNew}
                             className="gap-2 border-none bg-wine px-5 font-bold text-white shadow-md shadow-wine/20 hover:bg-wine-deep"
                             iconLeading={<Plus className="pointer-events-none size-5 shrink-0" />}
                         >
@@ -167,7 +179,9 @@ export function NotificationsView() {
                                 selectedCategory === ALL_CATEGORY_KEY ? "bg-wine-bright text-white shadow-xs" : "bg-white text-slate-600 hover:bg-slate-100"
                             }`}
                         >
-                            {UI_TEXT.notifications.allTab}{notifications.length}{UI_TEXT.notifications.closeParen}
+                            {UI_TEXT.notifications.allTab}
+                            {notifications.length}
+                            {UI_TEXT.notifications.closeParen}
                         </button>
                         {categories.map((cat) => {
                             const count = notifications.filter((n) => n.categoryCode === cat.code).length;
@@ -182,7 +196,9 @@ export function NotificationsView() {
                                         selectedCategory === cat.code ? "bg-wine-bright text-white shadow-xs" : "bg-white text-slate-600 hover:bg-slate-100"
                                     }`}
                                 >
-                                    {cat.label} ({count})
+                                    {cat.label} {"("}
+                                    {count}
+                                    {")"}
                                 </button>
                             );
                         })}
@@ -239,7 +255,9 @@ export function NotificationsView() {
                                                 {isTargeted ? (
                                                     <span className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
                                                         <Users className="size-3.5" />
-                                                        <span>{item.targetStudentIds?.length} {UI_TEXT.notifications.studentsSuffix}</span>
+                                                        <span>
+                                                            {item.targetStudentIds?.length} {UI_TEXT.notifications.studentsSuffix}
+                                                        </span>
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
@@ -266,6 +284,16 @@ export function NotificationsView() {
                                                                     }
                                                                 >
                                                                     <span>{UI_TEXT.notifications.viewDetail}</span>
+                                                                </Dropdown.Item>
+                                                                <Dropdown.Item
+                                                                    icon={Edit2}
+                                                                    onAction={() => handleEdit(item)}
+                                                                    className={(state) =>
+                                                                        "text-amber-600 [&_svg]:text-current " +
+                                                                        (state.isFocused || state.isHovered ? "[&>div]:!bg-amber-50" : "")
+                                                                    }
+                                                                >
+                                                                    <span>{UI_TEXT.notifications.editNotification || "Chỉnh sửa thông báo"}</span>
                                                                 </Dropdown.Item>
                                                                 <Dropdown.Separator className="my-1 bg-line" />
                                                                 <Dropdown.Item
@@ -310,7 +338,15 @@ export function NotificationsView() {
 
             {/* Modals */}
             <NotificationDetailModal notification={selectedNotification} isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} />
-            <CreateNotificationModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} onSuccess={fetchData} />
+            <CreateNotificationModal
+                isOpen={isCreateOpen}
+                onClose={() => {
+                    setIsCreateOpen(false);
+                    setEditingNotification(null);
+                }}
+                onSuccess={fetchData}
+                notification={editingNotification}
+            />
             <ManageCategoriesModal isOpen={isCategoriesOpen} onClose={() => setIsCategoriesOpen(false)} onSuccess={fetchData} />
         </div>
     );

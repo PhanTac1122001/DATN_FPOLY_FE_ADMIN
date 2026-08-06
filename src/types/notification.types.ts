@@ -80,10 +80,19 @@ export interface CreateNotificationModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    notification?: LmsNotificationEntity | null;
 }
 
 export interface ManageCategoriesModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+}
+
+export interface CategoryFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    category?: NotificationCategory | null;
+    categoriesCount?: number;
 }
