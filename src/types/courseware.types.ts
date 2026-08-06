@@ -4,11 +4,13 @@ import type { Lesson, Session } from "@/types/material.types";
 export interface SessionTypeOption {
     id: string;
     label: string;
+    code?: string;
 }
 
 export interface SessionFields {
     name: string;
     type: string;
+    typeId?: string;
     status: boolean;
     mindmap: string;
     srs: string;
@@ -19,10 +21,6 @@ export interface SessionFields {
     practiceEntranceQuiz: string;
     isShowMindmap: boolean;
     description: string;
-    requireSequential?: boolean;
-    requireAllLessons?: boolean;
-    requireMinPassScore?: boolean;
-    minPassScoreValue?: number;
 }
 
 export interface AddSessionModalProps {
@@ -71,6 +69,7 @@ export interface SessionNodeProps {
     onEditSession?: (session: Session) => void;
     onDeleteSession: (sessionId: string, name?: string) => void;
     onUpdateSessionName?: (sessionId: string, newName: string) => void;
+    onOpenLessonCompletionRule?: (lesson: Lesson) => void;
     courseId?: string;
 }
 
@@ -81,6 +80,7 @@ export interface LessonNodeProps {
     onSelectLesson: (id: string, tab: "video" | "reading" | "quiz") => void;
     onDelete: () => void;
     onEdit?: () => void;
+    onOpenCompletionRule?: (lesson: Lesson) => void;
     isDeletePending: boolean;
 }
 
@@ -140,6 +140,7 @@ export interface SessionFormProps {
     onRegisterSave?: (fn: () => void) => void;
     isDirty?: boolean;
     onOpenManageTypes?: () => void;
+    onOpenCompletionRule?: () => void;
 }
 
 export interface SessionPracticeEditorProps {

@@ -16,6 +16,8 @@ export function DeleteCourseModal({ isOpen, onOpenChange, course, onConfirm }: D
         try {
             await onConfirm(course.id);
             onOpenChange(false);
+        } catch {
+            // Handled by deleteMutation.onError toast
         } finally {
             setIsDeleting(false);
         }

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Play, Plus, Save } from "lucide-react";
+import { ArrowLeft, FileText, Play, Plus, Save, ShieldAlert } from "lucide-react";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
@@ -11,13 +11,16 @@ import { LessonEditorWrapper } from "@/components/application/type-detail-course
 import { SessionForm } from "@/components/application/type-detail-course/components/session-form";
 import { SessionNode } from "@/components/application/type-detail-course/components/session-node";
 import { SessionViewerWrapper } from "@/components/application/type-detail-course/components/session-viewer-wrapper";
+import { LessonCompletionRuleModal } from "@/components/application/type-detail-course/modals/lesson-completion-rule-modal";
+import { SessionCompletionRuleModal } from "@/components/application/type-detail-course/modals/session-completion-rule-modal";
+import { SessionSelectItem, SessionSelectModal } from "@/components/application/type-detail-course/modals/session-select-modal";
 import { Button } from "@/components/base/buttons/button";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { createSession, deleteSession, getCoursesBySystem, getQuizzesList, getSessionsByCourse, updateSession } from "@/services/material.service";
 import { getSystemsList } from "@/services/system.service";
 import { toast } from "@/services/toast.service";
 import type { SessionFields } from "@/types/courseware.types";
-import { type Session, SessionTypeEnum } from "@/types/material.types";
+import { type Lesson, type Session, SessionTypeEnum } from "@/types/material.types";
 import type { TypeDetailCourseViewProps } from "@/types/type.types";
 
 export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps) {
@@ -37,6 +40,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const initialSessionFields: SessionFields = {
         name: "",
         type: SessionTypeEnum.LY_THUYET,
+        typeId: undefined,
         status: true,
         mindmap: "",
         srs: "",
@@ -59,12 +63,18 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const [isLessonDirty, setIsLessonDirty] = useState(false);
     const [isConfirmUnsavedOpen, setIsConfirmUnsavedOpen] = useState(false);
     const [isSessionTypeModalOpen, setIsSessionTypeModalOpen] = useState(false);
+    const [isSessionSelectModalOpen, setIsSessionSelectModalOpen] = useState(false);
+    const [isCompletionRuleModalOpen, setIsCompletionRuleModalOpen] = useState(false);
+    const [isLessonRuleModalOpen, setIsLessonRuleModalOpen] = useState(false);
+    const [ruleTargetSession, setRuleTargetSession] = useState<SessionSelectItem | null>(null);
+    const [ruleTargetLesson, setRuleTargetLesson] = useState<{ id: string; name: string } | null>(null);
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
     const normalizeSessionFields = (fields: SessionFields): SessionFields => ({
         ...fields,
         name: (fields.name || "").trim(),
         type: (fields.type || "").trim(),
+        typeId: fields.typeId || undefined,
         status: !!fields.status,
         mindmap: (fields.mindmap || "").trim(),
         srs: (fields.srs || "").trim(),
@@ -80,8 +90,8 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const isSessionDirty = isAddingSession
         ? JSON.stringify(normalizeSessionFields(newSessionFields)) !== JSON.stringify(normalizeSessionFields(initialSessionFields))
         : editingSession
-          ? JSON.stringify(normalizeSessionFields(editSessionFields)) !== JSON.stringify(normalizeSessionFields(savedSessionFields))
-          : false;
+            ? JSON.stringify(normalizeSessionFields(editSessionFields)) !== JSON.stringify(normalizeSessionFields(savedSessionFields))
+            : false;
 
     const hasUnsavedChanges = isAddingSession || !!editingSession ? isSessionDirty : !!selectedLessonId && isLessonDirty;
 
@@ -206,39 +216,93 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.courseDetail.toastDeleteSessionSuccess);
             queryClient.invalidateQueries({ queryKey: ["sessions", courseId] });
-            setSelectedSessionId("");
-            setEditingSession(null);
-            setIsAddingSession(false);
+            if (editingSession && deletingSession && editingSession.id === deletingSession.id) {
+                setEditingSession(null);
+            }
+            if (selectedSessionId && deletingSession && selectedSessionId === deletingSession.id) {
+                setSelectedSessionId("");
+            }
+            setDeletingSession(null);
         },
         onError: () => {
             toast.error(UI_TEXT.classes.toastError, UI_TEXT.courseDetail.toastDeleteSessionError);
         },
     });
 
-    const handleAddSession = () => {
+    const handleSelectSessionNode = (sesId: string) => {
         executeWithUnsavedCheck(() => {
-            setNewSessionFields(initialSessionFields);
-            setSavedSessionFields(initialSessionFields);
+            setSelectedSessionId(sesId);
+            setSelectedLessonId("");
+            setIsAddingSession(false);
+            setEditingSession(null);
+            setRuleTargetSession(null);
+        });
+    };
+
+    const handleEditSessionNode = (ses: Session) => {
+        executeWithUnsavedCheck(() => {
+            setEditingSession(ses);
+            setSelectedSessionId("");
+            setSelectedLessonId("");
+            setIsAddingSession(false);
+            setRuleTargetSession(null);
+            const fields: SessionFields = {
+                name: ses.name,
+                type: ses.type || "",
+                typeId: ses.typeId,
+                status: ses.status ?? true,
+                mindmap: ses.mindmap || "",
+                srs: ses.srs || "",
+                miniProject: ses.miniProject || "",
+                pdf: ses.pdf || "",
+                exercise: ses.exercise || "",
+                quizzi: ses.quizzi || "",
+                practiceEntranceQuiz: ses.practiceEntranceQuiz || "",
+                isShowMindmap: ses.isShowMindmap ?? false,
+                description: ses.description || "",
+            };
+            setEditSessionFields(fields);
+            setSavedSessionFields(fields);
+        });
+    };
+
+    const handleSelectLessonNode = (lessonId: string) => {
+        executeWithUnsavedCheck(() => {
+            setSelectedLessonId(lessonId);
+            setSelectedSessionId("");
+            setIsAddingSession(false);
+            setEditingSession(null);
+            setRuleTargetSession(null);
+        });
+    };
+
+    const handleStartAddSession = () => {
+        executeWithUnsavedCheck(() => {
             setIsAddingSession(true);
             setEditingSession(null);
             setSelectedSessionId("");
             setSelectedLessonId("");
+            setRuleTargetSession(null);
+            setNewSessionFields(initialSessionFields);
+            setSavedSessionFields(initialSessionFields);
         });
     };
 
-    const handleSubmitAddSession = (e: React.FormEvent) => {
+    const handleSubmitCreateSession = (e: React.FormEvent) => {
         e.preventDefault();
         if (newSessionFields.name.trim()) {
-            const maxPos = sessions.length > 0 ? Math.max(...sessions.map((s) => s.position ?? 0)) + 1 : 0;
-
+            const maxPos = sessions.reduce((max, s) => Math.max(max, s.position ?? 0), 0);
+            const { type, typeId, ...rest } = newSessionFields;
+            const newPos = sessions.length > 0 ? maxPos + 1 : 0;
+            const payload = {
+                ...rest,
+                name: newSessionFields.name.trim(),
+                ...(typeId ? { typeId } : { type }),
+                courseId,
+                position: newPos,
+            };
             addSessionMutation.mutate(
-                {
-                    ...newSessionFields,
-                    name: newSessionFields.name.trim(),
-                    courseId,
-                    position: maxPos,
-                    practice: null,
-                },
+                payload as Omit<Session, "id" | "createdAt" | "position"> & { position?: number },
                 {
                     onSuccess: (newSession) => {
                         setIsAddingSession(false);
@@ -257,9 +321,11 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         e.preventDefault();
         if (editingSession && editSessionFields.name.trim()) {
             const { id } = editingSession;
+            const { type, typeId, ...rest } = editSessionFields;
             const updated = {
-                ...editSessionFields,
+                ...rest,
                 name: editSessionFields.name.trim(),
+                ...(typeId ? { typeId } : { type }),
             };
             updateSessionMutation.mutate(
                 {
@@ -268,7 +334,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 },
                 {
                     onSuccess: () => {
-                        setSavedSessionFields(updated);
+                        setSavedSessionFields({ ...editSessionFields, ...updated });
                         setEditingSession((prev) => (prev ? { ...prev, ...updated } : null));
                     },
                 },
@@ -335,6 +401,18 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {sortedSessions.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsSessionSelectModalOpen(true);
+                            }}
+                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 shadow-xs"
+                        >
+                            <ShieldAlert className="size-4 text-amber-600" />
+                            <span>Điều kiện hoàn thành</span>
+                        </button>
+                    )}
                     <Button
                         onClick={async () => {
                             if (isAddingSession || editingSession) {
@@ -386,13 +464,13 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                         setDraggedIndex(null);
                                     }}
                                     onDragEnd={() => setDraggedIndex(null)}
-                                    className={`rounded-xl transition-all duration-150 ${
-                                        draggedIndex === idx ? "scale-[0.98] border-2 border-dashed border-blue-300 opacity-30" : ""
-                                    }`}
+                                    className={`rounded-xl transition-all duration-150 ${draggedIndex === idx ? "scale-[0.98] border-2 border-dashed border-blue-300 opacity-30" : ""
+                                        }`}
                                 >
                                     <SessionNode
                                         session={ses}
                                         index={idx}
+                                        courseId={courseId}
                                         selectedLessonId={selectedLessonId}
                                         selectedSessionId={selectedSessionId}
                                         selectedSessionTab={selectedSessionTab}
@@ -430,6 +508,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                 const fields: SessionFields = {
                                                     name: session.name || "",
                                                     type: session.type || "LY_THUYET",
+                                                    typeId: session.typeId,
                                                     status: session.status ?? true,
                                                     mindmap: session.mindmap || "",
                                                     srs: session.srs || "",
@@ -453,6 +532,9 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                             setDeletingSession({ id: sessionId, name: name || "" });
                                             setIsDeleteSessionOpen(true);
                                         }}
+                                        onOpenLessonCompletionRule={(lesson: Lesson) => {
+                                            setRuleTargetLesson({ id: lesson.id, name: lesson.name });
+                                        }}
                                     />
                                 </div>
                             ))
@@ -462,7 +544,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     {/* Bottom Add Session Button (Full-width button matching Lưu thay đổi color) */}
                     <div className="mt-2 shrink-0 border-t border-slate-100 pt-3">
                         <button
-                            onClick={handleAddSession}
+                            onClick={handleStartAddSession}
                             className="hover:bg-wine-hover flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-4 py-3 text-xs font-black text-white shadow-xs transition duration-150 active:scale-[0.98]"
                         >
                             <Plus className="size-4" />
@@ -478,7 +560,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             mode="create"
                             fields={newSessionFields}
                             setFields={setNewSessionFields}
-                            onSubmit={handleSubmitAddSession}
+                            onSubmit={handleSubmitCreateSession}
                             isPending={addSessionMutation.isPending}
                             isDirty={isSessionDirty}
                             onOpenManageTypes={() => setIsSessionTypeModalOpen(true)}
@@ -494,6 +576,10 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             onSubmit={handleSubmitEditSession}
                             isDirty={isSessionDirty}
                             onOpenManageTypes={() => setIsSessionTypeModalOpen(true)}
+                            onOpenCompletionRule={() => {
+                                setRuleTargetSession(null);
+                                setIsCompletionRuleModalOpen(true);
+                            }}
                             onDelete={() => {
                                 if (editingSession) {
                                     setDeletingSession({ id: editingSession.id, name: editingSession.name });
@@ -547,6 +633,51 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
 
             {/* Session Type Modal */}
             <SessionTypeModal isOpen={isSessionTypeModalOpen} onClose={() => setIsSessionTypeModalOpen(false)} />
+
+            {/* Session Select Table Modal */}
+            <SessionSelectModal
+                isOpen={isSessionSelectModalOpen}
+                onOpenChange={setIsSessionSelectModalOpen}
+                sessions={sortedSessions.map((s) => ({ id: s.id, name: s.name, type: s.type }))}
+                onSelectSession={(session) => {
+                    setRuleTargetSession(session);
+                    setIsCompletionRuleModalOpen(true);
+                }}
+            />
+
+            {/* Session Completion Rule Modal */}
+            <SessionCompletionRuleModal
+                isOpen={isCompletionRuleModalOpen}
+                onOpenChange={(open) => {
+                    setIsCompletionRuleModalOpen(open);
+                    if (!open) {
+                        setRuleTargetSession(null);
+                    }
+                }}
+                sessionId={ruleTargetSession?.id || selectedSessionId || editingSession?.id || sortedSessions[0]?.id}
+                sessionName={
+                    ruleTargetSession?.name ||
+                    sessions.find((s) => s.id === (ruleTargetSession?.id || selectedSessionId || editingSession?.id))?.name ||
+                    sortedSessions[0]?.name
+                }
+                sessions={sortedSessions.map((s) => ({ id: s.id, name: s.name }))}
+                onBackToSessionSelect={() => {
+                    setIsCompletionRuleModalOpen(false);
+                    setIsSessionSelectModalOpen(true);
+                }}
+            />
+
+            {/* Lesson Completion Rule Modal */}
+            <LessonCompletionRuleModal
+                isOpen={!!ruleTargetLesson}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setRuleTargetLesson(null);
+                    }
+                }}
+                lessonId={ruleTargetLesson?.id || ""}
+                lessonName={ruleTargetLesson?.name || ""}
+            />
 
             {/* Confirmation Modal for Session Deletion */}
             <ConfirmModal

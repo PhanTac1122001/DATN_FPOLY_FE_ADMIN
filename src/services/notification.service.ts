@@ -1,10 +1,12 @@
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
 import type {
+    CreateNotificationCategoryDto,
     CreateStaffNotificationDto,
     LmsNotificationEntity,
     NotificationCategory,
     PaginatedNotificationsResponse,
+    UpdateNotificationCategoryDto,
     UpdateStaffNotificationDto,
 } from "@/types/notification.types";
 
@@ -15,28 +17,70 @@ export const notificationService = {
         if (params?.offset !== undefined) query.set("offset", String(params.offset));
         const queryString = query.toString() ? `?${query.toString()}` : "";
 
-        return await httpClient<PaginatedNotificationsResponse>(`/v1/staff/notifications${queryString}`, { method: HttpMethod.GET });
+        const response = await httpClient<any>(`/api/staff/notifications${queryString}`, { method: HttpMethod.GET });
+        const raw = response?.data ?? response;
+        if (raw && typeof raw === "object") {
+            return {
+                items: Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : [],
+                totalItems: typeof raw.totalItems === "number" ? raw.totalItems : raw.items?.length || 0,
+                limit: raw.limit || params?.limit || 10,
+                offset: raw.offset || params?.offset || 0,
+            };
+        }
+        return { items: [], totalItems: 0, limit: 10, offset: 0 };
     },
 
     createStaffNotification: async (dto: CreateStaffNotificationDto): Promise<LmsNotificationEntity> => {
-        return await httpClient<LmsNotificationEntity>("/v1/staff/notifications", {
+        const response = await httpClient<any>("/api/staff/notifications", {
             method: HttpMethod.POST,
             body: JSON.stringify(dto),
         });
+        return response?.data ?? response;
     },
 
     updateStaffNotification: async (id: string, dto: UpdateStaffNotificationDto): Promise<LmsNotificationEntity> => {
-        return await httpClient<LmsNotificationEntity>(`/v1/staff/notifications/${id}`, {
+        const response = await httpClient<any>(`/api/staff/notifications/${id}`, {
             method: HttpMethod.PUT,
             body: JSON.stringify(dto),
         });
+        return response?.data ?? response;
     },
 
     deleteStaffNotification: async (id: string): Promise<void> => {
-        return await httpClient<void>(`/v1/staff/notifications/${id}`, { method: HttpMethod.DELETE });
+        const response = await httpClient<any>(`/api/staff/notifications/${id}`, { method: HttpMethod.DELETE });
+        return response?.data ?? response;
     },
 
     listCategories: async (): Promise<{ items: NotificationCategory[] }> => {
-        return await httpClient<{ items: NotificationCategory[] }>("/v1/staff/notification-categories", { method: HttpMethod.GET });
+        const response = await httpClient<any>("/api/staff/notification-categories", { method: HttpMethod.GET });
+        const raw = response?.data ?? response;
+        if (Array.isArray(raw)) {
+            return { items: raw };
+        }
+        if (Array.isArray(raw?.items)) {
+            return { items: raw.items };
+        }
+        return { items: [] };
+    },
+
+    createCategory: async (dto: CreateNotificationCategoryDto): Promise<NotificationCategory> => {
+        const response = await httpClient<any>("/api/staff/notification-categories", {
+            method: HttpMethod.POST,
+            body: JSON.stringify(dto),
+        });
+        return response?.data ?? response;
+    },
+
+    updateCategory: async (code: string, dto: UpdateNotificationCategoryDto): Promise<NotificationCategory> => {
+        const response = await httpClient<any>(`/api/staff/notification-categories/${code}`, {
+            method: HttpMethod.PUT,
+            body: JSON.stringify(dto),
+        });
+        return response?.data ?? response;
+    },
+
+    deleteCategory: async (code: string): Promise<void> => {
+        const response = await httpClient<any>(`/api/staff/notification-categories/${code}`, { method: HttpMethod.DELETE });
+        return response?.data ?? response;
     },
 };

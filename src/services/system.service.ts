@@ -2,32 +2,16 @@ import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
 import type { CreateSystemRequest, Semester, Specialize, System, UpdateSystemRequest } from "@/types/system.types";
 
-let mockSystems: System[] = [
-    {
-        id: "sys-001",
-        systemCode: "HT-WEB",
-        name: "Hệ Đào Tạo Lập Trình Web Fullstack",
-        createdAt: "2026-07-01T08:00:00.000Z",
-    },
-    {
-        id: "sys-002",
-        systemCode: "HT-BACKEND",
-        name: "Hệ Đào Tạo Backend & Cloud DevOps",
-        createdAt: "2026-07-05T09:30:00.000Z",
-    },
-    {
-        id: "sys-003",
-        systemCode: "HT-MOBILE",
-        name: "Hệ Đào Tạo Lập Trình Mobile App",
-        createdAt: "2026-07-10T14:20:00.000Z",
-    },
-];
+let mockSystems: System[] = [];
 
 export async function getSystemsList(): Promise<System[]> {
     try {
         const response = await httpClient<any>("/api/systems", { method: HttpMethod.GET });
-        if (response?.data && Array.isArray(response.data) && response.data.length > 0) {
+        if (response?.data && Array.isArray(response.data)) {
             return response.data;
+        }
+        if (Array.isArray(response)) {
+            return response;
         }
     } catch {
         // Fallback mock system data

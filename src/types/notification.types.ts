@@ -54,6 +54,22 @@ export interface PaginatedNotificationsResponse {
     offset: number;
 }
 
+export interface CreateNotificationCategoryDto {
+    code: string;
+    label: string;
+    sortOrder?: number;
+    tone?: string;
+    requiresTargetStudents?: boolean;
+}
+
+export interface UpdateNotificationCategoryDto {
+    label?: string;
+    sortOrder?: number;
+    tone?: string;
+    isActive?: boolean;
+    requiresTargetStudents?: boolean;
+}
+
 export interface NotificationDetailModalProps {
     notification: LmsNotificationEntity | null;
     isOpen: boolean;
@@ -61,6 +77,12 @@ export interface NotificationDetailModalProps {
 }
 
 export interface CreateNotificationModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+}
+
+export interface ManageCategoriesModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;

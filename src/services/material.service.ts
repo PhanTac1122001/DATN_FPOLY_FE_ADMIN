@@ -12,10 +12,26 @@ export async function getSessionsByCourse(courseId: string): Promise<Session[]> 
     return res.data || res || [];
 }
 
-export async function createSession(body: Omit<Session, "id" | "createdAt" | "position"> & { position?: number }): Promise<Session> {
+export async function getSessionById(sessionId: string): Promise<Session> {
+    const res = await httpClient<any>(`/api/staff/sessions/${sessionId}`, { method: HttpMethod.GET });
+    return res.data || res;
+}
+
+export async function createSession(
+    body: Omit<Session, "id" | "createdAt" | "position"> & { position?: number; typeId?: string },
+): Promise<Session> {
+    const { type, typeId, ...rest } = body as Session & { position?: number; typeId?: string };
+    // Chỉ gửi typeId (hoặc type legacy). Gửi cả hai → 400.
+    const payload: Record<string, unknown> = { ...rest };
+    if (typeId) {
+        payload.typeId = typeId;
+    } else if (type) {
+        payload.type = type;
+    }
+
     const res = await httpClient<any>("/api/staff/sessions", {
         method: HttpMethod.POST,
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
     });
     return res.data || res;
 }
@@ -25,7 +41,15 @@ export async function getLessonsBySession(sessionId: string): Promise<Lesson[]> 
     return res.data || res || [];
 }
 
-export async function createLesson(body: { name: string; sessionId: string; position?: number }): Promise<Lesson> {
+export async function createLesson(body: {
+    name: string;
+    sessionId: string;
+    courseId: string;
+    position?: number;
+}): Promise<Lesson> {
+    if (!body.courseId) {
+        throw new Error("courseId is required when creating a lesson");
+    }
     const res = await httpClient<any>("/api/staff/lessons", {
         method: HttpMethod.POST,
         body: JSON.stringify(body),
@@ -192,15 +216,30 @@ export async function deleteLesson(id: string): Promise<void> {
     await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.DELETE });
 }
 
-export async function updateSession(id: string, body: Partial<Omit<Session, "id" | "createdAt">>): Promise<Session> {
+export async function updateSession(
+    id: string,
+    body: Partial<Omit<Session, "id" | "createdAt">> & { typeId?: string },
+): Promise<Session> {
+    const { type, typeId, ...rest } = body as Partial<Session> & { typeId?: string };
+    const payload: Record<string, unknown> = { ...rest };
+    if (typeId) {
+        payload.typeId = typeId;
+    } else if (type !== undefined && typeId === undefined) {
+        // Chỉ gửi type khi không có typeId (buổi legacy).
+        payload.type = type;
+    }
+
     const res = await httpClient<any>(`/api/staff/sessions/${id}`, {
         method: HttpMethod.PUT,
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload),
     });
     return res.data || res;
 }
 
-export async function updateLesson(id: string, body: Partial<{ name: string; position: number }>): Promise<Lesson> {
+export async function updateLesson(
+    id: string,
+    body: Partial<{ name: string; position: number; video: unknown; reading: unknown; quiz: unknown; quizId: string }>,
+): Promise<Lesson> {
     const res = await httpClient<any>(`/api/staff/lessons/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(body),

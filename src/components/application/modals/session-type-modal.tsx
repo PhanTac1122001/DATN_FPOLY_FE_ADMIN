@@ -5,6 +5,7 @@ import { Edit2, Loader2, Plus, Tag, Trash2, X } from "lucide-react";
 import { APP_CONFIG } from "@/constants/app.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { sessionTypeService } from "@/services/session-type.service";
+import { toast } from "@/services/toast.service";
 import type { SessionType, SessionTypeModalProps } from "@/types/session-type.types";
 
 export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModalProps) {
@@ -58,6 +59,7 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
                 description: description.trim() || undefined,
                 color,
             });
+            toast.success(UI_TEXT.staff?.toastSuccess || "Thành công", "Tạo danh mục môn học thành công");
             setIsCreating(false);
             setCode("");
             setName("");
@@ -65,7 +67,9 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
             loadTypes();
             onChanged?.();
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : UI_TEXT.common.genericError);
+            const errMsg = err instanceof Error ? err.message : UI_TEXT.common.genericError;
+            setError(errMsg);
+            toast.error(UI_TEXT.staff?.toastError || "Lỗi", errMsg);
         } finally {
             setSubmitting(false);
         }
@@ -79,11 +83,14 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
                 name: editName.trim(),
                 description: editDesc.trim() || undefined,
             });
+            toast.success(UI_TEXT.staff?.toastSuccess || "Thành công", "Cập nhật danh mục môn học thành công");
             setEditingId(null);
             loadTypes();
             onChanged?.();
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : UI_TEXT.common.genericError);
+            const errMsg = err instanceof Error ? err.message : UI_TEXT.common.genericError;
+            setError(errMsg);
+            toast.error(UI_TEXT.staff?.toastError || "Lỗi", errMsg);
         } finally {
             setSubmitting(false);
         }
@@ -92,11 +99,18 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
     const handleDelete = async (type: SessionType) => {
         if (!confirm(UI_TEXT.sessionTypes.confirmDelete)) return;
         try {
-            await sessionTypeService.remove(type.id);
+            const res = await sessionTypeService.remove(type.id);
+            if (res && res.hardDeleted === false) {
+                toast.success("Thông báo", "Loại danh mục này còn dữ liệu đang dùng nên chỉ được ẩn khỏi danh sách chọn");
+            } else {
+                toast.success(UI_TEXT.staff?.toastSuccess || "Thành công", "Xóa danh mục môn học thành công");
+            }
             loadTypes();
             onChanged?.();
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : UI_TEXT.common.genericError);
+            const errMsg = err instanceof Error ? err.message : UI_TEXT.common.genericError;
+            setError(errMsg);
+            toast.error(UI_TEXT.staff?.toastError || "Lỗi", errMsg);
         }
     };
 

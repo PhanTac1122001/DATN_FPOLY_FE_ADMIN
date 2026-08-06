@@ -403,11 +403,10 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                                 <button
                                     type="button"
                                     onClick={() => setReadingSubTab("document")}
-                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${
-                                        readingSubTab === "document"
+                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${readingSubTab === "document"
                                             ? "bg-wine text-white shadow-xs"
                                             : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                                    }`}
+                                        }`}
                                 >
                                     <FileText className={`size-3.5 ${readingSubTab === "document" ? "text-white" : "text-slate-400"}`} />
                                     <span>{UI_TEXT.learningMaterials.labelTabReadingDoc}</span>
@@ -415,19 +414,17 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                                 <button
                                     type="button"
                                     onClick={() => setReadingSubTab("questions")}
-                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${
-                                        readingSubTab === "questions"
+                                    className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-all duration-150 ${readingSubTab === "questions"
                                             ? "bg-wine text-white shadow-xs"
                                             : "text-slate-600 hover:bg-slate-200/60 hover:text-slate-900"
-                                    }`}
+                                        }`}
                                 >
                                     <HelpCircle className={`size-3.5 ${readingSubTab === "questions" ? "text-white" : "text-slate-400"}`} />
                                     <span>{UI_TEXT.learningMaterials.labelTabReadingQs}</span>
                                     {readingQuestions.length > 0 && (
                                         <span
-                                            className={`py-0.2 ml-1 rounded-full px-1.5 text-[10px] font-extrabold ${
-                                                readingSubTab === "questions" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
-                                            }`}
+                                            className={`py-0.2 ml-1 rounded-full px-1.5 text-[10px] font-extrabold ${readingSubTab === "questions" ? "bg-white/20 text-white" : "bg-blue-100 text-blue-700"
+                                                }`}
                                         >
                                             {readingQuestions.length}
                                         </span>
@@ -581,10 +578,10 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
                     deleteTarget === "video"
                         ? UI_TEXT.learningMaterials.confirmDeleteVideoDesc
                         : deleteTarget === "reading"
-                          ? UI_TEXT.learningMaterials.confirmDeleteReadingDesc
-                          : deleteTarget === "quiz"
-                            ? UI_TEXT.learningMaterials.confirmDeleteQuizDesc
-                            : ""
+                            ? UI_TEXT.learningMaterials.confirmDeleteReadingDesc
+                            : deleteTarget === "quiz"
+                                ? UI_TEXT.learningMaterials.confirmDeleteQuizDesc
+                                : ""
                 }
                 confirmText={UI_TEXT.learningMaterials.confirmDeleteButton}
                 cancelText={UI_TEXT.courseDetail.cancelButton}

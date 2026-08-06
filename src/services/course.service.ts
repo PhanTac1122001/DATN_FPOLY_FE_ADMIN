@@ -11,14 +11,12 @@ import type {
 } from "@/types/course.types";
 import { mapBackendFormulaToUiGrading, mapUiGradingToBackendFormula } from "@/utils/course-scoring.utils";
 
-const mockCategories: string[] = ["Lập trình Web", "Lập trình Backend", "Cơ sở dữ liệu", "Kỹ năng phần mềm"];
-
 function mapBackendToCourseItem(raw: CourseBackendEntity): CourseItem {
     return {
         id: raw.id,
         code: raw.courseCode || "",
         title: raw.name || "",
-        category: raw.scoringMethod || "Lập trình Web",
+        category: raw.scoringMethod || "",
         description: raw.description,
         learningOutcomes: raw.learningOutcomes,
         accessMode: raw.accessMode || "SEQUENTIAL",
@@ -26,10 +24,10 @@ function mapBackendToCourseItem(raw: CourseBackendEntity): CourseItem {
         position: raw.position,
         hour: raw.hour,
         totalSessions: raw.totalSessions,
-        rPointConfig: (raw.rpointFormula as CourseItem["rPointConfig"]) || {
-            enabled: true,
-            rPointValue: 50,
-            minCompletionRate: 80,
+        rPointConfig: {
+            enabled: raw.rpointFormula != null,
+            rPointValue: 0,
+            minCompletionRate: 0,
         },
         gradingFormula: mapBackendFormulaToUiGrading(raw.scoringFormula),
         createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : new Date().toISOString(),
@@ -71,16 +69,51 @@ async function syncCourseScoringFormula(courseId: string, grading?: CourseGradin
     await deleteCourseScoringFormula(courseId);
 }
 
+let dynamicCategories: string[] = [];
+
 export async function getCourseCategories(): Promise<string[]> {
-    return mockCategories;
+    try {
+        const response = await httpClient<any>("/api/staff/courses/scoring-methods", {
+            method: HttpMethod.GET,
+        });
+        const list = unwrapData<Array<{ method: string; label: string }> | string[]>(response);
+        if (Array.isArray(list) && list.length > 0) {
+            const apiLabels = list.map((item) => (typeof item === "string" ? item : item.label || item.method));
+            const merged = Array.from(new Set([...apiLabels, ...dynamicCategories]));
+            return merged;
+        }
+    } catch (err) {
+        console.warn("Failed to fetch scoring methods/categories from API:", err);
+    }
+    return [...dynamicCategories];
 }
 
 export async function addCourseCategory(name: string): Promise<string> {
     const trimmed = name.trim();
-    if (trimmed && !mockCategories.includes(trimmed)) {
-        mockCategories.push(trimmed);
+    if (trimmed && !dynamicCategories.includes(trimmed)) {
+        dynamicCategories.push(trimmed);
     }
     return trimmed;
+}
+
+export async function updateCourseCategory(oldName: string, newName: string): Promise<string> {
+    const oldTrimmed = oldName.trim();
+    const newTrimmed = newName.trim();
+    const index = dynamicCategories.indexOf(oldTrimmed);
+    if (index !== -1 && newTrimmed) {
+        dynamicCategories[index] = newTrimmed;
+    }
+    return newTrimmed;
+}
+
+export async function deleteCourseCategory(name: string): Promise<boolean> {
+    const trimmed = name.trim();
+    const index = dynamicCategories.indexOf(trimmed);
+    if (index !== -1) {
+        dynamicCategories.splice(index, 1);
+        return true;
+    }
+    return false;
 }
 
 export async function getCoursesList(search?: string): Promise<CourseItem[]> {

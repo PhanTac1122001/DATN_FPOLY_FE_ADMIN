@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookText, ChevronDown, ChevronRight, FileText, GripVertical, Pencil, Trash2, Video } from "lucide-react";
+import { BookText, ChevronDown, ChevronRight, FileText, GripVertical, Pencil, ShieldCheck, Trash2, Video } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteLessonReading, deleteLessonVideo, linkLessonQuiz } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import type { LessonNodeProps } from "@/types/courseware.types";
 
-export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLesson, onDelete, onEdit, isDeletePending }: LessonNodeProps) {
+export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLesson, onDelete, onEdit, onOpenCompletionRule, isDeletePending }: LessonNodeProps) {
     const queryClient = useQueryClient();
     const [isExpanded, setIsExpanded] = useState(false);
     const [deletingSubConfig, setDeletingSubConfig] = useState<"video" | "reading" | "quiz" | null>(null);
@@ -61,9 +61,8 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                 onClick={() => {
                     onSelectLesson(lesson.id, "video");
                 }}
-                className={`group flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${
-                    isSelected ? "bg-blue-50/60 font-bold text-slate-900" : "bg-white font-semibold text-slate-800 hover:bg-blue-50/40"
-                }`}
+                className={`group flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${isSelected ? "bg-blue-50/60 font-bold text-slate-900" : "bg-white font-semibold text-slate-800 hover:bg-blue-50/40"
+                    }`}
             >
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                     <div
@@ -88,6 +87,19 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                     <span className="flex-1 truncate font-bold text-slate-900">{lesson.name}</span>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition duration-150 group-hover:opacity-100">
+                    {onOpenCompletionRule && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenCompletionRule(lesson);
+                            }}
+                            className="cursor-pointer p-1 text-slate-400 transition duration-150 hover:text-wine"
+                            title="Điều kiện hoàn thành bài học"
+                        >
+                            <ShieldCheck className="size-3.5 text-wine/80 hover:text-wine" />
+                        </button>
+                    )}
                     {onEdit && (
                         <button
                             type="button"
@@ -124,9 +136,8 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                             e.stopPropagation();
                             onSelectLesson(lesson.id, "video");
                         }}
-                        className={`group/sub flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition duration-150 ${
-                            isSelected && selectedTab === "video" ? "bg-wine/5 font-semibold text-wine" : "cursor-pointer text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`group/sub flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition duration-150 ${isSelected && selectedTab === "video" ? "bg-wine/5 font-semibold text-wine" : "cursor-pointer text-slate-600 hover:bg-slate-50"
+                            }`}
                     >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                             <Video className="size-3.5 shrink-0" />
@@ -152,9 +163,8 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                             e.stopPropagation();
                             onSelectLesson(lesson.id, "reading");
                         }}
-                        className={`group/sub flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition duration-150 ${
-                            isSelected && selectedTab === "reading" ? "bg-wine/5 font-semibold text-wine" : "cursor-pointer text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`group/sub flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition duration-150 ${isSelected && selectedTab === "reading" ? "bg-wine/5 font-semibold text-wine" : "cursor-pointer text-slate-600 hover:bg-slate-50"
+                            }`}
                     >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                             <FileText className="size-3.5 shrink-0" />
@@ -180,9 +190,8 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                             e.stopPropagation();
                             onSelectLesson(lesson.id, "quiz");
                         }}
-                        className={`group/sub flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition duration-150 ${
-                            isSelected && selectedTab === "quiz" ? "bg-wine/5 font-semibold text-wine" : "cursor-pointer text-slate-600 hover:bg-slate-50"
-                        }`}
+                        className={`group/sub flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition duration-150 ${isSelected && selectedTab === "quiz" ? "bg-wine/5 font-semibold text-wine" : "cursor-pointer text-slate-600 hover:bg-slate-50"
+                            }`}
                     >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                             <BookText className="size-3.5 shrink-0" />
@@ -205,15 +214,15 @@ export function LessonNode({ lesson, selectedLessonId, selectedTab, onSelectLess
                     deletingSubConfig === "video"
                         ? UI_TEXT.lessonNode.deleteVideoTitle
                         : deletingSubConfig === "reading"
-                          ? UI_TEXT.lessonNode.deleteReadingTitle
-                          : UI_TEXT.lessonNode.deleteQuizTitle
+                            ? UI_TEXT.lessonNode.deleteReadingTitle
+                            : UI_TEXT.lessonNode.deleteQuizTitle
                 }
                 message={
                     deletingSubConfig === "video"
                         ? `${UI_TEXT.lessonNode.deleteVideoMessagePrefix}${lesson.name}${UI_TEXT.lessonNode.deleteMessageSuffix}`
                         : deletingSubConfig === "reading"
-                          ? `${UI_TEXT.lessonNode.deleteReadingMessagePrefix}${lesson.name}${UI_TEXT.lessonNode.deleteMessageSuffix}`
-                          : `${UI_TEXT.lessonNode.deleteQuizMessagePrefix}${lesson.name}${UI_TEXT.lessonNode.deleteMessageSuffix}`
+                            ? `${UI_TEXT.lessonNode.deleteReadingMessagePrefix}${lesson.name}${UI_TEXT.lessonNode.deleteMessageSuffix}`
+                            : `${UI_TEXT.lessonNode.deleteQuizMessagePrefix}${lesson.name}${UI_TEXT.lessonNode.deleteMessageSuffix}`
                 }
                 confirmText={UI_TEXT.learningMaterials.confirmDeleteButton}
                 cancelText={UI_TEXT.courseDetail.cancelButton}

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BookText, FileText, HelpCircle, Play, Plus, ShieldAlert, X } from "lucide-react";
+import { BookText, FileText, HelpCircle, Play, Plus, X } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
-import { DEFAULT_PASS_SCORE } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import type { AddSessionModalProps, SessionTypeOption } from "@/types/courseware.types";
 import { SessionTypeEnum } from "@/types/material.types";
@@ -44,9 +43,7 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                             <p className="mt-0.5 text-[11px] font-medium text-slate-400">{UI_TEXT.courseDetail.addSessionDescription}</p>
                         </div>
 
-                        {/* Scrollable Form Content */}
                         <div className="custom-scrollbar flex max-h-[500px] flex-col gap-6 overflow-y-auto pr-3">
-                            {/* Section 1: General Info */}
                             <div className="flex flex-col gap-4">
                                 <h4 className="border-b border-slate-100 pb-1.5 text-[11px] font-extrabold tracking-wider text-wine uppercase">
                                     {UI_TEXT.courseDetail.sessionTabGeneral}
@@ -103,67 +100,8 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Section 2: Logic Qua Bài (Session Pass Rules) */}
-                            <div className="flex flex-col gap-3 rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4">
-                                <div className="flex items-center gap-2 text-xs font-extrabold tracking-wider text-wine uppercase">
-                                    <ShieldAlert className="size-4" />
-                                    <span>{UI_TEXT.addSessionModal.passRulesTitle}</span>
-                                </div>
-
-                                <div className="flex flex-col gap-2.5 pt-1">
-                                    <label className="flex cursor-pointer items-center gap-3 text-xs font-bold text-slate-700">
-                                        <input
-                                            type="checkbox"
-                                            checked={fields.requireSequential ?? true}
-                                            onChange={(e) => setFields((prev) => ({ ...prev, requireSequential: e.target.checked }))}
-                                            className="size-4 cursor-pointer rounded accent-wine"
-                                        />
-                                        <span>{UI_TEXT.addSessionModal.requireSequentialLabel}</span>
-                                    </label>
-
-                                    <label className="flex cursor-pointer items-center gap-3 text-xs font-bold text-slate-700">
-                                        <input
-                                            type="checkbox"
-                                            checked={fields.requireAllLessons ?? true}
-                                            onChange={(e) => setFields((prev) => ({ ...prev, requireAllLessons: e.target.checked }))}
-                                            className="size-4 cursor-pointer rounded accent-wine"
-                                        />
-                                        <span>{UI_TEXT.addSessionModal.requireAllLessonsLabel}</span>
-                                    </label>
-
-                                    <div className="flex flex-col gap-2">
-                                        <label className="flex cursor-pointer items-center gap-3 text-xs font-bold text-slate-700">
-                                            <input
-                                                type="checkbox"
-                                                checked={fields.requireMinPassScore ?? false}
-                                                onChange={(e) => setFields((prev) => ({ ...prev, requireMinPassScore: e.target.checked }))}
-                                                className="size-4 cursor-pointer rounded accent-wine"
-                                            />
-                                            <span>{UI_TEXT.addSessionModal.requireMinPassScoreLabel}</span>
-                                        </label>
-
-                                        {fields.requireMinPassScore && (
-                                            <div className="ml-7 flex items-center gap-2">
-                                                <span className="text-xs font-medium text-slate-500">{UI_TEXT.addSessionModal.passScoreLabel}</span>
-                                                <input
-                                                    type="number"
-                                                    step="0.5"
-                                                    min={0}
-                                                    max={10}
-                                                    value={fields.minPassScoreValue ?? DEFAULT_PASS_SCORE}
-                                                    onChange={(e) => setFields((prev) => ({ ...prev, minPassScoreValue: Number(e.target.value) }))}
-                                                    className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-bold text-ink outline-none focus:border-wine"
-                                                />
-                                                <span className="text-xs text-slate-400">{UI_TEXT.addSessionModal.passScoreMaxSuffix}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
-                        {/* Modal Footer */}
                         <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-3">
                             <button
                                 type="button"
@@ -184,7 +122,6 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                 </Dialog>
             </CustomModal.Content>
 
-            {/* Add Session Type Modal */}
             <AddSessionTypeModal isOpen={isAddTypeModalOpen} onOpenChange={setIsAddTypeModalOpen} onAddType={handleAddType} />
         </CustomModal.Root>
     );

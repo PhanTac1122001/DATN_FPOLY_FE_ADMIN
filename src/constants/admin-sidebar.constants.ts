@@ -1,4 +1,5 @@
 import {
+    Bell,
     BookOpen,
     Bookmark,
     Briefcase,
@@ -35,6 +36,7 @@ export const dtItems = [
     { label: "Chấm thi", icon: FileSignature, path: "/homework" },
     { label: "Quản lý điểm thi", icon: TrendingUp, path: "/grades" },
     { label: "Thống kê học tập", icon: PieChart, path: "/reports" },
+    { label: "Thông báo", icon: Bell, path: "/notifications" },
     { label: "Đăng ký bảo vệ lại / thi lại", icon: FileText, path: "/reprotect" },
     { label: "Đăng ký học lại", icon: RefreshCw, path: "/relearn" },
     { label: "Quản lý R-Points", icon: Settings, path: "/rpoints" },

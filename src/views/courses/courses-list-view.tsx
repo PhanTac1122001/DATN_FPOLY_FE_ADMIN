@@ -2,21 +2,19 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, Calculator, CheckCircle, Eye, Pencil, Plus, Send, Trash2 } from "lucide-react";
+import { Award, Calculator, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { CourseFormModal } from "@/components/application/modals/course-form-modal";
+import { CourseRpointConfigModal } from "@/components/application/modals/course-rpoint-config-modal";
 import { DeleteCourseModal } from "@/components/application/modals/delete-course-modal";
-import { PublishReportModal } from "@/components/application/modals/publish-report-modal";
 import { TablePagination } from "@/components/application/pagination/table-pagination";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { DEFAULT_OPTIONS_LIMIT } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { HttpError } from "@/lib/http-client";
 import { createCourse, deleteCourse, getCoursesList, updateCourse } from "@/services/course.service";
-import { publishService } from "@/services/publish.service";
+import { toast } from "@/services/toast.service";
 import type { CourseItem, CreateCoursePayload } from "@/types/course.types";
-import type { PublishReportEntity } from "@/types/publish.types";
 
 export function CoursesListView() {
     const queryClient = useQueryClient();
@@ -29,13 +27,7 @@ export function CoursesListView() {
     const [selectedCourse, setSelectedCourse] = useState<CourseItem | null>(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState<CourseItem | null>(null);
-
-    // Publish & Validate state
-    const [isReportOpen, setIsReportOpen] = useState(false);
-    const [reportData, setReportData] = useState<PublishReportEntity | null>(null);
-    const [reportTitle, setReportTitle] = useState("Báo cáo kiểm tra môn học");
-    const [isPublishSuccess, setIsPublishSuccess] = useState(false);
-    const [processingCourseId, setProcessingCourseId] = useState<string | null>(null);
+    const [rpointCourse, setRpointCourse] = useState<CourseItem | null>(null);
 
     const { data: courses = [], isLoading } = useQuery({
         queryKey: ["courses", search],
@@ -44,17 +36,35 @@ export function CoursesListView() {
 
     const createMutation = useMutation({
         mutationFn: createCourse,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+        onSuccess: () => {
+            toast.success("Thành công", "Tạo môn học mới thành công");
+            queryClient.invalidateQueries({ queryKey: ["courses"] });
+        },
+        onError: (error: Error) => {
+            toast.error("Lỗi", error.message || "Không thể tạo môn học");
+        },
     });
 
     const updateMutation = useMutation({
         mutationFn: ({ id, payload }: { id: string; payload: CreateCoursePayload }) => updateCourse(id, payload),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+        onSuccess: () => {
+            toast.success("Thành công", "Cập nhật môn học thành công");
+            queryClient.invalidateQueries({ queryKey: ["courses"] });
+        },
+        onError: (error: Error) => {
+            toast.error("Lỗi", error.message || "Không thể cập nhật môn học");
+        },
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteCourse,
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+        onSuccess: () => {
+            toast.success("Thành công", "Xóa môn học thành công");
+            queryClient.invalidateQueries({ queryKey: ["courses"] });
+        },
+        onError: (error: Error) => {
+            toast.error("Lỗi", error.message || "Không thể xóa môn học");
+        },
     });
 
     const handleSearchChange = (val: string) => {
@@ -89,48 +99,6 @@ export function CoursesListView() {
         await deleteMutation.mutateAsync(id);
     };
 
-    const handleValidateCourse = async (course: CourseItem) => {
-        setProcessingCourseId(course.id);
-        setReportTitle(`Kết quả kiểm tra — ${course.title}`);
-        setIsPublishSuccess(false);
-        try {
-            const report = await publishService.validateCourse(course.id);
-            setReportData(report);
-            setIsReportOpen(true);
-        } catch (err) {
-            console.error("Validate course error:", err);
-        } finally {
-            setProcessingCourseId(null);
-        }
-    };
-
-    const handlePublishCourse = async (course: CourseItem) => {
-        setProcessingCourseId(course.id);
-        setReportTitle(`Kết quả Publish — ${course.title}`);
-        try {
-            const report = await publishService.publishCourse(course.id);
-            setReportData(report);
-            setIsPublishSuccess(true);
-            setIsReportOpen(true);
-        } catch (err) {
-            setIsPublishSuccess(false);
-            if (err instanceof HttpError && err.payload && typeof err.payload === "object") {
-                const payload = err.payload as { errors?: []; warnings?: [] };
-                if (payload.errors || payload.warnings) {
-                    setReportData({
-                        errors: payload.errors || [],
-                        warnings: payload.warnings || [],
-                    });
-                    setIsReportOpen(true);
-                    return;
-                }
-            }
-            console.error("Publish course error:", err);
-        } finally {
-            setProcessingCourseId(null);
-        }
-    };
-
     const total = courses.length;
     const totalPages = Math.ceil(total / limit) || 1;
     const paginatedCourses = courses.slice((page - 1) * limit, page * limit);
@@ -159,8 +127,6 @@ export function CoursesListView() {
                                 <th className="w-16 px-6 py-4 text-center">{UI_TEXT.coursesPage.thStt}</th>
                                 <th className="w-32 px-6 py-4">{UI_TEXT.coursesPage.thCode}</th>
                                 <th className="px-6 py-4">{UI_TEXT.coursesPage.thTitle}</th>
-                                <th className="w-44 px-6 py-4 whitespace-nowrap">{UI_TEXT.coursesPage.thCategory}</th>
-                                <th className="px-6 py-4">{UI_TEXT.coursesPage.thRpoint}</th>
                                 <th className="px-6 py-4">{UI_TEXT.coursesPage.thFormula}</th>
                                 <th className="w-44 px-6 py-4 text-center">{UI_TEXT.coursesPage.thActions}</th>
                             </tr>
@@ -168,13 +134,13 @@ export function CoursesListView() {
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                                    <td colSpan={5} className="px-6 py-12 text-center text-muted">
                                         {UI_TEXT.coursesPage.loading}
                                     </td>
                                 </tr>
                             ) : paginatedCourses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-muted">
+                                    <td colSpan={5} className="px-6 py-12 text-center text-muted">
                                         {UI_TEXT.coursesPage.noDataTitle}
                                     </td>
                                 </tr>
@@ -189,29 +155,10 @@ export function CoursesListView() {
                                             <div>{item.title}</div>
                                             {item.description && <div className="mt-0.5 text-xs font-normal text-muted">{item.description}</div>}
                                         </td>
-                                        <td className="border-b border-line px-6 py-4 whitespace-nowrap group-last:border-b-0">
-                                            <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-slate-700">
-                                                {item.category || UI_TEXT.trainingSystem.assignCourseModal.uncategorized}
-                                            </span>
-                                        </td>
-                                        <td className="border-b border-line px-6 py-4 group-last:border-b-0">
-                                            {item.rPointConfig.enabled ? (
-                                                <div className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                                                    <Award className="size-3.5" />
-                                                    <span>
-                                                        {item.rPointConfig.rPointValue} {UI_TEXT.trainingSystem.assignCourseModal.rPointUnit} {"("}
-                                                        {item.rPointConfig.minCompletionRate}
-                                                        {"%)"}
-                                                    </span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs font-medium text-muted">{UI_TEXT.coursesPage.notEnabled}</span>
-                                            )}
-                                        </td>
                                         <td className="border-b border-line px-6 py-4 group-last:border-b-0">
                                             {item.gradingFormula.useCustomFormula !== false ? (
                                                 <div className="flex items-center gap-2 text-xs font-medium text-muted">
-                                                    <Calculator className="size-3.5 text-wine" />
+                                                    <Calculator className="size-3.5 text-wine shrink-0" />
                                                     <span>
                                                         {UI_TEXT.coursesPage.formulaCc}
                                                         {item.gradingFormula.attendanceWeight}
@@ -224,32 +171,17 @@ export function CoursesListView() {
                                                         {UI_TEXT.coursesPage.formulaSuffix}
                                                     </span>
                                                 </div>
+                                            ) : item.category ? (
+                                                <div className="flex items-center gap-2 text-xs font-medium text-slate-700">
+                                                    <Calculator className="size-3.5 text-wine shrink-0" />
+                                                    <span>{item.category}</span>
+                                                </div>
                                             ) : (
                                                 <span className="text-xs font-medium text-muted">{UI_TEXT.coursesPage.notEnabled}</span>
                                             )}
                                         </td>
                                         <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
                                             <div className="flex items-center justify-center gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    disabled={processingCourseId === item.id}
-                                                    onClick={() => handleValidateCourse(item)}
-                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-blue-50 text-blue-600 transition hover:bg-blue-600 hover:text-white disabled:opacity-50"
-                                                    title={UI_TEXT.coursesPage.validateTooltip}
-                                                >
-                                                    <CheckCircle className="size-4" />
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    disabled={processingCourseId === item.id}
-                                                    onClick={() => handlePublishCourse(item)}
-                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition hover:bg-emerald-600 hover:text-white disabled:opacity-50"
-                                                    title={UI_TEXT.coursesPage.publishTooltip}
-                                                >
-                                                    <Send className="size-4" />
-                                                </button>
-
                                                 <Link
                                                     href={`/elearning/${item.id}` as Route}
                                                     className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-wine/10 text-wine transition duration-200 hover:scale-105 hover:bg-wine hover:text-white"
@@ -257,6 +189,14 @@ export function CoursesListView() {
                                                 >
                                                     <Eye className="size-4" />
                                                 </Link>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRpointCourse(item)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-amber-50 text-amber-700 transition duration-200 hover:bg-amber-500 hover:text-white"
+                                                    title={UI_TEXT.coursesPage.rpointConfigTooltip}
+                                                >
+                                                    <Award className="size-4" />
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditClick(item)}
@@ -302,15 +242,17 @@ export function CoursesListView() {
             {/* Modals */}
             <CourseFormModal isOpen={isFormOpen} onOpenChange={setIsFormOpen} initialData={selectedCourse} onSubmit={handleFormSubmit} />
 
-            <DeleteCourseModal isOpen={isDeleteOpen} onOpenChange={setIsDeleteOpen} course={courseToDelete} onConfirm={handleConfirmDelete} />
-
-            <PublishReportModal
-                isOpen={isReportOpen}
-                onOpenChange={setIsReportOpen}
-                report={reportData}
-                title={reportTitle}
-                isPublishSuccess={isPublishSuccess}
+            <CourseRpointConfigModal
+                isOpen={!!rpointCourse}
+                onOpenChange={(open) => {
+                    if (!open) setRpointCourse(null);
+                }}
+                courseId={rpointCourse?.id || ""}
+                courseTitle={rpointCourse?.title || ""}
             />
+
+            <DeleteCourseModal isOpen={isDeleteOpen} onOpenChange={setIsDeleteOpen} course={courseToDelete} onConfirm={handleConfirmDelete} />
         </div>
     );
 }
+

@@ -99,7 +99,6 @@ export function SystemsView() {
                             <thead>
                                 <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 uppercase">
                                     <th className="w-16 px-6 py-4 text-center">{UI_TEXT.trainingSystem.thStt}</th>
-                                    <th className="w-32 px-6 py-4 text-center">{UI_TEXT.trainingSystem.thId}</th>
                                     <th className="px-6 py-4">{UI_TEXT.trainingSystem.thName}</th>
                                     <th className="w-48 px-6 py-4 text-center">{UI_TEXT.trainingSystem.thCode}</th>
                                     <th className="w-48 px-6 py-4 text-center">{UI_TEXT.trainingSystem.thCreatedAt}</th>
@@ -112,7 +111,6 @@ export function SystemsView() {
                                         <td className="border-b border-slate-100 px-6 py-4 text-center font-semibold text-slate-400">
                                             {(page - 1) * limit + index + 1}
                                         </td>
-                                        <td className="border-b border-slate-100 px-6 py-4 text-center font-medium text-slate-600">{system.id}</td>
                                         <td className="border-b border-slate-100 px-6 py-4 font-bold text-slate-900">{system.name}</td>
                                         <td className="border-b border-slate-100 px-6 py-4 text-center font-semibold text-slate-600">
                                             {system.systemCode}

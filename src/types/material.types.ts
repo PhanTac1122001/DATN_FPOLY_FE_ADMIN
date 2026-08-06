@@ -107,6 +107,7 @@ export interface Session {
     pdf?: string;
     status?: boolean;
     type?: SessionTypeEnum | string;
+    typeId?: string;
     miniProject?: string;
     exercise?: string;
     quizzi?: string;

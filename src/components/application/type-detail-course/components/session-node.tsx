@@ -32,6 +32,8 @@ export function SessionNode({
     onSelectSession,
     onEditSession,
     onDeleteSession: _onDeleteSession,
+    onOpenLessonCompletionRule,
+    courseId,
 }: SessionNodeProps) {
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
@@ -118,7 +120,12 @@ export function SessionNode({
     const addLessonMutation = useMutation({
         mutationFn: (name: string) => {
             const maxPos = lessons.length > 0 ? Math.max(...lessons.map((l) => l.position ?? 0)) + 1 : 0;
-            return createLesson({ name, sessionId: session.id, position: maxPos });
+            return createLesson({
+                name,
+                sessionId: session.id,
+                courseId: session.courseId || courseId || "",
+                position: maxPos,
+            });
         },
         onSuccess: (newLesson) => {
             toast.success(UI_TEXT.courseClassModal.toastCreateSuccessTitle, UI_TEXT.sessionNode.toastAddLessonSuccess);
@@ -208,9 +215,8 @@ export function SessionNode({
 
     return (
         <div
-            className={`flex flex-col gap-2 rounded-xl border p-3.5 transition ${
-                selectedSessionId === session.id ? "border-blue-300 bg-blue-50/20 shadow-xs" : "border-slate-200/40 bg-slate-50/50 hover:bg-slate-50"
-            }`}
+            className={`flex flex-col gap-2 rounded-xl border p-3.5 transition ${selectedSessionId === session.id ? "border-blue-300 bg-blue-50/20 shadow-xs" : "border-slate-200/40 bg-slate-50/50 hover:bg-slate-50"
+                }`}
         >
             {/* Session Header */}
             <div className="flex items-center justify-between gap-2">
@@ -265,11 +271,10 @@ export function SessionNode({
                         <button
                             type="button"
                             onClick={() => onSelectSession?.(session.id, "mindmap")}
-                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${
-                                selectedSessionId === session.id && selectedSessionTab === "mindmap"
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700"
-                            }`}
+                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${selectedSessionId === session.id && selectedSessionTab === "mindmap"
+                                    ? "bg-pink-600 text-white"
+                                    : "bg-pink-50 text-pink-600 hover:bg-pink-100 hover:text-pink-700"
+                                }`}
                             title={UI_TEXT.coursesPage.viewMindmapTooltip}
                         >
                             <Map className="size-3" />
@@ -280,11 +285,10 @@ export function SessionNode({
                         <button
                             type="button"
                             onClick={() => onSelectSession?.(session.id, "pdf")}
-                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${
-                                selectedSessionId === session.id && selectedSessionTab === "pdf"
+                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${selectedSessionId === session.id && selectedSessionTab === "pdf"
                                     ? "bg-rose-600 text-white"
                                     : "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
-                            }`}
+                                }`}
                             title={UI_TEXT.coursesPage.viewPdfTooltip}
                         >
                             <FileText className="size-3" />
@@ -295,11 +299,10 @@ export function SessionNode({
                         <button
                             type="button"
                             onClick={() => onSelectSession?.(session.id, "srs")}
-                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${
-                                selectedSessionId === session.id && selectedSessionTab === "srs"
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
-                            }`}
+                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${selectedSessionId === session.id && selectedSessionTab === "srs"
+                                    ? "bg-indigo-600 text-white"
+                                    : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                                }`}
                             title={UI_TEXT.coursesPage.viewSrsTooltip}
                         >
                             <ScrollText className="size-3" />
@@ -310,11 +313,10 @@ export function SessionNode({
                         <button
                             type="button"
                             onClick={() => onSelectSession?.(session.id, "miniProject")}
-                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${
-                                selectedSessionId === session.id && selectedSessionTab === "miniProject"
-                                    ? "bg-amber-600 text-white"
-                                    : "bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700"
-                            }`}
+                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${selectedSessionId === session.id && selectedSessionTab === "miniProject"
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
+                                }`}
                             title={UI_TEXT.coursesPage.viewMiniProjectTooltip}
                         >
                             <File className="size-3" />
@@ -325,11 +327,10 @@ export function SessionNode({
                         <button
                             type="button"
                             onClick={() => onSelectSession?.(session.id, "exercise")}
-                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${
-                                selectedSessionId === session.id && selectedSessionTab === "exercise"
-                                    ? "bg-indigo-600 text-white"
-                                    : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
-                            }`}
+                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${selectedSessionId === session.id && selectedSessionTab === "exercise"
+                                    ? "bg-violet-600 text-white"
+                                    : "bg-violet-50 text-violet-600 hover:bg-violet-100 hover:text-violet-700"
+                                }`}
                             title={UI_TEXT.coursesPage.viewExerciseTooltip}
                         >
                             <BookText className="size-3" />
@@ -340,11 +341,10 @@ export function SessionNode({
                         <button
                             type="button"
                             onClick={() => onSelectSession?.(session.id, "practiceEntranceQuiz")}
-                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${
-                                selectedSessionId === session.id && selectedSessionTab === "practiceEntranceQuiz"
-                                    ? "bg-purple-600 text-white"
-                                    : "bg-purple-50 text-purple-600 hover:bg-purple-100 hover:text-purple-700"
-                            }`}
+                            className={`inline-flex cursor-pointer items-center gap-1 rounded px-1.5 py-0.5 text-[10.5px] font-bold transition ${selectedSessionId === session.id && selectedSessionTab === "practiceEntranceQuiz"
+                                    ? "bg-amber-600 text-white"
+                                    : "bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700"
+                                }`}
                             title={UI_TEXT.coursesPage.viewEntranceQuizTooltip}
                         >
                             <HelpCircle className="size-3" />
@@ -378,9 +378,8 @@ export function SessionNode({
                                         setDraggedLessonIndex(null);
                                     }}
                                     onDragEnd={() => setDraggedLessonIndex(null)}
-                                    className={`rounded-lg transition-all duration-150 ${
-                                        draggedLessonIndex === idx ? "scale-[0.98] border border-dashed border-blue-300 opacity-30" : ""
-                                    }`}
+                                    className={`rounded-lg transition-all duration-150 ${draggedLessonIndex === idx ? "scale-[0.98] border border-dashed border-blue-300 opacity-30" : ""
+                                        }`}
                                 >
                                     <LessonNode
                                         lesson={les}
@@ -389,6 +388,7 @@ export function SessionNode({
                                         onSelectLesson={onSelectLesson}
                                         onDelete={() => setDeletingLessonTarget({ id: les.id, name: les.name })}
                                         onEdit={() => handleEditLesson(les)}
+                                        onOpenCompletionRule={onOpenLessonCompletionRule}
                                         isDeletePending={deleteLessonMutation.isPending}
                                     />
                                 </div>
@@ -404,9 +404,8 @@ export function SessionNode({
                             <div
                                 key={pId || pIdx}
                                 onClick={() => onSelectSession?.(session.id, "practice", pId)}
-                                className={`group mt-0.5 flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${
-                                    isPracticeSelected ? "bg-blue-50/60 font-semibold text-blue-600" : "bg-white font-medium text-slate-500 hover:bg-blue-50/40"
-                                }`}
+                                className={`group mt-0.5 flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${isPracticeSelected ? "bg-blue-50/60 font-semibold text-blue-600" : "bg-white font-medium text-slate-500 hover:bg-blue-50/40"
+                                    }`}
                             >
                                 <div className="flex min-w-0 flex-1 items-center gap-1.5 pl-1">
                                     <FileText className="size-4 shrink-0 text-blue-600" />
@@ -422,11 +421,10 @@ export function SessionNode({
                     {/* Session Homework Node */}
                     <div
                         onClick={() => onSelectSession?.(session.id, "homework")}
-                        className={`group mt-0.5 flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${
-                            selectedSessionId === session.id && selectedSessionTab === "homework"
+                        className={`group mt-0.5 flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${selectedSessionId === session.id && selectedSessionTab === "homework"
                                 ? "bg-blue-50/60 font-semibold text-blue-600"
                                 : "bg-white font-medium text-slate-500 hover:bg-blue-50/40"
-                        }`}
+                            }`}
                     >
                         <div className="flex min-w-0 flex-1 items-center gap-1.5 pl-1">
                             <Code2 className="size-4 shrink-0 text-indigo-600" />
