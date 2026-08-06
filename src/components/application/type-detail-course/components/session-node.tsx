@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookText, ChevronDown, ChevronRight, Code2, File, FileText, GripVertical, HelpCircle, Map, Plus, ScrollText } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { coursewareService } from "@/services/courseware.service";
 import {
     createLesson,
     deleteLesson,
@@ -39,7 +40,13 @@ export function SessionNode({
     const [isOpen, setIsOpen] = useState(false);
     const [deletingPracticeTarget, setDeletingPracticeTarget] = useState<SessionPractice | null>(null);
 
-    const practicesList: SessionPractice[] = session.practices?.length ? session.practices : session.practice ? [session.practice] : [];
+    const { data: sessionBlocks = [] } = useQuery({
+        queryKey: ["session-blocks", session.id],
+        queryFn: () => coursewareService.getSessionBlocks(session.id),
+        enabled: !!session.id,
+    });
+
+    const practiceBlocks = sessionBlocks.filter((b) => b.type === "PRACTICE" || b.type === "ASSIGNMENT");
 
     const deletePracticeMutation = useMutation({
         mutationFn: (p: SessionPractice) => {
@@ -396,22 +403,30 @@ export function SessionNode({
                         })
                     )}
 
-                    {/* Practices list */}
-                    {practicesList.map((p, pIdx) => {
-                        const pId = p._id || p.id;
-                        const isPracticeSelected = selectedSessionId === session.id && selectedSessionTab === "practice" && _selectedPracticeId === pId;
+                    {/* Practice Courseware Blocks list */}
+                    {practiceBlocks.map((b, pIdx) => {
+                        const isPracticeSelected = selectedSessionId === session.id && selectedSessionTab === "practice" && _selectedPracticeId === b.id;
                         return (
                             <div
-                                key={pId || pIdx}
-                                onClick={() => onSelectSession?.(session.id, "practice", pId)}
+                                key={b.id || pIdx}
+                                onClick={() => onSelectSession?.(session.id, "practice", b.id)}
                                 className={`group mt-0.5 flex w-full cursor-pointer items-center justify-between rounded-lg p-2.5 text-left text-sm transition duration-150 ${isPracticeSelected ? "bg-blue-50/60 font-semibold text-blue-600" : "bg-white font-medium text-slate-500 hover:bg-blue-50/40"
                                     }`}
                             >
-                                <div className="flex min-w-0 flex-1 items-center gap-1.5 pl-1">
-                                    <FileText className="size-4 shrink-0 text-blue-600" />
-                                    <span className="flex-1 truncate font-bold text-slate-700">
-                                        {UI_TEXT.sessionNode.practiceTabPrefix}
-                                        {pIdx + 1}
+                                <div className="flex min-w-0 flex-1 items-center justify-between gap-1.5 pl-1">
+                                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                                        <FileText className="size-4 shrink-0 text-blue-600" />
+                                        <span className="flex-1 truncate font-bold text-slate-700">
+                                            {b.title || `${UI_TEXT.sessionNode.practiceTabPrefix}${pIdx + 1}`}
+                                        </span>
+                                    </div>
+                                    <span
+                                        className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${b.isRequired
+                                                ? "bg-red-50 text-red-600 border border-red-100"
+                                                : "bg-slate-100 text-slate-500"
+                                            }`}
+                                    >
+                                        {b.isRequired ? "Bắt buộc" : "Tùy chọn"}
                                     </span>
                                 </div>
                             </div>
