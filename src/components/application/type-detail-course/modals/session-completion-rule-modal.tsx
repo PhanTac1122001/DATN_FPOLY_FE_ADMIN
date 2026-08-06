@@ -1,40 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BookOpen, CheckSquare, FileCode, Layers, Loader2, Plus, ShieldAlert, Square, Trash2, X } from "lucide-react";
+import { ArrowLeft, CheckSquare, Layers, Loader2, Map, Plus, ShieldAlert, Trash2, X } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { HttpError } from "@/lib/http-client";
 import { completionRuleService } from "@/services/completion-rule.service";
 import { coursewareService } from "@/services/courseware.service";
-import { getHomeworkBySession } from "@/services/homework.service";
-import { getLessonsBySession, getSessionById } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
-import type {
-    CompletionRuleSelectableItem,
-    RuleGroupDraft,
-    RuleIssue,
-    RuleItemScopeMode,
-    RuleOperator,
-    SessionCompletionRuleModalProps,
-} from "@/types/completion-rule.types";
-import {
-    buildRulePayload,
-    buildSessionSelectableItems,
-    createDefaultGroupDraft,
-    getItemCategory,
-    normalizeRuleFromApi,
-    pruneMissingItems,
-    validateDraftsForSubmit,
-} from "@/utils/completion-rule.utils";
+import type { CoursewareBlockEntity, RuleGroupDraft, RuleIssue, SessionCompletionRuleModalProps } from "@/types/completion-rule.types";
+import { createDefaultGroupDraft, normalizeRuleFromApi } from "@/utils/completion-rule.utils";
+import { PracticeFormFields } from "../components/practice-form-fields";
 
 const T = UI_TEXT.sessionCompletionRuleModal;
-
-function extractRuleIssues(error: unknown): RuleIssue[] {
-    if (!(error instanceof HttpError) || !error.payload || typeof error.payload !== "object") {
-        return [];
-    }
-    const issues = (error.payload as { issues?: unknown }).issues;
-    return Array.isArray(issues) ? (issues as RuleIssue[]) : [];
-}
 
 function extractErrorMessages(error: unknown): string {
     if (!(error instanceof HttpError)) {
@@ -47,36 +23,6 @@ function extractErrorMessages(error: unknown): string {
     return error.message || T.toastSaveError;
 }
 
-function getItemBadgeDetails(item: CompletionRuleSelectableItem): { badge: string; badgeClass: string } {
-    if (item.kind === "LESSON") {
-        return { badge: "Lesson", badgeClass: "bg-blue-50 text-blue-700 border border-blue-200" };
-    }
-    const type = (item.blockType || "").toUpperCase();
-    const label = (item.label || "").toUpperCase();
-    if (type === "MINDMAP" || label.includes("MINDMAP")) {
-        return { badge: "Mindmap", badgeClass: "bg-pink-50 text-pink-700 border border-pink-200" };
-    }
-    if (type === "SRS" || label.includes("SRS")) {
-        return { badge: "SRS", badgeClass: "bg-indigo-50 text-indigo-700 border border-indigo-200" };
-    }
-    if (type === "MINI_PROJECT" || label.includes("MINI PROJECT") || label.includes("MINIPROJECT")) {
-        return { badge: "Mini Project", badgeClass: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
-    }
-    if (type === "PDF" || label.includes("PDF")) {
-        return { badge: "PDF", badgeClass: "bg-rose-50 text-rose-700 border border-rose-200" };
-    }
-    if (type === "ENTRANCE_QUIZ" || item.id === "session_entrance_quiz" || label.includes("ĐẦU VÀO")) {
-        return { badge: "Quiz đầu vào", badgeClass: "bg-amber-50 text-amber-700 border border-amber-200" };
-    }
-    if (type === "PRACTICE" || type === "ASSIGNMENT" || label.includes("THỰC HÀNH")) {
-        return { badge: "Bài tập thực hành", badgeClass: "bg-purple-50 text-purple-700 border border-purple-200" };
-    }
-    if (type === "HOMEWORK" || type === "EXERCISE" || label.includes("BÀI TẬP")) {
-        return { badge: "Bài tập về nhà", badgeClass: "bg-violet-50 text-violet-700 border border-violet-200" };
-    }
-    return { badge: item.label || "Học liệu", badgeClass: "bg-amber-50 text-amber-700 border border-amber-200" };
-}
-
 export function SessionCompletionRuleModal({
     isOpen,
     onOpenChange,
@@ -85,12 +31,20 @@ export function SessionCompletionRuleModal({
     sessions,
     onBackToSessionSelect,
 }: SessionCompletionRuleModalProps) {
+    const [isCustomRule, setIsCustomRule] = useState(false);
     const [groups, setGroups] = useState<RuleGroupDraft[]>([createDefaultGroupDraft()]);
-    const [selectables, setSelectables] = useState<CompletionRuleSelectableItem[]>([]);
+    const [blocks, setBlocks] = useState<CoursewareBlockEntity[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [issues, setIssues] = useState<RuleIssue[]>([]);
-    const [clientError, setClientError] = useState<string | null>(null);
+
+    // Form state for creating new PRACTICE block
+    const [isAddPracticeOpen, setIsAddPracticeOpen] = useState(false);
+    const [practiceTitle, setPracticeTitle] = useState("");
+    const [submissionType, setSubmissionType] = useState<"LINK" | "FILE" | "TEXT">("LINK");
+    const [practiceContent, setPracticeContent] = useState("");
+    const [isPracticeRequired, setIsPracticeRequired] = useState(true);
+    const [requireSubmission, setRequireSubmission] = useState(true);
+    const [isCreatingBlock, setIsCreatingBlock] = useState(false);
 
     const activeSessionName = useMemo(() => {
         if (sessions && sessionId) {
@@ -100,35 +54,34 @@ export function SessionCompletionRuleModal({
         return sessionName;
     }, [sessions, sessionId, sessionName]);
 
-    const availableKeys = useMemo(() => new Set(selectables.map((s) => s.key)), [selectables]);
-    const hasLessons = selectables.some((s) => s.kind === "LESSON");
+    const mindmapSubmissionBlock = useMemo(() => blocks.find((b) => b.type === "MINDMAP_SUBMISSION"), [blocks]);
+
+    const practiceBlocks = useMemo(() => blocks.filter((b) => b.type === "PRACTICE" || b.type === "ASSIGNMENT"), [blocks]);
 
     const load = useCallback(async () => {
         if (!sessionId) return;
         setLoading(true);
-        setIssues([]);
-        setClientError(null);
         try {
-            const [rule, blocks, lessons, sessionData] = await Promise.all([
-                completionRuleService.getSessionRule(sessionId),
+            const [rule, sessionBlocks] = await Promise.all([
+                completionRuleService.getSessionRule(sessionId).catch(() => null),
                 coursewareService.getSessionBlocks(sessionId).catch(() => []),
-                getLessonsBySession(sessionId).catch(() => []),
-                getSessionById(sessionId).catch(() => null),
             ]);
-            const items = buildSessionSelectableItems(
-                blocks,
-                (lessons || []).map((l: { id: string; name?: string }) => ({
-                    id: String(l.id),
-                    name: l.name,
-                })),
-                sessionData,
+            setBlocks(sessionBlocks);
+
+            const isCustom = Boolean(
+                rule &&
+                rule.groups &&
+                (rule.groups.length > 1 ||
+                    (rule.groups.length === 1 &&
+                        (rule.groups[0].operator !== "ALL" || (rule.groups[0].items && rule.groups[0].items.length > 0)))),
             );
-            setSelectables(items);
+            setIsCustomRule(isCustom);
             setGroups(normalizeRuleFromApi(rule));
         } catch (error) {
             toast.error(T.toastLoadErrorTitle, extractErrorMessages(error));
+            setIsCustomRule(false);
             setGroups([createDefaultGroupDraft()]);
-            setSelectables([]);
+            setBlocks([]);
         } finally {
             setLoading(false);
         }
@@ -140,92 +93,88 @@ export function SessionCompletionRuleModal({
         }
     }, [isOpen, sessionId, load]);
 
-    const updateGroup = (index: number, patch: Partial<RuleGroupDraft>) => {
-        setGroups((prev) => prev.map((g, i) => (i === index ? { ...g, ...patch } : g)));
-        setIssues([]);
-        setClientError(null);
-    };
-
-    const toggleItem = (index: number, key: string) => {
-        setGroups((prev) =>
-            prev.map((g, i) => {
-                if (i !== index) return g;
-                const selected = g.selectedKeys.includes(key)
-                    ? g.selectedKeys.filter((k) => k !== key)
-                    : [...g.selectedKeys, key];
-                return { ...g, selectedKeys: selected };
-            }),
-        );
-        setIssues([]);
-        setClientError(null);
-    };
-
-    const handleSelectAllCategory = (groupIndex: number, categoryItems: CompletionRuleSelectableItem[]) => {
-        const catKeys = categoryItems.map((i) => i.key);
-        setGroups((prev) =>
-            prev.map((g, i) => {
-                if (i !== groupIndex) return g;
-                const newKeys = Array.from(new Set([...g.selectedKeys, ...catKeys]));
-                return { ...g, selectedKeys: newKeys };
-            }),
-        );
-    };
-
-    const handleDeselectAllCategory = (groupIndex: number, categoryItems: CompletionRuleSelectableItem[]) => {
-        const catKeys = new Set(categoryItems.map((i) => i.key));
-        setGroups((prev) =>
-            prev.map((g, i) => {
-                if (i !== groupIndex) return g;
-                const newKeys = g.selectedKeys.filter((k) => !catKeys.has(k));
-                return { ...g, selectedKeys: newKeys };
-            }),
-        );
-    };
-
-    const handlePrune = () => {
-        const { drafts, removedCount } = pruneMissingItems(groups, availableKeys);
-        setGroups(drafts);
-        if (removedCount > 0) {
-            toast.success(T.toastPruneTitle, T.toastPruneSuccess.replace("{count}", String(removedCount)));
-        } else {
-            toast.success(T.toastPruneTitle, T.toastPruneNone);
-        }
-    };
-
-    const handleSave = async () => {
-        const targetId = sessionId;
-        if (!targetId) return;
-
-        const validationError = validateDraftsForSubmit(groups);
-        if (validationError) {
-            setClientError(validationError);
-            return;
-        }
+    const handleResetToDefault = async () => {
+        if (!sessionId) return;
         setSaving(true);
-        setIssues([]);
-        setClientError(null);
         try {
-            const payload = buildRulePayload(groups);
-            const saved = await completionRuleService.setSessionRule(targetId, payload);
+            const defaultPayload = { groups: [{ operator: "ALL" as const }] };
+            const saved = await completionRuleService.setSessionRule(sessionId, defaultPayload);
+            setIsCustomRule(false);
             setGroups(normalizeRuleFromApi(saved));
-            toast.success(T.toastSaveSuccessTitle, T.toastSaveSuccess);
-            onOpenChange(false);
+            toast.success("Thành công", "Đã đưa điều kiện hoàn thành buổi về mặc định");
         } catch (error) {
-            const ruleIssues = extractRuleIssues(error);
-            if (ruleIssues.length > 0) {
-                setIssues(ruleIssues);
-                toast.error(T.toastSaveErrorTitle, ruleIssues.map((i) => i.message).join(" · "));
-            } else {
-                toast.error(T.toastSaveErrorTitle, extractErrorMessages(error));
-            }
+            toast.error(T.toastSaveErrorTitle, extractErrorMessages(error));
         } finally {
             setSaving(false);
         }
     };
 
-    const groupHasIssue = (groupIndex: number) => issues.some((i) => i.groupIndex === groupIndex && !i.itemKey);
-    const itemHasIssue = (groupIndex: number, key: string) =>
-        issues.some((i) => i.groupIndex === groupIndex && i.itemKey === key);
+    const handleToggleBlockRequired = async (blockId: string, currentIsRequired: boolean) => {
+        try {
+            await coursewareService.updateBlock(blockId, { isRequired: !currentIsRequired });
+            setBlocks((prev) => prev.map((b) => (b.id === blockId ? { ...b, isRequired: !currentIsRequired } : b)));
+            toast.success("Thành công", "Đã cập nhật tính bắt buộc của học liệu");
+        } catch (error) {
+            toast.error("Lỗi", extractErrorMessages(error));
+        }
+    };
+
+    const handleDeleteBlock = async (blockId: string) => {
+        try {
+            await coursewareService.deleteBlock(blockId);
+            setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+            toast.success("Thành công", "Đã xóa học liệu khỏi buổi học");
+        } catch (error) {
+            toast.error("Lỗi", extractErrorMessages(error));
+        }
+    };
+
+    const handleCreateMindmapSubmissionBlock = async () => {
+        if (!sessionId) return;
+        try {
+            const newBlock = await coursewareService.createSessionBlock(sessionId, {
+                type: "MINDMAP_SUBMISSION",
+                title: "Cổng nộp Mindmap buổi học",
+                isRequired: true,
+                payload: {},
+            });
+            setBlocks((prev) => [...prev, newBlock]);
+            toast.success("Thành công", "Đã tạo cổng nộp Mindmap (MINDMAP_SUBMISSION) cho buổi học");
+        } catch (error) {
+            toast.error("Lỗi tạo cổng Mindmap", extractErrorMessages(error));
+        }
+    };
+
+    const handleCreatePracticeBlock = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!sessionId) return;
+        setIsCreatingBlock(true);
+        try {
+            const newBlock = await coursewareService.createSessionBlock(sessionId, {
+                type: "PRACTICE",
+                title: practiceTitle.trim() || "Bài thực hành cấp buổi",
+                isRequired: isPracticeRequired,
+                payload: {
+                    content: practiceContent.trim(),
+                    submissionType,
+                },
+                completionCriteria: {
+                    requireSubmission,
+                },
+            });
+            setBlocks((prev) => [...prev, newBlock]);
+            toast.success("Thành công", "Đã thêm Bài thực hành cấp buổi");
+            setIsAddPracticeOpen(false);
+            setPracticeTitle("");
+            setPracticeContent("");
+            setIsPracticeRequired(true);
+            setRequireSubmission(true);
+        } catch (error) {
+            toast.error("Lỗi tạo bài thực hành", extractErrorMessages(error));
+        } finally {
+            setIsCreatingBlock(false);
+        }
+    };
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onOpenChange}>
@@ -239,7 +188,7 @@ export function SessionCompletionRuleModal({
                         <X className="size-4" />
                     </button>
 
-                    <div className="pr-8 flex flex-col gap-1.5">
+                    <div className="pr-8 flex flex-col gap-1.5 border-b border-slate-100 pb-4">
                         <div className="flex items-center gap-2.5">
                             {onBackToSessionSelect && (
                                 <button
@@ -258,7 +207,6 @@ export function SessionCompletionRuleModal({
                             {T.subtitle}
                             {activeSessionName ? ` — ${activeSessionName}` : ""}
                         </p>
-                        <p className="text-xs leading-relaxed text-slate-500">{T.hint}</p>
                     </div>
 
                     {loading ? (
@@ -266,246 +214,266 @@ export function SessionCompletionRuleModal({
                             <Loader2 className="size-7 animate-spin" />
                         </div>
                     ) : (
-                        <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
-                            {!hasLessons && (
-                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-800">
-                                    {T.noLessonsHint}
+                        <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pr-1">
+                            {isCustomRule ? (
+                                <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-5">
+                                    <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                                        <ShieldAlert className="size-5 shrink-0 text-amber-600" />
+                                        <span>Buổi này đang dùng điều kiện tùy chỉnh</span>
+                                    </div>
+                                    <p className="text-xs font-medium leading-relaxed text-amber-800">
+                                        Buổi học này có cấu hình điều kiện nâng cao. Theo quy ước chuẩn của hệ thống, sinh viên cần hoàn thành{" "}
+                                        <strong>toàn bộ bài học (Lesson)</strong> trong buổi và các học liệu cấp buổi bắt buộc (isRequired).
+                                    </p>
+                                    <div className="pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={handleResetToDefault}
+                                            disabled={saving}
+                                            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-wine px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-wine/90 disabled:opacity-50"
+                                        >
+                                            {saving ? <Loader2 className="size-3.5 animate-spin" /> : <CheckSquare className="size-3.5" />}
+                                            <span>Đưa về mặc định (Hoàn thành tất cả)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-4.5">
+                                    <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                                        <CheckSquare className="size-5 shrink-0 text-wine" />
+                                        <span>Quy ước mặc định: Hoàn thành toàn bộ nội dung trong buổi</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2 text-xs font-semibold text-slate-700">
+                                        <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-white p-3 shadow-2xs">
+                                            <span className="font-bold text-wine">1.</span>
+                                            <span className="leading-relaxed">
+                                                Tất cả <strong>bài học (Lesson)</strong> thuộc buổi này mặc định đều <strong>bắt buộc</strong>{" "}
+                                                phải hoàn thành.
+                                            </span>
+                                        </div>
+                                        <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-white p-3 shadow-2xs">
+                                            <span className="font-bold text-wine">2.</span>
+                                            <span className="leading-relaxed">
+                                                Quản lý tính bắt buộc của các <strong>Học liệu cấp buổi (Mindmap, Bài thực hành)</strong> ở các phần
+                                                bên dưới.
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
-                            {groups.map((group, index) => (
-                                <div
-                                    key={index}
-                                    className={`flex flex-col gap-3.5 rounded-2xl border p-4.5 ${groupHasIssue(index) ? "border-red-400 bg-red-50/40" : "border-slate-200 bg-slate-50/60"
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-extrabold tracking-wider text-wine uppercase">
-                                            {T.groupLabel.replace("{n}", String(index + 1))}
+                            {/* Section 1: Cổng nộp Mindmap cấp buổi */}
+                            <div className="flex flex-col gap-3 rounded-2xl border border-pink-200 bg-pink-50/40 p-4.5">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-pink-950 font-bold text-sm">
+                                        <Map className="size-4 text-pink-600 shrink-0" />
+                                        <span>Cổng nộp Mindmap cấp buổi (MINDMAP_SUBMISSION)</span>
+                                    </div>
+                                    {mindmapSubmissionBlock ? (
+                                        <span
+                                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${mindmapSubmissionBlock.isRequired
+                                                    ? "bg-red-50 text-red-700 border border-red-200"
+                                                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                                                }`}
+                                        >
+                                            {mindmapSubmissionBlock.isRequired ? "Bắt buộc nộp bài" : "Tùy chọn nộp bài"}
                                         </span>
-                                        {groups.length > 1 && (
+                                    ) : (
+                                        <span className="rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold">
+                                            Chưa bật cổng nộp
+                                        </span>
+                                    )}
+                                </div>
+
+                                {mindmapSubmissionBlock ? (
+                                    <div className="flex items-center justify-between gap-3 pt-1">
+                                        <p className="text-xs font-medium text-slate-600">
+                                            Yêu cầu sinh viên phải hoàn thành bài vẽ Mindmap riêng để chốt hoàn thành buổi học.
+                                        </p>
+                                        <div className="flex items-center gap-2 shrink-0">
                                             <button
                                                 type="button"
-                                                onClick={() => setGroups((prev) => prev.filter((_, i) => i !== index))}
-                                                className="cursor-pointer p-1.5 text-red-400 hover:text-red-600"
-                                                title={T.removeGroupBtn}
+                                                onClick={() =>
+                                                    handleToggleBlockRequired(mindmapSubmissionBlock.id, mindmapSubmissionBlock.isRequired)
+                                                }
+                                                className="cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50"
+                                            >
+                                                {mindmapSubmissionBlock.isRequired ? "Bỏ bắt buộc" : "Đặt làm bắt buộc"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteBlock(mindmapSubmissionBlock.id)}
+                                                className="cursor-pointer rounded-xl border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100"
+                                                title="Xóa cổng nộp Mindmap"
                                             >
                                                 <Trash2 className="size-4" />
                                             </button>
-                                        )}
-                                    </div>
-                                    {/* Box 1: Phép toán */}
-                                    <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-                                        <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">{T.operatorLabel}</span>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {(["ALL", "ANY", "AT_LEAST_N"] as RuleOperator[]).map((op) => (
-                                                <button
-                                                    key={op}
-                                                    type="button"
-                                                    onClick={() => updateGroup(index, { operator: op })}
-                                                    className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-bold transition ${group.operator === op
-                                                            ? "bg-wine text-white shadow-xs"
-                                                            : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                                                        }`}
-                                                >
-                                                    {op === "ALL" ? T.operatorAll : op === "ANY" ? T.operatorAny : T.operatorAtLeastN}
-                                                </button>
-                                            ))}
-                                            {group.operator === "AT_LEAST_N" && (
-                                                <div className="flex items-center gap-1.5 pl-1">
-                                                    <span className="text-xs font-bold text-slate-500">Số lượng:</span>
-                                                    <input
-                                                        type="number"
-                                                        min={1}
-                                                        value={group.n ?? 1}
-                                                        onChange={(e) => updateGroup(index, { n: Number(e.target.value) || 1 })}
-                                                        className="w-16 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-sm font-bold outline-none focus:border-wine"
-                                                    />
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
-
-                                     {/* Box 2: Phạm vi mục */}
-                                    <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-                                        <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">{T.scopeLabel}</span>
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {(
-                                                [
-                                                    ["ALL_REQUIRED", T.scopeAllRequired],
-                                                    ["CATEGORY", "Chọn mục cụ thể"],
-                                                    ["NONE", T.scopeNone],
-                                                ] as [RuleItemScopeMode, string][]
-                                            ).map(([mode, label]) => (
-                                                <button
-                                                    key={mode}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        updateGroup(index, { scopeMode: mode });
-                                                    }}
-                                                    className={`cursor-pointer rounded-full px-4 py-1.5 text-sm font-bold transition ${group.scopeMode === mode
-                                                            ? "bg-wine text-white shadow-xs"
-                                                            : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                                                        }`}
-                                                >
-                                                    {label}
-                                                </button>
-                                            ))}
-                                        </div>
+                                ) : (
+                                    <div className="flex items-center justify-between gap-3 pt-1">
+                                        <p className="text-xs font-medium text-slate-500">
+                                            Chưa có cổng nộp Mindmap. Bấm tạo cổng để bắt buộc sinh viên nộp bài vẽ Mindmap.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleCreateMindmapSubmissionBlock}
+                                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-pink-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-pink-700 shrink-0"
+                                        >
+                                            <Plus className="size-3.5" />
+                                            <span>Bật cổng nộp Mindmap</span>
+                                        </button>
                                     </div>
+                                )}
+                            </div>
 
-                                    {/* Item list when CATEGORY mode is selected */}
-                                    {group.scopeMode === "CATEGORY" && (
-                                        <div className="flex flex-col gap-3.5 rounded-2xl border border-slate-200 bg-white p-4">
-                                            {/* Session Header Card */}
-                                            {activeSessionName && (
-                                                <div className="flex items-center justify-between rounded-xl bg-slate-100/70 px-3.5 py-2.5">
-                                                    <span className="text-xs font-extrabold text-slate-800">
-                                                        📌 Buổi học: <span className="text-wine">{activeSessionName}</span>
-                                                    </span>
-                                                    <span className="text-xs font-bold text-slate-500">
-                                                        Đã chọn: {group.selectedKeys.length}/{selectables.length} mục
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {selectables.length === 0 ? (
-                                                <p className="text-sm text-slate-400">{T.emptySelectables}</p>
-                                            ) : (
-                                                ([
-                                                    {
-                                                        kind: "LESSON",
-                                                        title: "Bài học (Lessons)",
-                                                        icon: BookOpen,
-                                                        headerBg: "bg-blue-50/60 text-blue-900",
-                                                    },
-                                                    {
-                                                        kind: "BLOCK",
-                                                        title: "Học liệu cấp buổi (Session Blocks)",
-                                                        icon: Layers,
-                                                        headerBg: "bg-purple-50/60 text-purple-900",
-                                                    },
-                                                ] as const).map(({ kind: catKind, title: catTitle, icon: CatIcon, headerBg }) => {
-                                                    const sectionItems = selectables.filter((item) => item.kind === catKind);
-                                                    if (sectionItems.length === 0) return null;
-                                                    const selectedCount = sectionItems.filter((i) => group.selectedKeys.includes(i.key)).length;
-                                                    const isAllSelected = selectedCount === sectionItems.length && sectionItems.length > 0;
-
-                                                    return (
-                                                        <div key={catKind} className="flex flex-col rounded-xl border border-slate-100 overflow-hidden">
-                                                            <div className={`flex items-center justify-between px-3.5 py-2.5 ${headerBg}`}>
-                                                                <div className="flex items-center gap-2">
-                                                                    <CatIcon className="size-4.5 opacity-80" />
-                                                                    <span className="text-sm font-bold">
-                                                                        {catTitle} ({selectedCount}/{sectionItems.length})
-                                                                    </span>
-                                                                </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        isAllSelected
-                                                                            ? handleDeselectAllCategory(index, sectionItems)
-                                                                            : handleSelectAllCategory(index, sectionItems)
-                                                                    }
-                                                                    className="inline-flex cursor-pointer items-center gap-1 rounded-md bg-white/90 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-white shadow-2xs"
-                                                                >
-                                                                    {isAllSelected ? (
-                                                                        <>
-                                                                            <Square className="size-3.5 text-slate-500" />
-                                                                            <span>Bỏ chọn</span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <CheckSquare className="size-3.5 text-wine" />
-                                                                            <span>Chọn tất cả</span>
-                                                                        </>
-                                                                    )}
-                                                                </button>
-                                                            </div>
-                                                            <div className="flex flex-col divide-y divide-slate-50 p-1 bg-white">
-                                                                {sectionItems.map((item) => {
-                                                                    const { badge, badgeClass } = getItemBadgeDetails(item);
-                                                                    return (
-                                                                        <label
-                                                                            key={item.key}
-                                                                            className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${itemHasIssue(index, item.key)
-                                                                                    ? "bg-red-50 text-red-700"
-                                                                                    : "text-slate-700 hover:bg-slate-50"
-                                                                                }`}
-                                                                        >
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={group.selectedKeys.includes(item.key)}
-                                                                                onChange={() => toggleItem(index, item.key)}
-                                                                                className="accent-wine size-4"
-                                                                            />
-                                                                            <span className={`rounded-md px-2.5 py-0.5 text-xs font-bold ${badgeClass}`}>
-                                                                                {badge}
-                                                                            </span>
-                                                                            <span className="flex-1 font-semibold text-slate-800">{item.label}</span>
-                                                                            {group.selectedKeys.includes(item.key) && (
-                                                                                <span className="text-xs font-bold text-wine">{T.requiredBadge}</span>
-                                                                            )}
-                                                                        </label>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {issues
-                                        .filter((i) => i.groupIndex === index)
-                                        .map((issue, issueIdx) => (
-                                            <p key={issueIdx} className="text-xs font-semibold text-red-600">
-                                                {issue.message}
-                                            </p>
-                                        ))}
+                            {/* Section 2: Học liệu Bài tập thực hành cấp buổi */}
+                            <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4.5">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-blue-950 font-bold text-sm">
+                                        <Layers className="size-4 text-blue-600 shrink-0" />
+                                        <span>Bài tập thực hành cấp buổi (Block PRACTICE)</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddPracticeOpen((prev) => !prev)}
+                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-wine px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-wine/90"
+                                    >
+                                        <Plus className="size-3.5" />
+                                        <span>{isAddPracticeOpen ? "Đóng form" : "Thêm bài thực hành"}</span>
+                                    </button>
                                 </div>
-                            ))}
 
-                            <button
-                                type="button"
-                                onClick={() => setGroups((prev) => [...prev, createDefaultGroupDraft()])}
-                                className="inline-flex cursor-pointer items-center justify-center gap-1.5 self-start rounded-full border border-dashed border-slate-300 px-4.5 py-2 text-sm font-bold text-slate-600 hover:border-wine hover:text-wine"
-                            >
-                                <Plus className="size-4" />
-                                {T.addGroupBtn}
-                            </button>
+                                {isAddPracticeOpen && (
+                                    <form
+                                        onSubmit={handleCreatePracticeBlock}
+                                        className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-white p-4 text-xs shadow-2xs"
+                                    >
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="font-bold text-slate-700">Tên bài thực hành cấp buổi</label>
+                                            <input
+                                                type="text"
+                                                value={practiceTitle}
+                                                onChange={(e) => setPracticeTitle(e.target.value)}
+                                                placeholder="Nhập tên bài thực hành..."
+                                                className="w-full rounded-full border border-slate-200 px-4 py-2 font-medium focus:border-wine focus:outline-none"
+                                                required
+                                            />
+                                        </div>
 
-                            {clientError && <p className="text-xs font-semibold text-red-600">{clientError}</p>}
+                                        <PracticeFormFields
+                                            submissionType={submissionType}
+                                            setSubmissionType={setSubmissionType}
+                                            content={practiceContent}
+                                            setContent={setPracticeContent}
+                                            resources={[]}
+                                            setResources={() => { }}
+                                        />
+
+                                        <div className="flex flex-col gap-2 rounded-xl bg-slate-50 p-3 border border-slate-200/80">
+                                            <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isPracticeRequired}
+                                                    onChange={(e) => setIsPracticeRequired(e.target.checked)}
+                                                    className="accent-wine size-4"
+                                                />
+                                                <span>Bắt buộc hoàn thành bài tập này để chốt buổi (isRequired)</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={requireSubmission}
+                                                    onChange={(e) => setRequireSubmission(e.target.checked)}
+                                                    className="accent-wine size-4"
+                                                />
+                                                <span>Yêu cầu sinh viên bắt buộc nộp bài làm (requireSubmission)</span>
+                                            </label>
+                                        </div>
+
+                                        <div className="flex justify-end gap-2 pt-1 border-t border-slate-100">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddPracticeOpen(false)}
+                                                className="rounded-full border border-slate-200 px-4 py-1.5 font-bold text-slate-600 hover:bg-slate-50"
+                                            >
+                                                Hủy
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={isCreatingBlock}
+                                                className="rounded-full bg-wine px-5 py-1.5 font-bold text-white shadow-xs hover:bg-wine/90 disabled:opacity-50"
+                                            >
+                                                {isCreatingBlock ? "Đang lưu..." : "Lưu bài thực hành"}
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {practiceBlocks.length === 0 ? (
+                                    <p className="text-xs text-slate-500 italic py-1">Chưa có Bài thực hành cấp buổi nào trong buổi này.</p>
+                                ) : (
+                                    <div className="flex flex-col gap-2 pt-1">
+                                        {practiceBlocks.map((b) => (
+                                            <div
+                                                key={b.id}
+                                                className="flex items-center justify-between rounded-xl border border-blue-100 bg-white p-3 text-xs font-semibold text-slate-800 shadow-2xs"
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className="font-extrabold text-slate-900">{b.title}</span>
+                                                    {b.isRequired ? (
+                                                        <span className="rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">
+                                                            Bắt buộc buổi
+                                                        </span>
+                                                    ) : (
+                                                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                                                            Tùy chọn
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleBlockRequired(b.id, b.isRequired)}
+                                                        className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100"
+                                                    >
+                                                        {b.isRequired ? "Bỏ bắt buộc" : "Đặt làm bắt buộc"}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteBlock(b.id)}
+                                                        className="cursor-pointer rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100"
+                                                        title="Xóa bài thực hành"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 
-                    <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
+                    <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-100 pt-3.5">
                         <button
                             type="button"
-                            onClick={handlePrune}
-                            disabled={loading || saving}
-                            className="cursor-pointer rounded-full border border-slate-200 px-5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                            onClick={() => onOpenChange(false)}
+                            className="cursor-pointer rounded-full border border-slate-200 px-5.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
                         >
-                            {T.pruneBtn}
+                            {T.cancelBtn}
                         </button>
-                        <div className="flex items-center gap-2.5">
-                            <button
-                                type="button"
-                                onClick={() => onOpenChange(false)}
-                                className="cursor-pointer rounded-full border border-slate-200 px-5.5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50"
-                            >
-                                {T.cancelBtn}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void handleSave()}
-                                disabled={loading || saving}
-                                className="cursor-pointer rounded-full bg-wine px-6.5 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-wine/90 disabled:opacity-50"
-                            >
-                                {saving ? T.savingText : T.saveBtn}
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={handleResetToDefault}
+                            disabled={loading || saving}
+                            className="cursor-pointer rounded-full bg-wine px-6.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-wine/90 disabled:opacity-50"
+                        >
+                            {saving ? T.savingText : "Lưu điều kiện mặc định"}
+                        </button>
                     </div>
                 </Dialog>
             </CustomModal.Content>
