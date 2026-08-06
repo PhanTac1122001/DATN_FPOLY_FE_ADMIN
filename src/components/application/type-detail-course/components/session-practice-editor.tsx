@@ -1,84 +1,99 @@
-"use client";
-
 import { useCallback, useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, FileText, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, ChevronDown, ChevronRight, FileText, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { Button } from "@/components/base/buttons/button";
 import { TiptapEditor } from "@/components/base/editor";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import {
-    addSessionPractice,
-    deleteSessionPractice,
-    deleteSessionPracticeById,
-    updateSessionPractice,
-    updateSessionPracticeById,
-} from "@/services/material.service";
+import { coursewareService } from "@/services/courseware.service";
 import { toast } from "@/services/toast.service";
+import type { CoursewareBlockEntity } from "@/types/completion-rule.types";
 import { NEW_PRACTICE_ID_FLAG, type SessionPracticeEditorProps, SubmissionTypeEnum } from "@/types/courseware.types";
-import type { SessionPractice } from "@/types/material.types";
 import { PracticeFormFields } from "./practice-form-fields";
 
 export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPracticeEditorProps) {
     const queryClient = useQueryClient();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingPractice, setEditingPractice] = useState<SessionPractice | null>(null);
-    const [deletingPractice, setDeletingPractice] = useState<SessionPractice | null>(null);
+    const [editingPractice, setEditingPractice] = useState<CoursewareBlockEntity | null>(null);
+    const [deletingPractice, setDeletingPractice] = useState<CoursewareBlockEntity | null>(null);
     const [expandedIds, setExpandedIds] = useState<string[]>([]);
 
     // Modal form fields
+    const [practiceTitle, setPracticeTitle] = useState("Bài thực hành cấp buổi");
     const [submissionType, setSubmissionType] = useState<"LINK" | "FILE" | "TEXT">(SubmissionTypeEnum.LINK);
     const [content, setContent] = useState("");
     const [resources, setResources] = useState<{ label: string; url: string }[]>([]);
+    const [isRequired, setIsRequired] = useState(true);
 
-    const rawPractices: SessionPractice[] = session.practices?.length ? session.practices : session.practice ? [session.practice] : [];
+    const { data: sessionBlocks = [] } = useQuery({
+        queryKey: ["session-blocks", session.id],
+        queryFn: () => coursewareService.getSessionBlocks(session.id),
+        enabled: !!session.id,
+    });
+
+    const practiceBlocks = sessionBlocks.filter((b) => b.type === "PRACTICE" || b.type === "ASSIGNMENT");
 
     const openCreateModal = useCallback(() => {
         setEditingPractice(null);
+        setPracticeTitle("Bài thực hành cấp buổi");
         setSubmissionType(SubmissionTypeEnum.LINK);
         setContent("");
         setResources([]);
+        setIsRequired(true);
         setIsModalOpen(true);
     }, []);
 
     useEffect(() => {
-        if (selectedPracticeId === NEW_PRACTICE_ID_FLAG && rawPractices.length > 0) {
+        if (selectedPracticeId === NEW_PRACTICE_ID_FLAG) {
             openCreateModal();
-        } else if (selectedPracticeId && selectedPracticeId !== NEW_PRACTICE_ID_FLAG) {
+        } else if (selectedPracticeId) {
             setExpandedIds([selectedPracticeId]);
         }
-    }, [selectedPracticeId, rawPractices.length, openCreateModal]);
+    }, [selectedPracticeId, openCreateModal]);
 
     const toggleExpand = (id: string) => {
         setExpandedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
     };
 
-    const openEditModal = (p: SessionPractice) => {
-        setEditingPractice(p);
-        setSubmissionType((p.submissionType as "LINK" | "FILE" | "TEXT") || SubmissionTypeEnum.LINK);
-        setContent(p.content || "");
-        setResources(p.resources ? p.resources.map((r) => ({ label: r.label || "", url: r.url || "" })) : []);
+    const openEditModal = (b: CoursewareBlockEntity) => {
+        setEditingPractice(b);
+        setPracticeTitle(b.title || "Bài thực hành cấp buổi");
+        const payload = b.payload || {};
+        setSubmissionType((payload.submissionType as "LINK" | "FILE" | "TEXT") || SubmissionTypeEnum.LINK);
+        setContent((payload.content as string) || "");
+        const rawRes = payload.resources as Array<{ label?: string; url?: string }> | undefined;
+        setResources(rawRes ? rawRes.map((r) => ({ label: r.label || "", url: r.url || "" })) : []);
+        setIsRequired(b.isRequired !== false);
         setIsModalOpen(true);
     };
 
     const saveMutation = useMutation({
         mutationFn: async () => {
-            const body = {
+            const cleanResources = resources.filter((r) => r.url.trim() !== "");
+            const payload = {
                 submissionType,
                 content: content.trim(),
-                resources: resources.filter((r) => r.url.trim() !== ""),
+                resources: cleanResources,
             };
 
-            const practiceId = editingPractice?._id || editingPractice?.id;
-
-            if (editingPractice && practiceId) {
-                return updateSessionPracticeById(session.id, practiceId, body);
-            } else if (editingPractice && !practiceId) {
-                return updateSessionPractice(session.id, body);
+            if (editingPractice) {
+                return coursewareService.updateBlock(editingPractice.id, {
+                    title: practiceTitle.trim() || "Bài thực hành cấp buổi",
+                    isRequired,
+                    payload,
+                });
             } else {
-                return addSessionPractice(session.id, body);
+                return coursewareService.createSessionBlock(session.id, {
+                    type: "PRACTICE",
+                    title: practiceTitle.trim() || "Bài thực hành cấp buổi",
+                    isRequired,
+                    payload,
+                    completionCriteria: {
+                        requireSubmission: true,
+                    },
+                });
             }
         },
         onSuccess: () => {
@@ -86,6 +101,7 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                 UI_TEXT.courseClassModal.toastCreateSuccessTitle,
                 editingPractice ? UI_TEXT.practiceEditor.toastUpdateSuccess : UI_TEXT.practiceEditor.toastCreateSuccess,
             );
+            queryClient.invalidateQueries({ queryKey: ["session-blocks", session.id] });
             queryClient.invalidateQueries({ queryKey: ["sessions", session.courseId] });
             setIsModalOpen(false);
         },
@@ -95,16 +111,12 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
     });
 
     const deleteMutation = useMutation({
-        mutationFn: async (practice: SessionPractice) => {
-            const practiceId = practice._id || practice.id;
-            if (practiceId) {
-                return deleteSessionPracticeById(session.id, practiceId);
-            } else {
-                return deleteSessionPractice(session.id);
-            }
+        mutationFn: async (practice: CoursewareBlockEntity) => {
+            return coursewareService.deleteBlock(practice.id);
         },
         onSuccess: () => {
             toast.success(UI_TEXT.courseClassModal.toastCreateSuccessTitle, UI_TEXT.practiceEditor.toastDeleteSuccess);
+            queryClient.invalidateQueries({ queryKey: ["session-blocks", session.id] });
             queryClient.invalidateQueries({ queryKey: ["sessions", session.courseId] });
             setDeletingPractice(null);
         },
@@ -137,7 +149,7 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
 
             {/* List area */}
             <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
-                {rawPractices.length === 0 ? (
+                {practiceBlocks.length === 0 ? (
                     <div className="animate-fadeIn flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 p-8 py-14 text-center">
                         <div className="flex size-14 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-white text-slate-400">
                             <FileText className="size-6 text-slate-400" />
@@ -157,21 +169,25 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                     </div>
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {rawPractices.map((p, index) => {
-                            const pId = p._id || p.id || String(index);
-                            const isExpanded = expandedIds.includes(pId);
+                        {practiceBlocks.map((b, index) => {
+                            const isExpanded = expandedIds.includes(b.id);
+                            const payload = b.payload || {};
+                            const bSubmissionType = (payload.submissionType as string) || "LINK";
+                            const bContent = (payload.content as string) || "";
+                            const bResources = (payload.resources as Array<{ label?: string; url?: string }>) || [];
+
                             return (
                                 <div
-                                    key={pId}
+                                    key={b.id}
                                     className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-xs transition duration-150 hover:border-slate-300"
                                 >
-                                    <div onClick={() => toggleExpand(pId)} className="flex cursor-pointer items-center justify-between gap-3 select-none">
+                                    <div onClick={() => toggleExpand(b.id)} className="flex cursor-pointer items-center justify-between gap-3 select-none">
                                         <div className="flex min-w-0 flex-1 items-center gap-2.5">
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    toggleExpand(pId);
+                                                    toggleExpand(b.id);
                                                 }}
                                                 className="cursor-pointer rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                                                 title={isExpanded ? UI_TEXT.practiceEditor.collapseTooltip : UI_TEXT.practiceEditor.expandTooltip}
@@ -179,28 +195,34 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                                                 {isExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                                             </button>
                                             <span
-                                                className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition ${
-                                                    isExpanded ? "bg-wine text-white shadow-xs" : "bg-slate-100 text-slate-700"
-                                                }`}
+                                                className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-black transition ${isExpanded ? "bg-wine text-white shadow-xs" : "bg-slate-100 text-slate-700"
+                                                    }`}
                                             >
                                                 {index + 1}
                                             </span>
                                             <div className="flex min-w-0 flex-1 flex-col gap-1">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <h4 className="text-sm leading-snug font-black text-slate-900">
-                                                        {UI_TEXT.practiceEditor.practiceIndexPrefix}
-                                                        {index + 1}
+                                                        {b.title || `Bài thực hành ${index + 1}`}
                                                     </h4>
                                                     <span className="inline-flex items-center gap-1 rounded-full border border-blue-200/80 bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-600">
-                                                        {p.submissionType === SubmissionTypeEnum.FILE
+                                                        {bSubmissionType === SubmissionTypeEnum.FILE
                                                             ? UI_TEXT.practiceEditor.submitTypeFile
-                                                            : p.submissionType === SubmissionTypeEnum.TEXT
-                                                              ? UI_TEXT.practiceEditor.submitTypeText
-                                                              : UI_TEXT.practiceEditor.submitTypeLink}
+                                                            : bSubmissionType === SubmissionTypeEnum.TEXT
+                                                                ? UI_TEXT.practiceEditor.submitTypeText
+                                                                : UI_TEXT.practiceEditor.submitTypeLink}
                                                     </span>
-                                                    {p.resources && p.resources.length > 0 && (
+                                                    <span
+                                                        className={`rounded-md px-2.5 py-0.5 text-xs font-bold ${b.isRequired
+                                                                ? "bg-red-50 text-red-600 border border-red-100"
+                                                                : "bg-slate-100 text-slate-500"
+                                                            }`}
+                                                    >
+                                                        {b.isRequired ? "Bắt buộc buổi" : "Tùy chọn"}
+                                                    </span>
+                                                    {bResources.length > 0 && (
                                                         <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
-                                                            {p.resources.length}
+                                                            {bResources.length}
                                                             {UI_TEXT.practiceEditor.resourcesCountSuffix}
                                                         </span>
                                                     )}
@@ -211,7 +233,7 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                                         <div onClick={(e) => e.stopPropagation()} className="flex shrink-0 items-center gap-1.5">
                                             <button
                                                 type="button"
-                                                onClick={() => openEditModal(p)}
+                                                onClick={() => openEditModal(b)}
                                                 className="cursor-pointer rounded-lg bg-blue-50 p-1.5 text-blue-400 transition hover:bg-blue-100 hover:text-blue-500"
                                                 title={UI_TEXT.practiceEditor.editTooltip}
                                             >
@@ -219,7 +241,7 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                                             </button>
                                             <button
                                                 type="button"
-                                                onClick={() => setDeletingPractice(p)}
+                                                onClick={() => setDeletingPractice(b)}
                                                 className="cursor-pointer p-1.5 text-red-500 transition hover:text-red-600"
                                                 title={UI_TEXT.practiceEditor.deleteTooltip}
                                             >
@@ -235,21 +257,21 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                                                     {UI_TEXT.practiceEditor.problemStatementLabel}
                                                 </span>
                                                 <TiptapEditor
-                                                    value={p.content || ""}
-                                                    onChange={() => {}}
+                                                    value={bContent}
+                                                    onChange={() => { }}
                                                     readOnly
                                                     hideToolbar
                                                     editorClassName="min-h-0 p-0 text-sm text-slate-800 bg-transparent [&_p]:!my-0.5 [&_h1]:!mt-2 [&_h1]:!mb-1 [&_h2]:!mt-2 [&_h2]:!mb-1 [&_h3]:!mt-1.5 [&_h3]:!mb-0.5 [&_ul]:!my-1 [&_ol]:!my-1 [&_h1]:!text-base [&_h2]:!text-sm [&_h2]:!font-bold [&_h3]:!text-sm [&_h3]:!font-bold [&_p]:!text-sm [&_p]:!leading-relaxed"
                                                 />
                                             </div>
 
-                                            {p.resources && p.resources.length > 0 && (
+                                            {bResources.length > 0 && (
                                                 <div className="flex flex-col gap-1.5">
                                                     <span className="text-xs font-bold tracking-wider text-slate-400 uppercase">
                                                         {UI_TEXT.practiceEditor.attachedResourcesLabel}
                                                     </span>
                                                     <div className="flex flex-col gap-1">
-                                                        {p.resources.map((r, rIdx) => (
+                                                        {bResources.map((r, rIdx) => (
                                                             <div
                                                                 key={rIdx}
                                                                 className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs"
@@ -298,14 +320,40 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                             <p className="text-center text-xs font-semibold text-slate-400 sm:text-sm">{UI_TEXT.practiceEditor.modalDescription}</p>
                         </div>
 
-                        <PracticeFormFields
-                            submissionType={submissionType}
-                            setSubmissionType={setSubmissionType}
-                            content={content}
-                            setContent={setContent}
-                            resources={resources}
-                            setResources={setResources}
-                        />
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-700">Tên bài thực hành</label>
+                                <input
+                                    type="text"
+                                    value={practiceTitle}
+                                    onChange={(e) => setPracticeTitle(e.target.value)}
+                                    placeholder="Nhập tên bài thực hành..."
+                                    className="w-full rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold focus:border-wine focus:outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <PracticeFormFields
+                                submissionType={submissionType}
+                                setSubmissionType={setSubmissionType}
+                                content={content}
+                                setContent={setContent}
+                                resources={resources}
+                                setResources={setResources}
+                            />
+
+                            <div className="flex items-center gap-2 rounded-xl bg-slate-50 p-3 border border-slate-200/80">
+                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                                    <input
+                                        type="checkbox"
+                                        checked={isRequired}
+                                        onChange={(e) => setIsRequired(e.target.checked)}
+                                        className="accent-wine size-4"
+                                    />
+                                    <span>Bắt buộc hoàn thành bài tập này để chốt buổi (isRequired)</span>
+                                </label>
+                            </div>
+                        </div>
 
                         <div className="mt-2 flex w-full items-center gap-3">
                             <button
@@ -318,7 +366,7 @@ export function SessionPracticeEditor({ session, selectedPracticeId }: SessionPr
                             <Button
                                 onClick={() => saveMutation.mutate()}
                                 isLoading={saveMutation.isPending}
-                                disabled={!content.trim()}
+                                disabled={!content.trim() || !practiceTitle.trim()}
                                 className="hover:bg-wine-hover w-2/3 cursor-pointer rounded-full border-none bg-wine py-2.5 text-center text-sm font-black text-white transition active:scale-[0.98]"
                             >
                                 {editingPractice ? UI_TEXT.practiceEditor.saveBtn : UI_TEXT.practiceEditor.addBtn}

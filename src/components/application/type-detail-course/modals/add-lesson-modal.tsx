@@ -6,8 +6,8 @@ import { ArrowLeft, BookText, ChevronRight, Code2, FileText, X } from "lucide-re
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { coursewareService } from "@/services/courseware.service";
 import { createHomework } from "@/services/homework.service";
-import { addSessionPractice } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import { type AddLessonModalProps, SubmissionTypeEnum } from "@/types/courseware.types";
 import { PracticeFormFields } from "../components/practice-form-fields";
@@ -61,14 +61,23 @@ export function AddLessonModal({
     // Mutation for creating Practice
     const createPracticeMutation = useMutation({
         mutationFn: async () => {
-            return addSessionPractice(sessionId, {
-                submissionType: practiceSubmissionType,
-                content: practiceContent.trim(),
-                resources: resources.filter((r) => r.url.trim() !== ""),
+            return coursewareService.createSessionBlock(sessionId, {
+                type: "PRACTICE",
+                title: "Bài thực hành cấp buổi",
+                isRequired: true,
+                payload: {
+                    submissionType: practiceSubmissionType,
+                    content: practiceContent.trim(),
+                    resources: resources.filter((r) => r.url.trim() !== ""),
+                },
+                completionCriteria: {
+                    requireSubmission: true,
+                },
             });
         },
         onSuccess: () => {
             toast.success(UI_TEXT.courseClassModal.toastCreateSuccessTitle, UI_TEXT.addLessonModal.toastPracticeSuccess);
+            queryClient.invalidateQueries({ queryKey: ["session-blocks", sessionId] });
             if (courseId) {
                 queryClient.invalidateQueries({ queryKey: ["sessions", courseId] });
             }
