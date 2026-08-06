@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckSquare, Layers, Loader2, Map, Plus, ShieldAlert, Trash2, X } from "lucide-react";
+import { ArrowLeft, CheckSquare, Layers, Loader2, Map, Plus, ShieldAlert, X } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { HttpError } from "@/lib/http-client";
@@ -300,14 +300,6 @@ export function SessionCompletionRuleModal({
                                             >
                                                 {mindmapSubmissionBlock.isRequired ? "Bỏ bắt buộc" : "Đặt làm bắt buộc"}
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDeleteBlock(mindmapSubmissionBlock.id)}
-                                                className="cursor-pointer rounded-xl border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100"
-                                                title="Xóa cổng nộp Mindmap"
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </button>
                                         </div>
                                     </div>
                                 ) : (
@@ -440,14 +432,6 @@ export function SessionCompletionRuleModal({
                                                         className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100"
                                                     >
                                                         {b.isRequired ? "Bỏ bắt buộc" : "Đặt làm bắt buộc"}
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteBlock(b.id)}
-                                                        className="cursor-pointer rounded-lg border border-red-200 bg-red-50 p-1.5 text-red-600 hover:bg-red-100"
-                                                        title="Xóa bài thực hành"
-                                                    >
-                                                        <Trash2 className="size-3.5" />
                                                     </button>
                                                 </div>
                                             </div>
