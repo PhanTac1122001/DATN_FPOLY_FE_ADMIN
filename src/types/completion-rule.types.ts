@@ -51,6 +51,7 @@ export interface CoursewareBlockEntity {
     title: string;
     isRequired: boolean;
     position?: number;
+    payload?: Record<string, unknown>;
     completionCriteria?: Record<string, unknown>;
 }
 

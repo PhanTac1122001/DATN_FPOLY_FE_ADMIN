@@ -26,6 +26,8 @@ export const coursewareService = {
             title: b.title || "",
             isRequired: b.isRequired !== false,
             position: b.position,
+            payload: b.payload || {},
+            completionCriteria: b.completionCriteria || b.criteria || {},
         }));
     },
 
@@ -39,13 +41,14 @@ export const coursewareService = {
             title: b.title || "",
             isRequired: b.isRequired !== false,
             position: b.position,
+            payload: b.payload || {},
             completionCriteria: b.completionCriteria || b.criteria || {},
         }));
     },
 
     updateBlock: async (
         blockId: string,
-        body: Partial<{ title: string; description: string; isRequired: boolean; completionCriteria: Record<string, unknown> }>,
+        body: Partial<{ title: string; description: string; isRequired: boolean; payload: Record<string, unknown>; completionCriteria: Record<string, unknown> }>,
     ): Promise<CoursewareBlockEntity> => {
         const response = await httpClient<any>(`/api/staff/blocks/${blockId}`, {
             method: HttpMethod.PATCH,
@@ -58,7 +61,44 @@ export const coursewareService = {
             title: b.title || "",
             isRequired: b.isRequired !== false,
             position: b.position,
+            payload: b.payload || {},
             completionCriteria: b.completionCriteria || b.criteria || {},
         };
+    },
+
+    createSessionBlock: async (
+        sessionId: string,
+        body: {
+            type: string;
+            title: string;
+            payload?: Record<string, unknown>;
+            completionCriteria?: Record<string, unknown>;
+            isRequired?: boolean;
+            position?: number;
+        },
+    ): Promise<CoursewareBlockEntity> => {
+        const response = await httpClient<any>(`/api/staff/sessions/${sessionId}/blocks`, {
+            method: HttpMethod.POST,
+            body: JSON.stringify({
+                payload: {},
+                ...body,
+            }),
+        });
+        const b = response?.data || response;
+        return {
+            id: String(b.id ?? b._id),
+            type: b.type || "",
+            title: b.title || "",
+            isRequired: b.isRequired !== false,
+            position: b.position,
+            payload: b.payload || {},
+            completionCriteria: b.completionCriteria || b.criteria || {},
+        };
+    },
+
+    deleteBlock: async (blockId: string): Promise<void> => {
+        await httpClient<any>(`/api/staff/blocks/${blockId}`, {
+            method: HttpMethod.DELETE,
+        });
     },
 };
