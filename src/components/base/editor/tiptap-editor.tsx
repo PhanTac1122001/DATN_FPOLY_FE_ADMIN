@@ -80,14 +80,16 @@ export function TiptapEditor({ value, onChange, placeholder, readOnly, hideToolb
         immediatelyRender: false,
     });
 
-    // Update editor content when value prop changes
+    // Update editor content when value prop changes (programmatic — do not emit onUpdate,
+    // or parent state flips HTML↔markdown and the reading tab stays falsely dirty / needs 2 saves).
     useEffect(() => {
-        if (editor && value !== (editor.storage as unknown as { markdown: { getMarkdown: () => string } }).markdown.getMarkdown()) {
-            const { from, to } = editor.state.selection;
-            editor.commands.setContent(value);
-            // Restore cursor position if possible
-            editor.commands.setTextSelection({ from: Math.min(from, editor.state.doc.content.size), to: Math.min(to, editor.state.doc.content.size) });
-        }
+        if (!editor) return;
+        const currentMarkdown = (editor.storage as unknown as { markdown: { getMarkdown: () => string } }).markdown.getMarkdown();
+        if (value === currentMarkdown) return;
+
+        const { from, to } = editor.state.selection;
+        editor.commands.setContent(value || "", { emitUpdate: false });
+        editor.commands.setTextSelection({ from: Math.min(from, editor.state.doc.content.size), to: Math.min(to, editor.state.doc.content.size) });
     }, [value, editor]);
 
     // Update editor's editable state when readOnly prop changes

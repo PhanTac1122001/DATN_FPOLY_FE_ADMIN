@@ -6,6 +6,8 @@ import { Award, BookOpen, Edit, Plus, Search, Trash2, Users } from "lucide-react
 import { AssignGroupHomeworkModal } from "@/components/application/modals/assign-group-homework-modal";
 import { GroupModal } from "@/components/application/modals/group-modal";
 import { Button } from "@/components/base/buttons/button";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteGroup, getGroups } from "@/services/group.service";
 import { toast } from "@/services/toast.service";
@@ -83,42 +85,52 @@ export function ClassGroupsTab({ classId, initialGroups, availableSubjects = [] 
         setIsAssignModalOpen(true);
     };
 
+    const subjectFilterItems = useMemo(() => {
+        return [
+            { id: "", label: UI_TEXT.classGroupsTab.allSubjectsFilter },
+            ...allFilterSubjects.map((sub) => ({ id: sub.id, label: sub.name })),
+        ];
+    }, [allFilterSubjects]);
+
     return (
         <div className="space-y-4">
             {/* Header Toolbar */}
-            <div className="flex flex-col items-stretch justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center dark:border-gray-800 dark:bg-gray-900">
+            <div className="flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900">
                 <div className="flex flex-1 items-center gap-3">
                     {/* Search Input */}
-                    <div className="relative max-w-md flex-1">
-                        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
+                    <div className="w-full max-w-sm">
+                        <Input
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(val) => setSearch(val)}
                             placeholder={UI_TEXT.classGroupsTab.searchPlaceholder}
-                            className="w-full rounded-lg border border-gray-200 py-1.5 pr-3 pl-9 text-sm focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                            icon={Search as any}
+                            size="sm"
                         />
                     </div>
 
                     {/* Filter by Subject */}
-                    <select
-                        value={selectedSubjectFilter}
-                        onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                    >
-                        <option value="">{UI_TEXT.classGroupsTab.allSubjectsFilter}</option>
-                        {allFilterSubjects.map((sub) => (
-                            <option key={sub.id} value={sub.id}>
-                                {sub.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="w-56">
+                        <Select
+                            aria-label={UI_TEXT.classGroupsTab.allSubjectsFilter}
+                            selectedKey={selectedSubjectFilter || null}
+                            onSelectionChange={(key) => setSelectedSubjectFilter((key as string) || "")}
+                            items={subjectFilterItems}
+                            size="sm"
+                            placeholder={UI_TEXT.classGroupsTab.allSubjectsFilter}
+                        >
+                            {(item) => <Select.Item id={item.id} label={item.label} />}
+                        </Select>
+                    </div>
                 </div>
 
-                <Button onClick={handleCreateNew} className="inline-flex items-center gap-1.5">
-                    <Plus className="size-4" />
-                    {UI_TEXT.classGroupsTab.btnAddGroup}
-                </Button>
+                <button
+                    type="button"
+                    onClick={handleCreateNew}
+                    className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
+                >
+                    <Plus className="size-4.5" />
+                    <span>{UI_TEXT.classGroupsTab.btnAddGroup}</span>
+                </button>
             </div>
 
             {/* Groups Table / List */}
@@ -129,9 +141,14 @@ export function ClassGroupsTab({ classId, initialGroups, availableSubjects = [] 
                     <Users className="mx-auto mb-2 size-10 text-gray-400" />
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{UI_TEXT.classGroupsTab.emptyTitle}</p>
                     <p className="mt-1 mb-4 text-xs text-gray-500">{UI_TEXT.classGroupsTab.emptyDesc}</p>
-                    <Button onClick={handleCreateNew} size="sm">
-                        <Plus className="mr-1 size-4" /> {UI_TEXT.classGroupsTab.btnCreateFirstGroup}
-                    </Button>
+                    <button
+                        type="button"
+                        onClick={handleCreateNew}
+                        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
+                    >
+                        <Plus className="size-4.5" />
+                        <span>{UI_TEXT.classGroupsTab.btnCreateFirstGroup}</span>
+                    </button>
                 </div>
             ) : (
                 <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs dark:border-gray-800 dark:bg-gray-900">

@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { SEARCH_THRESHOLD_5 } from "@/constants/ui-components.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -21,7 +22,6 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
     const [description, setDescription] = useState("");
     const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-    const [subjectSearch, setSubjectSearch] = useState("");
     const [studentSearch, setStudentSearch] = useState("");
 
     // Load students in class via class detail (includes assigned courses and students)
@@ -53,11 +53,12 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
         return Array.from(map.values());
     }, [availableSubjects, classDetail]);
 
-    const filteredSubjects = useMemo(() => {
-        if (!subjectSearch.trim()) return allSubjects;
-        const q = subjectSearch.toLowerCase();
-        return allSubjects.filter((s) => s.name.toLowerCase().includes(q) || (s.courseCode && s.courseCode.toLowerCase().includes(q)));
-    }, [allSubjects, subjectSearch]);
+    const subjectSelectItems = useMemo(() => {
+        return allSubjects.map((sub) => ({
+            id: sub.id,
+            label: `${sub.name}${sub.courseCode ? ` (${sub.courseCode})` : ""}`,
+        }));
+    }, [allSubjects]);
 
     // Load students in class via group service
     const { data: fetchedStudents = [], isLoading: isLoadingGroupStudents } = useQuery<GroupStudent[]>({
@@ -115,7 +116,6 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
                 setSelectedSubjectIds([]);
                 setSelectedStudentIds([]);
             }
-            setSubjectSearch("");
             setStudentSearch("");
         }
     }, [isOpen, groupData]);
@@ -151,10 +151,6 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
             toast.error(UI_TEXT.groupModal.toastError, error?.message || UI_TEXT.groupModal.toastDefaultError);
         },
     });
-
-    const toggleSubject = (id: string) => {
-        setSelectedSubjectIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
-    };
 
     const toggleStudent = (id: string) => {
         setSelectedStudentIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
@@ -202,66 +198,24 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
                             placeholder={UI_TEXT.groupModal.placeholderTitle}
                         />
 
+                        {/* Subject Selection Dropdown */}
                         <div className="flex flex-col gap-1.5">
-                            <label className="text-sm font-semibold text-slate-700">{UI_TEXT.groupModal.labelDescription}</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder={UI_TEXT.groupModal.placeholderDescription}
-                                rows={2}
-                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-wine focus:ring-1 focus:ring-wine focus:outline-none"
+                            <label className="text-sm font-semibold text-slate-700">
+                                {UI_TEXT.groupModal.labelSubjects}{" "}
+                                <span className="font-normal text-slate-500">
+                                    {"("}
+                                    {UI_TEXT.groupModal.selectedSubjectPrefix} {selectedSubjectIds.length}
+                                    {")"}
+                                </span>
+                            </label>
+                            <Select.MultiComboBox
+                                aria-label={UI_TEXT.groupModal.labelSubjects}
+                                placeholder={UI_TEXT.groupModal.placeholderFilterSubject || "Chọn môn học..."}
+                                selectedKeys={selectedSubjectIds}
+                                onSelectionChange={(keys) => setSelectedSubjectIds((keys as string[]) || [])}
+                                items={subjectSelectItems}
+                                size="sm"
                             />
-                        </div>
-
-                        {/* Subject Selection */}
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-semibold text-slate-700">
-                                    {UI_TEXT.groupModal.labelSubjects}{" "}
-                                    <span className="font-normal text-slate-500">
-                                        {"("}
-                                        {UI_TEXT.groupModal.selectedSubjectPrefix} {selectedSubjectIds.length}
-                                        {")"}
-                                    </span>
-                                </label>
-                                {allSubjects.length > SEARCH_THRESHOLD_5 && (
-                                    <div className="relative w-52">
-                                        <Search className="absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            value={subjectSearch}
-                                            onChange={(e) => setSubjectSearch(e.target.value)}
-                                            placeholder={UI_TEXT.groupModal.placeholderFilterSubject}
-                                            className="w-full rounded-full border border-slate-200 bg-slate-50/50 py-1 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-wine focus:ring-1 focus:ring-wine focus:outline-none"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {filteredSubjects.length === 0 ? (
-                                <p className="py-2 text-xs text-slate-400 italic">{UI_TEXT.groupModal.noSubjectsFound}</p>
-                            ) : (
-                                <div className="custom-scrollbar flex max-h-36 flex-wrap gap-2 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                                    {filteredSubjects.map((sub) => {
-                                        const isSelected = selectedSubjectIds.includes(sub.id);
-                                        return (
-                                            <button
-                                                key={sub.id}
-                                                type="button"
-                                                onClick={() => toggleSubject(sub.id)}
-                                                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                                                    isSelected
-                                                        ? "border-wine bg-wine/10 font-semibold text-wine"
-                                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                                                }`}
-                                            >
-                                                {isSelected && <Check className="size-3.5 text-wine" />}
-                                                {sub.name} {sub.courseCode ? `(${sub.courseCode})` : ""}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
                         </div>
 
                         {/* Student Selection Roster */}
@@ -328,6 +282,18 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
                                     })}
                                 </div>
                             )}
+                        </div>
+
+                        {/* Description - Moved to the bottom */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-semibold text-slate-700">{UI_TEXT.groupModal.labelDescription}</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder={UI_TEXT.groupModal.placeholderDescription}
+                                rows={2}
+                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-wine focus:ring-1 focus:ring-wine focus:outline-none"
+                            />
                         </div>
                     </div>
 

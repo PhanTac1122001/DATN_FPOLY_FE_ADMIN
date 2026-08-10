@@ -369,6 +369,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                                 setActiveTab("groups");
                                             } else if (card.id === "schedule" || card.id === "learning") {
                                                 router.push(`/classes/${classId}/${card.id}` as Route);
+                                            } else if (card.id === "quizziz") {
+                                                router.push(`/classes/${classId}/quiz` as Route);
                                             } else {
                                                 toast.info(card.title, UI_TEXT.classDetail.toastFeatureUnderDevelopment);
                                             }

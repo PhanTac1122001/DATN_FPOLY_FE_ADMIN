@@ -12,7 +12,7 @@ export function fractionToPct(fraction: number): number {
 }
 
 const defaultUiGrading: CourseGradingFormula = {
-    useCustomFormula: false,
+    useCustomFormula: true,
     attendanceWeight: 10,
     quizWeight: 10,
     hackathonWeight: 20,

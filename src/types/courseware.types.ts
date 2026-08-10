@@ -152,6 +152,8 @@ export interface SessionFormProps {
     isDirty?: boolean;
     onOpenManageTypes?: () => void;
     onOpenCompletionRule?: () => void;
+    /** Bump to reload session type options after manage-types changes */
+    typesReloadToken?: number;
 }
 
 export interface SessionPracticeEditorProps {

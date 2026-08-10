@@ -16,6 +16,7 @@ export function SessionForm({
     isDirty,
     onOpenManageTypes,
     onOpenCompletionRule: _onOpenCompletionRule,
+    typesReloadToken = 0,
 }: SessionFormProps) {
     const formRef = useRef<HTMLFormElement>(null);
 
@@ -49,7 +50,7 @@ export function SessionForm({
             .catch((err) => {
                 console.warn("Could not load backend session types, using default types:", err);
             });
-    }, []);
+    }, [typesReloadToken]);
 
     useEffect(() => {
         if (onRegisterSave) {

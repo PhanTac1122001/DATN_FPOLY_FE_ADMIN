@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getLocalTimeZone } from "@internationalized/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dices, Layers, RefreshCw, X } from "lucide-react";
 import { Heading } from "react-aria-components";
+import { DateTimePicker } from "@/components/application/date-picker/date-time-picker";
 import { Button } from "@/components/base/buttons/button";
-import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { HOMEWORK_DIFFICULTY_LEVELS, RANDOM_SORT_OFFSET } from "@/constants/ui-components.constants";
@@ -16,16 +17,15 @@ import { getSessionsByCourse } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import type { AssignGroupHomeworkModalProps, GroupSubject, HomeworkDifficultyLevel } from "@/types/group.types";
 import type { Homework } from "@/types/material.types";
+import { parseToDateTime } from "@/utils/date-time-picker.utils";
 
 export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubjects = [] }: AssignGroupHomeworkModalProps) {
     const queryClient = useQueryClient();
 
     const [subjectId, setSubjectId] = useState("");
     const [sessionId, setSessionId] = useState("");
-    const [homeworkTitle, setHomeworkTitle] = useState("");
-    const [difficultyLevel] = useState<HomeworkDifficultyLevel>("MEDIUM");
     const [dueDate, setDueDate] = useState("");
-    const [note, setNote] = useState("");
+    const [dueTime, setDueTime] = useState("");
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
     // State cho số lượng bài tập muốn lấy ngẫu nhiên theo từng cấp độ
@@ -99,9 +99,8 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
             const initialSubject = groupSubjects[0]?.id || "";
             setSubjectId(initialSubject);
             setSessionId("");
-            setHomeworkTitle("");
             setDueDate("");
-            setNote("");
+            setDueTime("");
             setSelectedStudentIds(group.studentIds || []);
             setLevelCounts({
                 EASY: 0,
@@ -129,56 +128,39 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
             if (!group) return;
             if (!subjectId) throw new Error(UI_TEXT.assignGroupHomeworkModal.errorSelectSubject);
 
-            // Trường hợp 1: Chọn bài ngẫu nhiên theo số lượng nhập của các cấp độ
-            if (totalRandomCount > 0) {
-                const assignedPromises: Promise<unknown>[] = [];
+            const homeworksPayload: Array<{ homeworkId: string; difficultyLevel: HomeworkDifficultyLevel }> = [];
 
-                HOMEWORK_DIFFICULTY_LEVELS.forEach((lvl) => {
-                    const count = levelCounts[lvl.id] || 0;
-                    const pool = homeworksByLevel[lvl.id] || [];
+            HOMEWORK_DIFFICULTY_LEVELS.forEach((lvl) => {
+                const count = levelCounts[lvl.id] || 0;
+                const pool = homeworksByLevel[lvl.id] || [];
 
-                    if (count > 0 && pool.length > 0) {
-                        // Shuffle pool ngẫu nhiên
-                        const shuffled = [...pool].sort(() => RANDOM_SORT_OFFSET - Math.random());
-                        const selectedHws = shuffled.slice(0, count);
+                if (count > 0 && pool.length > 0) {
+                    const shuffled = [...pool].sort(() => RANDOM_SORT_OFFSET - Math.random());
+                    const selectedHws = shuffled.slice(0, count);
 
-                        selectedHws.forEach((hw) => {
-                            assignedPromises.push(
-                                assignHomeworkToGroup(group.id, {
-                                    subjectId,
-                                    homeworkId: hw.title || hw.id,
-                                    difficultyLevel: lvl.id,
-                                    assignedStudentIds: selectedStudentIds,
-                                    dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-                                    note: note.trim(),
-                                }),
-                            );
+                    selectedHws.forEach((hw) => {
+                        const hwId = hw.id || ((hw as unknown as Record<string, unknown>)._id as string);
+                        homeworksPayload.push({
+                            homeworkId: hwId,
+                            difficultyLevel: lvl.id,
                         });
-                    }
-                });
-
-                if (assignedPromises.length === 0) {
-                    throw new Error(UI_TEXT.assignGroupHomeworkModal.errorNoHomeworkInPool);
+                    });
                 }
+            });
 
-                await Promise.all(assignedPromises);
-                return assignedPromises.length;
+            if (homeworksPayload.length === 0) {
+                throw new Error(UI_TEXT.assignGroupHomeworkModal.errorNoHomeworkInPool);
             }
 
-            // Trường hợp 2: Điền tên bài tập thủ công
-            if (!homeworkTitle.trim()) {
-                throw new Error(UI_TEXT.assignGroupHomeworkModal.errorTitleOrRandomRequired);
-            }
-
+            const dueDateValue = parseToDateTime(dueDate, dueTime);
             await assignHomeworkToGroup(group.id, {
                 subjectId,
-                homeworkId: homeworkTitle.trim(),
-                difficultyLevel,
+                homeworks: homeworksPayload,
                 assignedStudentIds: selectedStudentIds,
-                dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-                note: note.trim(),
+                dueDate: dueDateValue ? dueDateValue.toDate(getLocalTimeZone()).toISOString() : undefined,
             });
-            return 1;
+
+            return homeworksPayload.length;
         },
         onSuccess: (assignedCount) => {
             toast.success(
@@ -350,35 +332,17 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
                             </div>
                         )}
 
-                        {/* Hoặc nhập tiêu đề bài tập thủ công */}
-                        <Input
-                            label={
-                                totalRandomCount > 0 ? (
-                                    UI_TEXT.assignGroupHomeworkModal.labelTitleOptional
-                                ) : (
-                                    <span>
-                                        {UI_TEXT.assignGroupHomeworkModal.labelTitleManual} <span className="font-bold text-red-500">{"*"}</span>
-                                    </span>
-                                )
-                            }
-                            value={homeworkTitle}
-                            onChange={(val) => setHomeworkTitle(val)}
-                            placeholder={UI_TEXT.assignGroupHomeworkModal.placeholderTitle}
-                        />
-
-                        {/* Due Date & Note */}
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Input
+                        {/* Due Date */}
+                        <div className="flex flex-col gap-1.5">
+                            <DateTimePicker
                                 label={UI_TEXT.assignGroupHomeworkModal.labelDueDate}
-                                type="datetime-local"
-                                value={dueDate}
-                                onChange={(val) => setDueDate(val)}
-                            />
-                            <Input
-                                label={UI_TEXT.assignGroupHomeworkModal.labelNote}
-                                value={note}
-                                onChange={(val) => setNote(val)}
-                                placeholder={UI_TEXT.assignGroupHomeworkModal.placeholderNote}
+                                placeholder={UI_TEXT.assignGroupHomeworkModal.placeholderDueDate}
+                                date={dueDate || undefined}
+                                time={dueTime || undefined}
+                                onChange={(nextDate, nextTime) => {
+                                    setDueDate(nextDate);
+                                    setDueTime(nextTime);
+                                }}
                             />
                         </div>
                     </div>
@@ -394,7 +358,7 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
                             type="button"
                             onClick={() => mutation.mutate()}
                             isLoading={mutation.isPending}
-                            isDisabled={!subjectId || (totalRandomCount === 0 && !homeworkTitle.trim())}
+                            isDisabled={!subjectId || totalRandomCount === 0}
                             className="border-none bg-wine px-6 font-bold text-white hover:bg-wine-deep"
                         >
                             {totalRandomCount > 0

@@ -1,18 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Calculator, X } from "lucide-react";
 import { Heading } from "react-aria-components";
-import { CategoryManagementModal } from "@/components/application/modals/category-management-modal";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
-import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { getCourseCategories } from "@/services/course.service";
 import { toast } from "@/services/toast.service";
 import { AccessModeEnum, type CourseFormModalProps, FinalExamTypeEnum } from "@/types/course.types";
+
+const DEFAULT_SCORING_METHOD = "FULL_PROJECT";
 
 export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }: CourseFormModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,14 +19,11 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
     // Form fields
     const [code, setCode] = useState("");
     const [title, setTitle] = useState("");
-    const [category, setCategory] = useState("");
-    const [isCategoryManageOpen, setIsCategoryManageOpen] = useState(false);
     const [description, setDescription] = useState("");
     const [learningOutcomes, setLearningOutcomes] = useState("");
     const [accessMode, setAccessMode] = useState<AccessModeEnum>(AccessModeEnum.SEQUENTIAL);
 
-    // Custom Grading Formula
-    const [useCustomFormula, setUseCustomFormula] = useState(true);
+    // Custom Grading Formula (always on — preset scoringMethod is no longer configurable in UI)
     const [attendanceWeight, setAttendanceWeight] = useState(10);
     const [quizWeight, setQuizWeight] = useState(10);
     const [hackathonWeight, setHackathonWeight] = useState(20);
@@ -47,24 +42,15 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
 
     const [passScore, setPassScore] = useState(5.0);
 
-    // Fetch dynamic categories list
-    const { data: categories = [] } = useQuery({
-        queryKey: ["course-categories"],
-        queryFn: getCourseCategories,
-        enabled: isOpen,
-    });
-
     useEffect(() => {
         setSubmitted(false);
         if (initialData) {
             setCode(initialData.code);
             setTitle(initialData.title);
-            setCategory(initialData.category || "");
             setDescription(initialData.description || "");
             setLearningOutcomes(initialData.learningOutcomes || "");
             setAccessMode(initialData.accessMode ? (initialData.accessMode as AccessModeEnum) : AccessModeEnum.SEQUENTIAL);
 
-            setUseCustomFormula(initialData.gradingFormula.useCustomFormula ?? true);
             setAttendanceWeight(initialData.gradingFormula.attendanceWeight ?? 10);
             setQuizWeight(initialData.gradingFormula.quizWeight ?? 10);
             setHackathonWeight(initialData.gradingFormula.hackathonWeight ?? 20);
@@ -83,12 +69,10 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
         } else {
             setCode("");
             setTitle("");
-            setCategory(categories[0] || "");
             setDescription("");
             setLearningOutcomes("");
             setAccessMode(AccessModeEnum.SEQUENTIAL);
 
-            setUseCustomFormula(true);
             setAttendanceWeight(10);
             setQuizWeight(10);
             setHackathonWeight(20);
@@ -103,7 +87,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             setEssayQuizWeight(30);
             setPassScore(5.0);
         }
-    }, [initialData, isOpen, categories]);
+    }, [initialData, isOpen]);
 
     const isInvalidWeight = (val: number) => isNaN(val) || val < 0 || val > 100;
 
@@ -115,64 +99,61 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitted(true);
-        const selectedCategory = category.trim();
 
-        if (!title.trim() || !code.trim() || !selectedCategory) {
+        if (!title.trim() || !code.trim()) {
             toast.error(UI_TEXT.common.errorTitle, UI_TEXT.courseFormModal.toastRequiredError);
             return;
         }
 
-        if (useCustomFormula) {
-            const isAnyWeightOutOfRange =
-                isInvalidWeight(attendanceWeight) ||
-                isInvalidWeight(quizWeight) ||
-                isInvalidWeight(hackathonWeight) ||
-                isInvalidWeight(hackathonQuizWeight) ||
-                isInvalidWeight(hackathonEssayWeight) ||
-                isInvalidWeight(examWeight) ||
-                (finalExamType === FinalExamTypeEnum.PROJECT && (
-                    isInvalidWeight(projectProductWeight) ||
-                    isInvalidWeight(projectKnowledgeWeight) ||
-                    isInvalidWeight(projectInterviewWeight)
-                )) ||
-                (finalExamType === FinalExamTypeEnum.ESSAY && (
-                    isInvalidWeight(essayEssayWeight) ||
-                    isInvalidWeight(essayQuizWeight)
-                ));
+        const isAnyWeightOutOfRange =
+            isInvalidWeight(attendanceWeight) ||
+            isInvalidWeight(quizWeight) ||
+            isInvalidWeight(hackathonWeight) ||
+            isInvalidWeight(hackathonQuizWeight) ||
+            isInvalidWeight(hackathonEssayWeight) ||
+            isInvalidWeight(examWeight) ||
+            (finalExamType === FinalExamTypeEnum.PROJECT && (
+                isInvalidWeight(projectProductWeight) ||
+                isInvalidWeight(projectKnowledgeWeight) ||
+                isInvalidWeight(projectInterviewWeight)
+            )) ||
+            (finalExamType === FinalExamTypeEnum.ESSAY && (
+                isInvalidWeight(essayEssayWeight) ||
+                isInvalidWeight(essayQuizWeight)
+            ));
 
-            if (isAnyWeightOutOfRange) {
-                toast.error(UI_TEXT.common.errorTitle, UI_TEXT.courseFormModal.toastWeightOutOfRange);
-                return;
-            }
+        if (isAnyWeightOutOfRange) {
+            toast.error(UI_TEXT.common.errorTitle, UI_TEXT.courseFormModal.toastWeightOutOfRange);
+            return;
+        }
 
-            if (generalTotal !== 100) {
-                toast.error(
-                    UI_TEXT.common.errorTitle,
-                    `${UI_TEXT.courseFormModal.toastWeight100ErrorPrefix}${generalTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
-                );
-                return;
-            }
-            if (hackathonTotal !== 100) {
-                toast.error(
-                    UI_TEXT.common.errorTitle,
-                    `${UI_TEXT.courseFormModal.toastHackathon100ErrorPrefix}${hackathonTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
-                );
-                return;
-            }
-            if (finalExamType === FinalExamTypeEnum.PROJECT && projectTotal !== 100) {
-                toast.error(
-                    UI_TEXT.common.errorTitle,
-                    `${UI_TEXT.courseFormModal.toastProject100ErrorPrefix}${projectTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
-                );
-                return;
-            }
-            if (finalExamType === FinalExamTypeEnum.ESSAY && essayTotal !== 100) {
-                toast.error(
-                    UI_TEXT.common.errorTitle,
-                    `${UI_TEXT.courseFormModal.toastEssay100ErrorPrefix}${essayTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
-                );
-                return;
-            }
+        if (generalTotal !== 100) {
+            toast.error(
+                UI_TEXT.common.errorTitle,
+                `${UI_TEXT.courseFormModal.toastWeight100ErrorPrefix}${generalTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
+            );
+            return;
+        }
+        if (hackathonTotal !== 100) {
+            toast.error(
+                UI_TEXT.common.errorTitle,
+                `${UI_TEXT.courseFormModal.toastHackathon100ErrorPrefix}${hackathonTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
+            );
+            return;
+        }
+        if (finalExamType === FinalExamTypeEnum.PROJECT && projectTotal !== 100) {
+            toast.error(
+                UI_TEXT.common.errorTitle,
+                `${UI_TEXT.courseFormModal.toastProject100ErrorPrefix}${projectTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
+            );
+            return;
+        }
+        if (finalExamType === FinalExamTypeEnum.ESSAY && essayTotal !== 100) {
+            toast.error(
+                UI_TEXT.common.errorTitle,
+                `${UI_TEXT.courseFormModal.toastEssay100ErrorPrefix}${essayTotal}${UI_TEXT.courseFormModal.toastWeight100ErrorSuffix}`,
+            );
+            return;
         }
 
         setIsSubmitting(true);
@@ -180,7 +161,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             await onSubmit({
                 code: code.trim(),
                 title: title.trim(),
-                category: selectedCategory,
+                category: initialData?.category || DEFAULT_SCORING_METHOD,
                 description: description.trim(),
                 learningOutcomes: learningOutcomes.trim(),
                 accessMode,
@@ -190,7 +171,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                     minCompletionRate: 0,
                 },
                 gradingFormula: {
-                    useCustomFormula,
+                    useCustomFormula: true,
                     attendanceWeight: Number(attendanceWeight),
                     quizWeight: Number(quizWeight),
                     hackathonWeight: Number(hackathonWeight),
@@ -266,36 +247,6 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                 />
                             </div>
 
-                            {/* Category selection & management */}
-                            <div>
-                                <label className="mb-1.5 block text-sm font-medium text-secondary">
-                                    {UI_TEXT.courseFormModal.categoryLabel} <span className="font-bold text-red-500">*</span>
-                                </label>
-                                <div className="flex flex-col gap-1.5">
-                                    <div className={useCustomFormula ? "pointer-events-none opacity-60" : ""}>
-                                        <Select
-                                            aria-label={UI_TEXT.courseFormModal.categoryLabel}
-                                            selectedKey={category || null}
-                                            onSelectionChange={(key) => key && setCategory(String(key))}
-                                            items={categories.map((cat) => ({ id: cat, label: cat }))}
-                                            size="sm"
-                                            placeholder={UI_TEXT.courseFormModal.categoryPlaceholder}
-                                            isClearable={false}
-                                            isDisabled={useCustomFormula}
-                                            isInvalid={submitted && !category.trim()}
-                                        >
-                                            {(item) => <Select.Item id={item.id} label={item.label} />}
-                                        </Select>
-                                    </div>
-                                    {submitted && !category.trim() && (
-                                        <p className="text-[11px] font-medium text-rose-500">{UI_TEXT.courseFormModal.toastRequiredError}</p>
-                                    )}
-                                    {useCustomFormula && (
-                                        <p className="text-[11px] text-amber-700">{UI_TEXT.courseFormModal.customFormulaLocksCategoryHint}</p>
-                                    )}
-                                </div>
-                            </div>
-
                             <div>
                                 <label className="mb-1.5 block text-sm font-medium text-secondary">{UI_TEXT.courseFormModal.descLabel}</label>
                                 <textarea
@@ -350,37 +301,11 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                             </div>
 
                             <div className="flex flex-col gap-5">
-                                {/* Toggle banner */}
-                                <div className="flex flex-col justify-between gap-3 rounded-2xl border border-wine/15 bg-gradient-to-r from-wine/5 via-slate-50 to-indigo-50/30 p-4.5 shadow-xs sm:flex-row sm:items-center">
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-sm font-bold text-slate-900">{UI_TEXT.courseFormModal.gradingSectionTitle}</h3>
-                                            <span
-                                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${useCustomFormula ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
-                                                    }`}
-                                            >
-                                                {useCustomFormula ? UI_TEXT.coursesPage.visibleStatusText : UI_TEXT.coursesPage.hiddenStatusText}
-                                            </span>
-                                        </div>
-                                        <p className="mt-0.5 text-xs text-slate-500">{UI_TEXT.courseFormModal.useCustomFormulaLabel}</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        aria-checked={useCustomFormula}
-                                        onClick={() => setUseCustomFormula(!useCustomFormula)}
-                                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${useCustomFormula ? "bg-wine" : "bg-slate-300"
-                                            }`}
-                                    >
-                                        <span
-                                            className={`pointer-events-none inline-block size-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${useCustomFormula ? "translate-x-5" : "translate-x-0"
-                                                }`}
-                                        />
-                                    </button>
+                                <div className="rounded-2xl border border-wine/15 bg-gradient-to-r from-wine/5 via-slate-50 to-indigo-50/30 p-4.5 shadow-xs">
+                                    <h3 className="text-sm font-bold text-slate-900">{UI_TEXT.courseFormModal.gradingSectionTitle}</h3>
+                                    <p className="mt-0.5 text-xs text-slate-500">{UI_TEXT.courseFormModal.useCustomFormulaLabel}</p>
                                 </div>
 
-                                {useCustomFormula && (
-                                    <>
                                         {/* Card 1: Hình thức thi cuối kỳ */}
                                         <div className="flex flex-col gap-2 rounded-2xl  bg-white shadow-xs">
 
@@ -867,8 +792,6 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                                 </div>
                                             </div>
                                         </div>
-                                    </>
-                                )}
                             </div>
                         </div>
 
@@ -899,12 +822,6 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                     </form>
                 </Dialog>
             </CustomModal.Content>
-            <CategoryManagementModal
-                isOpen={isCategoryManageOpen}
-                onOpenChange={setIsCategoryManageOpen}
-                selectedCategory={category}
-                onSelectCategory={(selected) => setCategory(selected)}
-            />
         </CustomModal.Root>
     );
 }

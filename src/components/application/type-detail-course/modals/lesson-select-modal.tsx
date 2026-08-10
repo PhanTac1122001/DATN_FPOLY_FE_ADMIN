@@ -70,7 +70,7 @@ export function LessonSelectModal({ isOpen, onOpenChange, sessionName, lessons, 
                                         <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold tracking-wider text-slate-600 uppercase">
                                             <th className="w-16 px-4.5 py-3.5 text-center">{t.thStt}</th>
                                             <th className="px-4.5 py-3.5">{t.thLessonName}</th>
-                                            <th className="w-44 px-4.5 py-3.5 text-right">{t.thActions}</th>
+                                            <th className="whitespace-nowrap px-4.5 py-3.5 text-right">{t.thActions}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -84,17 +84,17 @@ export function LessonSelectModal({ isOpen, onOpenChange, sessionName, lessons, 
                                                 <td className="px-4.5 py-3.5 text-sm font-bold text-slate-800 transition group-hover:text-purple-700">
                                                     {lesson.name}
                                                 </td>
-                                                <td className="px-4.5 py-3.5 text-right">
+                                                <td className="whitespace-nowrap px-4.5 py-3.5 text-right">
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleSelect(lesson);
                                                         }}
-                                                        className="inline-flex items-center gap-1.5 rounded-xl bg-purple-50 px-3 py-1.5 text-xs font-extrabold text-purple-700 transition group-hover:bg-purple-600 group-hover:text-white"
+                                                        className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-purple-50 px-3 py-1.5 text-xs font-extrabold text-purple-700 transition group-hover:bg-purple-600 group-hover:text-white"
                                                     >
-                                                        <span>{t.btnSelect}</span>
-                                                        <ChevronRight className="size-3.5" />
+                                                        <span className="whitespace-nowrap">{t.btnSelect}</span>
+                                                        <ChevronRight className="size-3.5 shrink-0" />
                                                     </button>
                                                 </td>
                                             </tr>

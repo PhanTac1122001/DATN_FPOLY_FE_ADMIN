@@ -1,0 +1,104 @@
+import { API_ENDPOINTS } from "@/constants/api-endpoints.constants";
+import { httpClient } from "@/lib/http-client";
+import { HttpMethod } from "@/types/api-types";
+import type {
+    CreateSessionQuizPayload,
+    ImportExcelResponse,
+    QuerySessionQuizParams,
+    SessionQuizItem,
+    SessionQuizListResponse,
+    UpdateSessionQuizPayload,
+} from "@/types/session-quiz.types";
+
+export async function getSessionQuizzes(params: QuerySessionQuizParams = {}): Promise<SessionQuizListResponse> {
+    const searchParams = new URLSearchParams();
+    if (params.educationProgramId) searchParams.set("educationProgramId", params.educationProgramId);
+    if (params.subjectId) searchParams.set("subjectId", params.subjectId);
+    if (params.sessionId) searchParams.set("sessionId", params.sessionId);
+    if (params.search) searchParams.set("search", params.search);
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+
+    const queryString = searchParams.toString();
+    const url = queryString ? `${API_ENDPOINTS.SESSION_QUIZ.BASE}?${queryString}` : API_ENDPOINTS.SESSION_QUIZ.BASE;
+
+    const res = await httpClient<any>(url, { method: HttpMethod.GET });
+    const result = res?.data ?? res;
+    if (result?.items && Array.isArray(result.items)) {
+        return {
+            items: result.items,
+            total: result.total ?? result.items.length,
+            page: result.page ?? (params.page || 1),
+            limit: result.limit ?? (params.limit || 10),
+        };
+    }
+    const items = Array.isArray(result) ? result : [];
+    return {
+        items,
+        total: items.length,
+        page: params.page || 1,
+        limit: params.limit || 20,
+    };
+}
+
+export async function getSessionQuizById(id: string): Promise<SessionQuizItem> {
+    const res = await httpClient<any>(API_ENDPOINTS.SESSION_QUIZ.BY_ID(id), {
+        method: HttpMethod.GET,
+    });
+    return res?.data || res;
+}
+
+export async function createSessionQuiz(payload: CreateSessionQuizPayload): Promise<SessionQuizItem> {
+    const res = await httpClient<any>(API_ENDPOINTS.SESSION_QUIZ.BASE, {
+        method: HttpMethod.POST,
+        body: JSON.stringify(payload),
+    });
+    return res?.data || res;
+}
+
+export async function updateSessionQuiz(id: string, payload: UpdateSessionQuizPayload): Promise<SessionQuizItem> {
+    const res = await httpClient<any>(API_ENDPOINTS.SESSION_QUIZ.BY_ID(id), {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(payload),
+    });
+    return res?.data || res;
+}
+
+export async function deleteSessionQuiz(id: string): Promise<void> {
+    await httpClient<void>(API_ENDPOINTS.SESSION_QUIZ.BY_ID(id), {
+        method: HttpMethod.DELETE,
+    });
+}
+
+export async function importExcelQuestions(file: File): Promise<ImportExcelResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await httpClient<any>(API_ENDPOINTS.SESSION_QUIZ.IMPORT_EXCEL, {
+        method: HttpMethod.POST,
+        body: formData,
+    });
+    return res?.data || res;
+}
+
+export async function downloadExcelTemplate(): Promise<void> {
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") || localStorage.getItem("token") : null;
+    const response = await fetch(API_ENDPOINTS.SESSION_QUIZ.EXCEL_TEMPLATE, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (!response.ok) {
+        throw new Error("Không thể tải file mẫu Excel");
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = "session_quiz_import_template.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+}

@@ -5,10 +5,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BookText, ChevronRight, Code2, FileText, X } from "lucide-react";
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { HOMEWORK_DIFFICULTY_LEVELS } from "@/constants/ui-components.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { createHomework } from "@/services/homework.service";
 import { toast } from "@/services/toast.service";
 import { type AddLessonModalProps } from "@/types/courseware.types";
+import { HomeworkDifficultyEnum, type HomeworkDifficultyLevel } from "@/types/group.types";
 import { PracticeFormModal } from "./practice-form-modal";
 
 const stepChoose = 1;
@@ -35,6 +37,7 @@ export function AddLessonModal({
 
     // Homework Form state
     const [homeworkTitle, setHomeworkTitle] = useState("");
+    const [homeworkDifficultyLevel, setHomeworkDifficultyLevel] = useState<HomeworkDifficultyLevel>(HomeworkDifficultyEnum.MEDIUM);
     const [homeworkDescription, setHomeworkDescription] = useState("");
     const [homeworkCriteria, setHomeworkCriteria] = useState("");
     const [homeworkSampleLink, setHomeworkSampleLink] = useState("");
@@ -45,6 +48,7 @@ export function AddLessonModal({
             setSelectedOption("lesson");
             setSubmitted(false);
             setHomeworkTitle("");
+            setHomeworkDifficultyLevel(HomeworkDifficultyEnum.MEDIUM);
             setHomeworkDescription("");
             setHomeworkCriteria("");
             setHomeworkSampleLink("");
@@ -58,6 +62,7 @@ export function AddLessonModal({
                 sessionId,
                 courseId: courseId || "",
                 title: homeworkTitle.trim(),
+                difficultyLevel: homeworkDifficultyLevel,
                 description: homeworkDescription.trim(),
                 gradingCriteria: homeworkCriteria.trim() || undefined,
                 sampleLink: homeworkSampleLink.trim() || undefined,
@@ -291,6 +296,31 @@ export function AddLessonModal({
                                         {submitted && !homeworkTitle.trim() && (
                                             <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.common.fieldRequired}</p>
                                         )}
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-slate-700">
+                                            {UI_TEXT.homeworkEditor.difficultyLevelLabel}
+                                        </label>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {HOMEWORK_DIFFICULTY_LEVELS.map((lvl) => {
+                                                const isSelected = homeworkDifficultyLevel === lvl.id;
+                                                return (
+                                                    <button
+                                                        key={lvl.id}
+                                                        type="button"
+                                                        onClick={() => setHomeworkDifficultyLevel(lvl.id)}
+                                                        className={`cursor-pointer rounded-full border px-3.5 py-1 text-xs font-bold transition-all ${
+                                                            isSelected
+                                                                ? `${lvl.badgeColor} ring-2 ring-wine/20 shadow-sm`
+                                                                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                                                        }`}
+                                                    >
+                                                        {lvl.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">

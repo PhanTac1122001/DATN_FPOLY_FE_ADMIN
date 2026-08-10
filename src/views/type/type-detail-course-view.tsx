@@ -16,8 +16,8 @@ import { SessionCompletionRuleModal } from "@/components/application/type-detail
 import { SessionSelectItem, SessionSelectModal } from "@/components/application/type-detail-course/modals/session-select-modal";
 import { Button } from "@/components/base/buttons/button";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { createSession, deleteSession, getCoursesBySystem, getQuizzesList, getSessionsByCourse, updateSession } from "@/services/material.service";
-import { getSystemsList } from "@/services/system.service";
+import { createSession, deleteSession, getQuizzesList, getSessionsByCourse, updateSession } from "@/services/material.service";
+import { getCourseById } from "@/services/course.service";
 import { toast } from "@/services/toast.service";
 import type { SessionFields } from "@/types/courseware.types";
 import { type Lesson, type Session, SessionTypeEnum } from "@/types/material.types";
@@ -64,6 +64,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const [lessonResetKey, setLessonResetKey] = useState(0);
     const [isConfirmUnsavedOpen, setIsConfirmUnsavedOpen] = useState(false);
     const [isSessionTypeModalOpen, setIsSessionTypeModalOpen] = useState(false);
+    const [sessionTypesReloadToken, setSessionTypesReloadToken] = useState(0);
     const [isSessionSelectModalOpen, setIsSessionSelectModalOpen] = useState(false);
     const [isCompletionRuleModalOpen, setIsCompletionRuleModalOpen] = useState(false);
     const [_isLessonRuleModalOpen, _setIsLessonRuleModalOpen] = useState(false);
@@ -125,38 +126,11 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
     const lessonSaveRef = useRef<(() => Promise<void>) | null>(null);
     const sessionSaveRef = useRef<(() => void) | null>(null);
 
-    // Queries
-    const { data: courseInfo, isLoading: isLoadingCourseInfo } = useQuery({
-        queryKey: ["course-info", courseId, id],
-        queryFn: async () => {
-            if (id) {
-                const courses = await getCoursesBySystem(id);
-                const course = courses.find((c) => c.id === courseId);
-                return { course, systemId: id };
-            }
-            const systems = await getSystemsList();
-            for (const sys of systems) {
-                try {
-                    const courses = await getCoursesBySystem(sys.id);
-                    const course = courses.find((c) => c.id === courseId);
-                    if (course) {
-                        return { course, systemId: sys.id };
-                    }
-                } catch {
-                    // continue
-                }
-            }
-            return null;
-        },
+    // Queries — elearning/:courseId only needs the course itself (no system fan-out)
+    const { data: courseDetail, isLoading: isLoadingCourseDetail } = useQuery({
+        queryKey: ["course-detail", courseId],
+        queryFn: () => getCourseById(courseId),
         enabled: !!courseId,
-    });
-
-    const activeSystemId = id || courseInfo?.systemId;
-
-    const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
-        queryKey: ["courses", activeSystemId],
-        queryFn: () => getCoursesBySystem(activeSystemId!),
-        enabled: !!activeSystemId,
     });
 
     const { data: sessions = [], isLoading: loadingSessions } = useQuery({
@@ -373,9 +347,8 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         });
     };
 
-    const currentCourse = courseInfo?.course || courses.find((c) => c.id === courseId);
-
-    const isInitialDataLoading = isLoadingCourseInfo || (!!activeSystemId && isLoadingCourses) || loadingSessions || isLoadingQuizzes;
+    const courseDisplayName = courseDetail?.title || UI_TEXT.courseDetail.fallbackTitle;
+    const isInitialDataLoading = isLoadingCourseDetail || loadingSessions || isLoadingQuizzes;
 
     if (isInitialDataLoading) {
         return (
@@ -396,10 +369,10 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             executeWithUnsavedCheck(() => {
                                 if (typeof window !== "undefined" && window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
                                     router.back();
-                                } else if (activeSystemId) {
-                                    router.push(`/type/${activeSystemId}` as Route);
+                                } else if (id) {
+                                    router.push(`/type/${id}` as Route);
                                 } else {
-                                    router.push("/course" as Route);
+                                    router.push("/courses" as Route);
                                 }
                             });
                         }}
@@ -409,7 +382,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                         <ArrowLeft className="size-5" />
                     </button>
                     <div className="flex items-center gap-2">
-                        <h1 className="text-lg font-black tracking-tight text-slate-800">{currentCourse?.name || "Chi tiết khóa học"}</h1>
+                        <h1 className="text-lg font-black tracking-tight text-slate-800">{courseDisplayName}</h1>
                     </div>
                 </div>
 
@@ -573,6 +546,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             isPending={addSessionMutation.isPending}
                             isDirty={isSessionDirty}
                             onOpenManageTypes={() => setIsSessionTypeModalOpen(true)}
+                            typesReloadToken={sessionTypesReloadToken}
                             onRegisterSave={(fn) => {
                                 sessionSaveRef.current = fn;
                             }}
@@ -585,6 +559,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             onSubmit={handleSubmitEditSession}
                             isDirty={isSessionDirty}
                             onOpenManageTypes={() => setIsSessionTypeModalOpen(true)}
+                            typesReloadToken={sessionTypesReloadToken}
                             onOpenCompletionRule={() => {
                                 setRuleTargetSession(null);
                                 setIsCompletionRuleModalOpen(true);
@@ -642,7 +617,11 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
             </div>
 
             {/* Session Type Modal */}
-            <SessionTypeModal isOpen={isSessionTypeModalOpen} onClose={() => setIsSessionTypeModalOpen(false)} />
+            <SessionTypeModal
+                isOpen={isSessionTypeModalOpen}
+                onClose={() => setIsSessionTypeModalOpen(false)}
+                onChanged={() => setSessionTypesReloadToken((n) => n + 1)}
+            />
 
             {/* Session Select Table Modal */}
             <SessionSelectModal
@@ -726,7 +705,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 }}
                 title={UI_TEXT.courseDetail.deleteCourseTitle}
                 message={
-                    UI_TEXT.courseDetail.deleteCourseConfirmPrefix + ' "' + (currentCourse?.name || "") + '"' + UI_TEXT.courseDetail.deleteCourseConfirmSuffix
+                    UI_TEXT.courseDetail.deleteCourseConfirmPrefix + ' "' + (courseDisplayName || "") + '"' + UI_TEXT.courseDetail.deleteCourseConfirmSuffix
                 }
                 confirmText={UI_TEXT.courseDetail.deleteCourseTitle}
                 cancelText={UI_TEXT.common.cancel}
@@ -766,8 +745,6 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 variant="danger"
             />
 
-            {/* Modal for Managing Session Types */}
-            <SessionTypeModal isOpen={isSessionTypeModalOpen} onClose={() => setIsSessionTypeModalOpen(false)} />
         </div>
     );
 }

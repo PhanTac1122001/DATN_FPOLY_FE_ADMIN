@@ -127,20 +127,6 @@ export function SessionSelectModal({
                             )}
                         </div>
                     </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
-                        <span className="text-xs font-bold text-slate-500">
-                            {UI_TEXT.sessionSelectModal.totalPrefix}{filteredSessions.length}{UI_TEXT.sessionSelectModal.totalSuffix}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => onOpenChange(false)}
-                            className="cursor-pointer rounded-full border border-slate-200 bg-white px-6 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
-                        >
-                            {UI_TEXT.sessionSelectModal.closeBtn}
-                        </button>
-                    </div>
                 </Dialog>
             </CustomModal.Content>
         </CustomModal.Root>

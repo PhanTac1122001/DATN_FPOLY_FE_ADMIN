@@ -30,4 +30,10 @@ export const API_ENDPOINTS = {
         BASE: `${API_PREFIX}/staff/quizzes`,
         BY_ID: (id: string) => `${API_PREFIX}/staff/quizzes/${id}`,
     },
+    SESSION_QUIZ: {
+        BASE: `${API_PREFIX}/staff/session-quizzes`,
+        BY_ID: (id: string) => `${API_PREFIX}/staff/session-quizzes/${id}`,
+        IMPORT_EXCEL: `${API_PREFIX}/staff/session-quizzes/import-excel`,
+        EXCEL_TEMPLATE: `${API_PREFIX}/staff/session-quizzes/excel-template`,
+    },
 } as const;

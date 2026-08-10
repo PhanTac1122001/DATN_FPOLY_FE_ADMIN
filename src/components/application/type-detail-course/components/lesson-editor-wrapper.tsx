@@ -160,6 +160,7 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
     }, [lessonDetails, lessonId]);
 
     const [isSaving, setIsSaving] = useState(false);
+    const handleSaveAllRef = useRef<(() => Promise<void>) | null>(null);
 
     // Dirty checks for Lesson tabs
     const initialVideoUrl = lessonDetails?.video?.url || lessonDetails?.videoUrl || "";
@@ -401,11 +402,14 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
         quizSaveRef,
     ]);
 
+    handleSaveAllRef.current = handleSaveAll;
+
     useEffect(() => {
         if (onRegisterSave) {
-            onRegisterSave(handleSaveAll);
+            // Always call latest save via ref — parent passes a new onRegisterSave each render.
+            onRegisterSave(() => handleSaveAllRef.current?.() ?? Promise.resolve());
         }
-    }, [onRegisterSave, handleSaveAll]);
+    }, [onRegisterSave]);
 
     useEffect(() => {
         if (onIsSavingChange) {

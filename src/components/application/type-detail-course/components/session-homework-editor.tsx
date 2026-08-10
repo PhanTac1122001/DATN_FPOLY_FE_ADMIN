@@ -7,10 +7,12 @@ import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { Button } from "@/components/base/buttons/button";
 import { TiptapEditor } from "@/components/base/editor";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { HOMEWORK_DIFFICULTY_LEVELS } from "@/constants/ui-components.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { approveHomework, createHomework, deleteHomework, getHomeworkBySession, rejectHomework, updateHomework } from "@/services/homework.service";
 import { toast } from "@/services/toast.service";
 import type { SessionHomeworkEditorProps } from "@/types/courseware.types";
+import { HomeworkDifficultyEnum, type HomeworkDifficultyLevel } from "@/types/group.types";
 import type { Homework } from "@/types/material.types";
 
 export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
@@ -27,6 +29,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
 
     // Form fields
     const [title, setTitle] = useState("");
+    const [difficultyLevel, setDifficultyLevel] = useState<HomeworkDifficultyLevel>(HomeworkDifficultyEnum.MEDIUM);
     const [description, setDescription] = useState("");
     const [tutorial, setTutorial] = useState("");
     const [gradingCriteria, setGradingCriteria] = useState("");
@@ -42,6 +45,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
     const openCreateModal = () => {
         setEditingHomework(null);
         setTitle("");
+        setDifficultyLevel(HomeworkDifficultyEnum.MEDIUM);
         setDescription("");
         setTutorial("");
         setGradingCriteria("");
@@ -54,6 +58,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
     const openEditModal = (hw: Homework) => {
         setEditingHomework(hw);
         setTitle(hw.title || "");
+        setDifficultyLevel((hw.difficultyLevel as HomeworkDifficultyLevel) || HomeworkDifficultyEnum.MEDIUM);
         setDescription(hw.description || "");
         setTutorial(hw.tutorial || "");
         setGradingCriteria(hw.gradingCriteria || "");
@@ -68,6 +73,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                 sessionId: session.id,
                 courseId: session.courseId,
                 title: title.trim(),
+                difficultyLevel,
                 description: description.trim(),
                 tutorial: tutorial.trim() || undefined,
                 gradingCriteria: gradingCriteria.trim() || undefined,
@@ -189,6 +195,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                             const hwId = hw.id || ((hw as unknown as Record<string, unknown>)._id as string) || String(index);
                             const isOpen = expandedHomeworkIds.includes(hwId);
                             const displayTitle = (hw.title || "").replace(/^\d+\.\s*/, "");
+                            const hwLevelConfig = HOMEWORK_DIFFICULTY_LEVELS.find((l) => l.id === hw.difficultyLevel) || HOMEWORK_DIFFICULTY_LEVELS.find((l) => l.id === HomeworkDifficultyEnum.MEDIUM);
                             return (
                                 <div
                                     key={hwId}
@@ -217,6 +224,11 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                                             <div className="flex min-w-0 flex-1 flex-col gap-1">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <h4 className="text-sm leading-snug font-black text-slate-900">{displayTitle}</h4>
+                                                    {hwLevelConfig && (
+                                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${hwLevelConfig.badgeColor}`}>
+                                                            {hwLevelConfig.label}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -346,6 +358,30 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                                     placeholder={UI_TEXT.homeworkEditor.titlePlaceholder}
                                     className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold focus:border-wine focus:outline-none"
                                 />
+                            </div>
+
+                            {/* Difficulty Level */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-[11px] font-medium text-slate-700 uppercase">{UI_TEXT.homeworkEditor.difficultyLevelLabel}</label>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {HOMEWORK_DIFFICULTY_LEVELS.map((lvl) => {
+                                        const isSelected = difficultyLevel === lvl.id;
+                                        return (
+                                            <button
+                                                key={lvl.id}
+                                                type="button"
+                                                onClick={() => setDifficultyLevel(lvl.id)}
+                                                className={`cursor-pointer rounded-full border px-3.5 py-1 text-xs font-bold transition-all ${
+                                                    isSelected
+                                                        ? `${lvl.badgeColor} ring-2 ring-wine/20 shadow-sm`
+                                                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                {lvl.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             {/* Description */}

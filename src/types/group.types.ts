@@ -8,6 +8,35 @@ export enum HomeworkDifficultyEnum {
 
 export type HomeworkDifficultyLevel = keyof typeof HomeworkDifficultyEnum;
 
+export const HOMEWORK_DIFFICULTY_RANK: Record<HomeworkDifficultyLevel, number> = {
+    [HomeworkDifficultyEnum.EASY]: 1,
+    [HomeworkDifficultyEnum.MEDIUM]: 2,
+    [HomeworkDifficultyEnum.FAIR]: 3,
+    [HomeworkDifficultyEnum.GOOD]: 4,
+    [HomeworkDifficultyEnum.EXCELLENT]: 5,
+};
+
+export const HOMEWORK_DIFFICULTY_ORDER: HomeworkDifficultyLevel[] = [
+    HomeworkDifficultyEnum.EASY,
+    HomeworkDifficultyEnum.MEDIUM,
+    HomeworkDifficultyEnum.FAIR,
+    HomeworkDifficultyEnum.GOOD,
+    HomeworkDifficultyEnum.EXCELLENT,
+];
+
+export const getDifficultyRank = (level?: string | HomeworkDifficultyLevel): number => {
+    if (!level) return HOMEWORK_DIFFICULTY_RANK[HomeworkDifficultyEnum.MEDIUM];
+    const key = level.toUpperCase() as HomeworkDifficultyLevel;
+    return HOMEWORK_DIFFICULTY_RANK[key] ?? HOMEWORK_DIFFICULTY_RANK[HomeworkDifficultyEnum.MEDIUM];
+};
+
+export const isHigherDifficulty = (
+    a?: string | HomeworkDifficultyLevel,
+    b?: string | HomeworkDifficultyLevel
+): boolean => {
+    return getDifficultyRank(a) > getDifficultyRank(b);
+};
+
 export interface GroupSubject {
     id: string;
     name: string;
@@ -52,10 +81,16 @@ export interface UpdateGroupRequest {
     studentIds?: string[];
 }
 
-export interface AssignGroupHomeworkRequest {
-    subjectId: string;
+export interface HomeworkAssignmentItem {
     homeworkId: string;
     difficultyLevel: HomeworkDifficultyLevel;
+}
+
+export interface AssignGroupHomeworkRequest {
+    subjectId: string;
+    homeworks?: HomeworkAssignmentItem[];
+    homeworkId?: string;
+    difficultyLevel?: HomeworkDifficultyLevel;
     assignedStudentIds?: string[];
     dueDate?: string;
     note?: string;
