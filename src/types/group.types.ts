@@ -76,6 +76,7 @@ export interface GroupHomeworkAssignment {
 }
 
 export interface FilterGroupParams {
+    classId?: string;
     search?: string;
     page?: number;
     limit?: number;
@@ -122,5 +123,11 @@ export interface AssignGroupHomeworkModalProps {
     isOpen: boolean;
     onClose: () => void;
     group: Group | null;
+    availableSubjects?: GroupSubject[];
+}
+
+export interface ClassGroupsTabProps {
+    classId: string;
+    initialGroups?: Group[];
     availableSubjects?: GroupSubject[];
 }

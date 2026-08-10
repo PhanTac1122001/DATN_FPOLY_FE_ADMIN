@@ -24,6 +24,7 @@ import {
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/components/application/breadcrumb";
+import { ClassGroupsTab } from "@/components/application/classes/class-groups-tab";
 import { ClassModal } from "@/components/application/modals/class-modal";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { CourseClassModal } from "@/components/application/modals/course-class-modal";
@@ -73,11 +74,13 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
     const classInfo = detail?.class;
     const courses = detail?.courses || [];
     const students = detail?.students || [];
+    const groups = detail?.groups || [];
     const studyingCount = students.filter((s) => s.isActive !== false && (s.status === StudentClassStatusEnum.STUDYING || !s.status)).length;
     const summary = {
         courseCount: detail?.summary?.courseCount ?? courses.length,
         studentCount: detail?.summary?.studentCount ?? students.length,
         activeStudentCount: studyingCount,
+        groupCount: detail?.summary?.groupCount ?? groups.length,
     };
 
     // Mutations for delete
@@ -86,6 +89,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.classDetail.toastCancelAssignmentSuccess);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
+            queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-groups"] });
             setConfirmDelete({ isOpen: false, type: null, id: null, name: "" });
         },
         onError: (err: Error) => {
@@ -98,6 +103,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.classDetail.toastRemoveStudentSuccess);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
+            queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-groups"] });
             setConfirmDelete({ isOpen: false, type: null, id: null, name: "" });
         },
         onError: (err: Error) => {
@@ -273,6 +280,22 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                         {")"}
                     </span>
                 </button>
+
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("groups")}
+                    className={cx(
+                        "flex cursor-pointer items-center gap-2 border-b-2 px-2 py-3 text-sm font-semibold transition duration-150",
+                        activeTab === "groups" ? "border-wine font-bold text-wine" : "border-transparent text-slate-500 hover:text-wine-bright",
+                    )}
+                >
+                    <Users className="size-4" />
+                    <span>
+                        {UI_TEXT.classDetail.tabGroups} {"("}
+                        {summary.groupCount || groups.length}
+                        {")"}
+                    </span>
+                </button>
             </div>
 
             {/* TAB 1: THÔNG TIN LỚP HỌC */}
@@ -300,7 +323,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                     </div>
 
                     {/* Summary Stats Cards */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
                             <div className="flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                                 <BookMarked className="size-6" />
@@ -320,6 +343,16 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                 <p className="text-2xl font-bold text-slate-900">{summary.studentCount}</p>
                             </div>
                         </div>
+
+                        <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
+                            <div className="flex size-12 items-center justify-center rounded-xl bg-pink-50 text-pink-600">
+                                <Users className="size-6" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-semibold text-slate-500">{UI_TEXT.classDetail.totalGroups}</p>
+                                <p className="text-2xl font-bold text-slate-900">{summary.groupCount}</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Feature Selection Grid */}
@@ -332,7 +365,9 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                     <div
                                         key={card.id}
                                         onClick={() => {
-                                            if (card.id === "schedule" || card.id === "learning") {
+                                            if (card.id === "group") {
+                                                setActiveTab("groups");
+                                            } else if (card.id === "schedule" || card.id === "learning") {
                                                 router.push(`/classes/${classId}/${card.id}` as Route);
                                             } else {
                                                 toast.info(card.title, UI_TEXT.classDetail.toastFeatureUnderDevelopment);
@@ -584,6 +619,22 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                         </div>
                     )}
                 </div>
+            )}
+
+            {/* TAB 4: QUẢN LÝ NHÓM */}
+            {activeTab === "groups" && (
+                <ClassGroupsTab
+                    classId={classId}
+                    initialGroups={detail?.groups}
+                    availableSubjects={courses.map((c: CourseClassEmbed) => {
+                        const course = c.courseId;
+                        return {
+                            id: course?.id || (typeof course === "string" ? course : c.id),
+                            name: course?.name || "Môn học",
+                            courseCode: course?.courseCode || "",
+                        };
+                    })}
+                />
             )}
 
             {/* Class Edit Modal */}

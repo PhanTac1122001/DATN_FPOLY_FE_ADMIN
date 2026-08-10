@@ -1,3 +1,5 @@
+import type { Group } from "./group.types";
+
 export enum ClassTypeEnum {
     FULLTIME = "FULLTIME",
     PARTTIME = "PARTTIME",
@@ -71,12 +73,14 @@ export interface ClassDetailSummary {
     courseCount: number;
     studentCount: number;
     activeStudentCount: number;
+    groupCount?: number;
 }
 
 export interface ClassDetail {
     class: ClassEntity;
     courses: CourseClassEmbed[];
     students: StudentClassEmbed[];
+    groups?: Group[];
     summary: ClassDetailSummary;
 }
 
@@ -120,7 +124,7 @@ export interface ClassModalProps {
     classData?: ClassEntity | null;
 }
 
-export type DetailTabType = "info" | "courses" | "students";
+export type DetailTabType = "info" | "courses" | "students" | "groups";
 
 export interface ClassDetailModalProps {
     isOpen: boolean;
