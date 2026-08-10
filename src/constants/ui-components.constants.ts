@@ -16,6 +16,7 @@ export const PERCENT_100 = 100;
 export const SCALE_500 = 500;
 export const SCALE_2 = 2;
 export const SCALE_5 = 5;
+export const SEARCH_THRESHOLD_5 = 5;
 
 export const DRAG_TYPES = {
     CHAPTER: "CHAPTER",
