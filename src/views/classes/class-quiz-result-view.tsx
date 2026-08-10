@@ -8,7 +8,8 @@ import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { Button } from "@/components/base/buttons/button";
 import { APP_CONFIG } from "@/constants/app.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
-import { getClassById } from "@/services/class.service";
+import { getClassDetail } from "@/services/class.service";
+import { getSessionsByCourse } from "@/services/material.service";
 import { getCourseById } from "@/services/course.service";
 import { getSessionQuizzes } from "@/services/session-quiz.service";
 import {
@@ -75,26 +76,40 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
         async function loadClassData() {
             try {
                 setIsLoading(true);
-                const cls = await getClassById(classId);
+                const detail = await getClassDetail(classId);
+                const cls = detail?.class || null;
                 setClassData(cls);
 
-                const courseClasses = (cls as any)?.courseClasses || [];
+                const assignedCourses = detail?.courses || [];
                 const loadedSubjects: { id: string; code: string; title: string; educationProgramId?: string }[] = [];
 
-                for (const cc of courseClasses) {
-                    if (cc.courseId) {
+                for (const cc of assignedCourses) {
+                    const rawCourse = cc.courseId;
+                    if (rawCourse && typeof rawCourse === "object") {
+                        const cId = (rawCourse as any).id || (rawCourse as any)._id;
+                        const cCode = (rawCourse as any).courseCode || (rawCourse as any).code || "";
+                        const cTitle = (rawCourse as any).title || (rawCourse as any).name || "";
+                        if (cId) {
+                            loadedSubjects.push({
+                                id: String(cId),
+                                code: cCode,
+                                title: cTitle,
+                                educationProgramId: (rawCourse as any).educationProgramId || (cls as any)?.educationProgramId,
+                            });
+                        }
+                    } else if (typeof rawCourse === "string") {
                         try {
-                            const course = await getCourseById(cc.courseId);
+                            const course = await getCourseById(rawCourse);
                             if (course) {
                                 loadedSubjects.push({
                                     id: course.id,
                                     code: course.code,
                                     title: course.title,
-                                    educationProgramId: (course as any).educationProgramId || (cls as any).educationProgramId,
+                                    educationProgramId: (course as any).educationProgramId || (cls as any)?.educationProgramId,
                                 });
                             }
                         } catch {
-                            // ignore course fetch error
+                            // ignore
                         }
                     }
                 }
@@ -118,19 +133,22 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
 
         async function loadSubjectDetails() {
             try {
-                const course = await getCourseById(selectedSubjectId);
-                const loadedSessions = (course as any)?.sessions || (course as any)?.lessons || [];
+                const loadedSessions = await getSessionsByCourse(selectedSubjectId);
                 setSessions(
-                    loadedSessions.map((s: any, idx: number) => ({
-                        id: s.id || s._id || String(idx),
-                        title: s.title || `Session ${idx + 1}`,
+                    (loadedSessions || []).map((s: any, idx: number) => ({
+                        id: String(s.id || s._id || idx),
+                        title: s.title || s.name || `Session ${idx + 1}`,
                     })),
                 );
-                if (loadedSessions.length > 0) {
-                    setSelectedSessionId(loadedSessions[0].id || loadedSessions[0]._id);
+                if (loadedSessions && loadedSessions.length > 0) {
+                    setSelectedSessionId(String(loadedSessions[0].id || (loadedSessions[0] as any)._id));
+                } else {
+                    setSelectedSessionId("");
                 }
             } catch (err) {
                 console.error("Error loading subject sessions:", err);
+                setSessions([]);
+                setSelectedSessionId("");
             }
         }
 
