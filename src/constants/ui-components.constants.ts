@@ -1,7 +1,50 @@
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { HomeworkDifficultyEnum, type HomeworkDifficultyLevel } from "@/types/group.types";
+
 /**
  * UI Components Constants
  * Extracted from UI component files to fix ESLint no-restricted-syntax warnings
  */
+
+export const RANDOM_SORT_OFFSET = 0.5;
+
+export const HOMEWORK_DIFFICULTY_LEVELS: Array<{
+    id: HomeworkDifficultyLevel;
+    label: string;
+    description: string;
+    badgeColor: string;
+}> = [
+    {
+        id: HomeworkDifficultyEnum.EASY,
+        label: UI_TEXT.assignGroupHomeworkModal.levelEasy,
+        description: UI_TEXT.assignGroupHomeworkModal.descEasy,
+        badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-300",
+    },
+    {
+        id: HomeworkDifficultyEnum.MEDIUM,
+        label: UI_TEXT.assignGroupHomeworkModal.levelMedium,
+        description: UI_TEXT.assignGroupHomeworkModal.descMedium,
+        badgeColor: "bg-blue-50 text-blue-700 border-blue-300",
+    },
+    {
+        id: HomeworkDifficultyEnum.FAIR,
+        label: UI_TEXT.assignGroupHomeworkModal.levelFair,
+        description: UI_TEXT.assignGroupHomeworkModal.descFair,
+        badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-300",
+    },
+    {
+        id: HomeworkDifficultyEnum.GOOD,
+        label: UI_TEXT.assignGroupHomeworkModal.levelGood,
+        description: UI_TEXT.assignGroupHomeworkModal.descGood,
+        badgeColor: "bg-amber-50 text-amber-700 border-amber-300",
+    },
+    {
+        id: HomeworkDifficultyEnum.EXCELLENT,
+        label: UI_TEXT.assignGroupHomeworkModal.levelExcellent,
+        description: UI_TEXT.assignGroupHomeworkModal.descExcellent,
+        badgeColor: "bg-purple-50 text-purple-700 border-purple-300",
+    },
+];
 
 // ============================================
 // Common timing constants

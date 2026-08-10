@@ -1,4 +1,12 @@
-export type HomeworkDifficultyLevel = "EASY" | "MEDIUM" | "FAIR" | "GOOD" | "EXCELLENT";
+export enum HomeworkDifficultyEnum {
+    EASY = "EASY",
+    MEDIUM = "MEDIUM",
+    FAIR = "FAIR",
+    GOOD = "GOOD",
+    EXCELLENT = "EXCELLENT",
+}
+
+export type HomeworkDifficultyLevel = keyof typeof HomeworkDifficultyEnum;
 
 export interface GroupSubject {
     id: string;
@@ -108,4 +116,11 @@ export interface ClassStudentItem {
     fullName?: string;
     studentCode?: string;
     email?: string;
+}
+
+export interface AssignGroupHomeworkModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    group: Group | null;
+    availableSubjects?: GroupSubject[];
 }
