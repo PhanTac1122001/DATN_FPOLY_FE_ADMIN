@@ -74,7 +74,7 @@ const dynamicCategories: string[] = [];
 
 export async function getCourseCategories(): Promise<string[]> {
     try {
-        const response = await httpClient<any>("/api/staff/courses/scoring-methods", {
+        const response = await httpClient<any>("/staff/courses/scoring-methods", {
             method: HttpMethod.GET,
         });
         const list = unwrapData<Array<{ method: string; label: string }> | string[]>(response);
@@ -119,7 +119,7 @@ export async function deleteCourseCategory(name: string): Promise<boolean> {
 
 export async function getCoursesList(search?: string): Promise<CourseItem[]> {
     const query = search ? `?search=${encodeURIComponent(search)}` : "";
-    const response = await httpClient<any>(`/api/staff/courses${query}`, {
+    const response = await httpClient<any>(`/staff/courses${query}`, {
         method: HttpMethod.GET,
     });
     const list = unwrapData<CourseBackendEntity[] | { items?: CourseBackendEntity[] }>(response) || [];
@@ -133,7 +133,7 @@ export async function getCoursesList(search?: string): Promise<CourseItem[]> {
 }
 
 export async function getCourseById(id: string): Promise<CourseItem> {
-    const response = await httpClient<any>(`/api/staff/courses/${id}`, {
+    const response = await httpClient<any>(`/staff/courses/${id}`, {
         method: HttpMethod.GET,
     });
     const raw = unwrapData<CourseBackendEntity>(response);
@@ -142,7 +142,7 @@ export async function getCourseById(id: string): Promise<CourseItem> {
 
 export async function setCourseScoringFormula(courseId: string, formula: BackendScoringFormula): Promise<CourseItem> {
     const body: SetScoringFormulaPayload = { ...formula };
-    const response = await httpClient<any>(`/api/staff/courses/${courseId}/scoring-formula`, {
+    const response = await httpClient<any>(`/staff/courses/${courseId}/scoring-formula`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(body),
     });
@@ -151,7 +151,7 @@ export async function setCourseScoringFormula(courseId: string, formula: Backend
 }
 
 export async function deleteCourseScoringFormula(courseId: string): Promise<CourseItem> {
-    const response = await httpClient<any>(`/api/staff/courses/${courseId}/scoring-formula`, {
+    const response = await httpClient<any>(`/staff/courses/${courseId}/scoring-formula`, {
         method: HttpMethod.DELETE,
     });
     const raw = unwrapData<CourseBackendEntity>(response);
@@ -160,7 +160,7 @@ export async function deleteCourseScoringFormula(courseId: string): Promise<Cour
 
 export async function createCourse(payload: CreateCoursePayload): Promise<CourseItem> {
     const dto = mapPayloadToCreateDto(payload);
-    const response = await httpClient<any>("/api/staff/courses", {
+    const response = await httpClient<any>("/staff/courses", {
         method: HttpMethod.POST,
         body: JSON.stringify(dto),
     });
@@ -187,7 +187,7 @@ export async function updateCourse(id: string, payload: UpdateCoursePayload): Pr
     if (payload.hour !== undefined) dto.hour = payload.hour;
     if (payload.totalSessions !== undefined) dto.totalSessions = payload.totalSessions;
 
-    const response = await httpClient<any>(`/api/staff/courses/${id}`, {
+    const response = await httpClient<any>(`/staff/courses/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(dto),
     });
@@ -201,7 +201,7 @@ export async function updateCourse(id: string, payload: UpdateCoursePayload): Pr
 }
 
 export async function deleteCourse(id: string): Promise<boolean> {
-    const response = await httpClient<any>(`/api/staff/courses/${id}`, {
+    const response = await httpClient<any>(`/staff/courses/${id}`, {
         method: HttpMethod.DELETE,
     });
     return unwrapData(response) || true;

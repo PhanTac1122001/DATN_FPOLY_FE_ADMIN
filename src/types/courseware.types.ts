@@ -1,4 +1,5 @@
 import type React from "react";
+import type { CoursewareBlockEntity } from "@/types/completion-rule.types";
 import type { Lesson, Session } from "@/types/material.types";
 
 export interface SessionTypeOption {
@@ -215,6 +216,32 @@ export interface YTPlayer {
 
 export interface YTGlobal {
     Player: new (element: HTMLElement | null, config: unknown) => YTPlayer;
+}
+
+export interface LessonSelectItem {
+    id: string;
+    name: string;
+    description?: string;
+}
+
+export interface LessonSelectModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    sessionName?: string;
+    lessons: LessonSelectItem[];
+    onSelectLesson: (lesson: LessonSelectItem) => void;
+}
+
+export interface PracticeFormModalProps {
+    mode?: "create" | "edit";
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    sessionId: string;
+    courseId?: string;
+    sessionName?: string;
+    initialData?: CoursewareBlockEntity | null;
+    onSuccess?: () => void;
+    onBack?: () => void;
 }
 
 export const NEW_PRACTICE_ID_FLAG = "NEW";

@@ -5,28 +5,9 @@ import { BookOpen, ChevronRight, Search, X } from "lucide-react";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import type { LessonSelectItem, LessonSelectModalProps } from "@/types/courseware.types";
 
-export interface LessonSelectItem {
-    id: string;
-    name: string;
-    description?: string;
-}
-
-export interface LessonSelectModalProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    sessionName?: string;
-    lessons: LessonSelectItem[];
-    onSelectLesson: (lesson: LessonSelectItem) => void;
-}
-
-export function LessonSelectModal({
-    isOpen,
-    onOpenChange,
-    sessionName,
-    lessons,
-    onSelectLesson,
-}: LessonSelectModalProps) {
+export function LessonSelectModal({ isOpen, onOpenChange, sessionName, lessons, onSelectLesson }: LessonSelectModalProps) {
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredLessons = useMemo(() => {
@@ -72,29 +53,24 @@ export function LessonSelectModal({
                     <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
                         {/* Search Bar */}
                         <div className="relative">
-                            <Input
-                                placeholder={t.placeholder}
-                                value={searchQuery}
-                                onChange={(val) => setSearchQuery(val)}
-                                className="pl-10"
-                            />
-                            <Search className="absolute top-3 left-3.5 size-4 text-slate-400 pointer-events-none" />
+                            <Input placeholder={t.placeholder} value={searchQuery} onChange={(val) => setSearchQuery(val)} className="pl-10" />
+                            <Search className="pointer-events-none absolute top-3 left-3.5 size-4 text-slate-400" />
                         </div>
 
                         {/* Lessons Table */}
                         <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50">
                             {filteredLessons.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                    <BookOpen className="size-8 opacity-40 text-purple-400" />
+                                    <BookOpen className="size-8 text-purple-400 opacity-40" />
                                     <p className="mt-2 text-xs font-medium">{t.empty}</p>
                                 </div>
                             ) : (
-                                <table className="w-full text-left border-collapse text-sm">
+                                <table className="w-full border-collapse text-left text-sm">
                                     <thead>
-                                        <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold uppercase tracking-wider text-slate-600">
-                                            <th className="py-3.5 px-4.5 w-16 text-center">{t.thStt}</th>
-                                            <th className="py-3.5 px-4.5">{t.thLessonName}</th>
-                                            <th className="py-3.5 px-4.5 w-44 text-right">{t.thActions}</th>
+                                        <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold tracking-wider text-slate-600 uppercase">
+                                            <th className="w-16 px-4.5 py-3.5 text-center">{t.thStt}</th>
+                                            <th className="px-4.5 py-3.5">{t.thLessonName}</th>
+                                            <th className="w-44 px-4.5 py-3.5 text-right">{t.thActions}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -104,13 +80,11 @@ export function LessonSelectModal({
                                                 onClick={() => handleSelect(lesson)}
                                                 className="group cursor-pointer transition hover:bg-purple-50/50"
                                             >
-                                                <td className="py-3.5 px-4.5 text-center font-extrabold text-slate-400 text-sm">
-                                                    {index + 1}
-                                                </td>
-                                                <td className="py-3.5 px-4.5 font-bold text-slate-800 text-sm group-hover:text-purple-700 transition">
+                                                <td className="px-4.5 py-3.5 text-center text-sm font-extrabold text-slate-400">{index + 1}</td>
+                                                <td className="px-4.5 py-3.5 text-sm font-bold text-slate-800 transition group-hover:text-purple-700">
                                                     {lesson.name}
                                                 </td>
-                                                <td className="py-3.5 px-4.5 text-right">
+                                                <td className="px-4.5 py-3.5 text-right">
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {

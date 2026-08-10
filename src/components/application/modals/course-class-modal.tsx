@@ -91,6 +91,8 @@ export function CourseClassModal({ isOpen, onClose, classId, courseClassData }: 
         onSuccess: () => {
             toast.success(UI_TEXT.courseClassModal.toastCreateSuccessTitle, UI_TEXT.courseClassModal.toastCreateSuccessDesc);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
+            queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-groups"] });
             onClose();
         },
         onError: (err: Error) => {
@@ -110,6 +112,8 @@ export function CourseClassModal({ isOpen, onClose, classId, courseClassData }: 
         onSuccess: () => {
             toast.success(UI_TEXT.courseClassModal.toastUpdateSuccessTitle, UI_TEXT.courseClassModal.toastUpdateSuccessDesc);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
+            queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-groups"] });
             onClose();
         },
         onError: (err: Error) => {

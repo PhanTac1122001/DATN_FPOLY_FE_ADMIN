@@ -76,9 +76,7 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900">{t.modalTitle}</h3>
-                                    <p className="text-xs font-medium text-slate-500">
-                                        Danh sách các loại buổi học thiết lập trong hệ thống
-                                    </p>
+                                    <p className="text-xs font-medium text-slate-500">{t.subtitle}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 pr-8">
@@ -119,7 +117,7 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
                                             key={item.id}
                                             className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4 shadow-2xs transition hover:border-slate-300"
                                         >
-                                            <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3">
+                                            <div className="flex min-w-0 flex-1 flex-col gap-1 pr-3">
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className="text-sm font-black text-slate-900">{item.name}</span>
                                                     <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-extrabold text-slate-700">
@@ -136,14 +134,10 @@ export function SessionTypeModal({ isOpen, onClose, onChanged }: SessionTypeModa
                                                         </span>
                                                     )}
                                                 </div>
-                                                {item.description && (
-                                                    <p className="line-clamp-1 text-xs font-medium text-slate-500">
-                                                        {item.description}
-                                                    </p>
-                                                )}
+                                                {item.description && <p className="line-clamp-1 text-xs font-medium text-slate-500">{item.description}</p>}
                                             </div>
 
-                                            <div className="flex items-center gap-1.5 shrink-0">
+                                            <div className="flex shrink-0 items-center gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleOpenEdit(item)}

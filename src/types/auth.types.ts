@@ -49,6 +49,10 @@ export interface UserProfile {
     fullName: string;
     avatarUrl?: string | null;
     phoneNumber?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    gender?: "MALE" | "FEMALE" | "OTHER" | string | null;
+    staffCode?: string | null;
     role: string;
     roles?: string[];
     permissions: string[];
@@ -57,9 +61,13 @@ export interface UserProfile {
 }
 
 export interface UpdateProfileRequest {
-    fullName: string;
+    fullName?: string;
     phoneNumber?: string;
+    phone?: string;
+    address?: string;
+    gender?: "MALE" | "FEMALE" | "OTHER" | string;
     avatarUrl?: string | null;
+    avatar?: string | null;
 }
 
 export interface ChangePasswordRequest {

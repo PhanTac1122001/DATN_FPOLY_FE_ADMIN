@@ -93,11 +93,14 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPa
     });
 }
 
-function mapBackendStaffToUserProfile(staff: any): UserProfile {
-    if (!staff) {
+function mapBackendStaffToUserProfile(payload: any): UserProfile {
+    if (!payload) {
         throw new Error("Invalid staff profile payload");
     }
-    const roleNames = (staff.roles || []).map((r: any) => r.name);
+    // Unwrap response data if backend returned { statusCode: 200, data: { ... } }
+    const staff = payload.data && typeof payload.data === "object" && !Array.isArray(payload.data) ? payload.data : payload;
+
+    const roleNames = (staff.roles || []).map((r: any) => (typeof r === "string" ? r : r.code || r.name));
 
     // Default role mappings
     let role = "ADMIN";
@@ -119,6 +122,10 @@ function mapBackendStaffToUserProfile(staff: any): UserProfile {
         fullName: staff.fullName || "",
         avatarUrl: staff.avatar || null,
         phoneNumber: staff.phone || null,
+        phone: staff.phone || null,
+        address: staff.address || null,
+        gender: staff.gender || null,
+        staffCode: staff.staffCode || staff.code || null,
         role: role,
         roles: roleNames,
         permissions: permissions,
@@ -155,9 +162,21 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<UserPro
         method: HttpMethod.PUT,
         body: JSON.stringify({
             fullName: data.fullName,
-            phone: data.phoneNumber,
-            avatar: data.avatarUrl,
+            phone: data.phone || data.phoneNumber,
+            address: data.address,
+            gender: data.gender,
+            avatar: data.avatar || data.avatarUrl,
         }),
+    });
+    return mapBackendStaffToUserProfile(response);
+}
+
+export async function uploadAvatar(file: File): Promise<UserProfile> {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    const response = await httpClient<any>(API_ENDPOINTS.AUTH.AVATAR_UPLOAD, {
+        method: HttpMethod.POST,
+        body: formData,
     });
     return mapBackendStaffToUserProfile(response);
 }

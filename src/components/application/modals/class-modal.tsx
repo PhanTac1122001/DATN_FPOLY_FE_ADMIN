@@ -63,6 +63,7 @@ export function ClassModal({ isOpen, onClose, classData }: ClassModalProps) {
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.classes.toastCreateSuccess);
             queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
             onClose();
         },
         onError: (error: Error) => {
@@ -75,6 +76,7 @@ export function ClassModal({ isOpen, onClose, classData }: ClassModalProps) {
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.classes.toastUpdateSuccess);
             queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
             onClose();
         },
         onError: (error: Error) => {

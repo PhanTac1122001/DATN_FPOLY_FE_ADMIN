@@ -3,7 +3,7 @@ import { HttpMethod } from "@/types/api-types";
 import type { Lesson } from "@/types/material.types";
 
 export async function getLessonsBySession(sessionId: string): Promise<Lesson[]> {
-    const res = await httpClient<any>(`/api/staff/lessons/session/${sessionId}`, { method: HttpMethod.GET });
+    const res = await httpClient<any>(`/staff/lessons/session/${sessionId}`, { method: HttpMethod.GET });
     return res.data || res || [];
 }
 
@@ -11,7 +11,7 @@ export async function createLesson(body: { name: string; sessionId: string; cour
     if (!body.courseId) {
         throw new Error("courseId is required when creating a lesson");
     }
-    const res = await httpClient<any>("/api/staff/lessons", {
+    const res = await httpClient<any>("/staff/lessons", {
         method: HttpMethod.POST,
         body: JSON.stringify(body),
     });
@@ -19,7 +19,7 @@ export async function createLesson(body: { name: string; sessionId: string; cour
 }
 
 export async function getLessonDetails(id: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.GET });
+    const res = await httpClient<any>(`/staff/lessons/${id}`, { method: HttpMethod.GET });
     return res.data || res;
 }
 
@@ -27,7 +27,7 @@ export async function updateLesson(
     id: string,
     body: Partial<{ name: string; position: number; sequentialBlocks: boolean; video: unknown; reading: unknown; quiz: unknown; quizId: string }>,
 ): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${id}`, {
+    const res = await httpClient<any>(`/staff/lessons/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(body),
     });
@@ -35,11 +35,11 @@ export async function updateLesson(
 }
 
 export async function deleteLesson(id: string): Promise<void> {
-    await httpClient<any>(`/api/staff/lessons/${id}`, { method: HttpMethod.DELETE });
+    await httpClient<any>(`/staff/lessons/${id}`, { method: HttpMethod.DELETE });
 }
 
 export async function configureLessonVideo(lessonId: string, formData: FormData): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/video`, {
+    const res = await httpClient<any>(`/staff/lessons/${lessonId}/video`, {
         method: HttpMethod.POST,
         body: formData,
     });
@@ -47,14 +47,14 @@ export async function configureLessonVideo(lessonId: string, formData: FormData)
 }
 
 export async function deleteLessonVideo(lessonId: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/video`, {
+    const res = await httpClient<any>(`/staff/lessons/${lessonId}/video`, {
         method: HttpMethod.DELETE,
     });
     return res.data || res;
 }
 
 export async function configureLessonReading(lessonId: string, formData: FormData): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading`, {
+    const res = await httpClient<any>(`/staff/lessons/${lessonId}/reading`, {
         method: HttpMethod.POST,
         body: formData,
     });
@@ -62,7 +62,7 @@ export async function configureLessonReading(lessonId: string, formData: FormDat
 }
 
 export async function configureLessonReadingHtml(lessonId: string, formData: FormData): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading-html`, {
+    const res = await httpClient<any>(`/staff/lessons/${lessonId}/reading-html`, {
         method: HttpMethod.POST,
         body: formData,
     });
@@ -70,11 +70,11 @@ export async function configureLessonReadingHtml(lessonId: string, formData: For
 }
 
 export async function deleteLessonReading(lessonId: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/reading`, {
+    const res = await httpClient<any>(`/staff/lessons/${lessonId}/reading`, {
         method: HttpMethod.DELETE,
     });
     try {
-        await httpClient<any>(`/api/staff/lessons/${lessonId}`, {
+        await httpClient<any>(`/staff/lessons/${lessonId}`, {
             method: HttpMethod.PUT,
             body: JSON.stringify({ pdf: "" }),
         });
@@ -85,7 +85,7 @@ export async function deleteLessonReading(lessonId: string): Promise<Lesson> {
 }
 
 export async function linkLessonQuiz(lessonId: string, quizId: string): Promise<Lesson> {
-    const res = await httpClient<any>(`/api/staff/lessons/${lessonId}/quiz`, {
+    const res = await httpClient<any>(`/staff/lessons/${lessonId}/quiz`, {
         method: HttpMethod.PUT,
         body: JSON.stringify({ quizId }),
     });

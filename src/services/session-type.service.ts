@@ -11,7 +11,7 @@ function unwrap<T>(response: unknown): T {
 
 export const sessionTypeService = {
     getAll: async (includeInactive = true): Promise<SessionType[]> => {
-        const response = await httpClient<any>(`/api/staff/session-types?includeInactive=${includeInactive}`, {
+        const response = await httpClient<any>(`/staff/session-types?includeInactive=${includeInactive}`, {
             method: HttpMethod.GET,
         });
         const data = unwrap<SessionType[] | { items?: SessionType[] }>(response);
@@ -20,7 +20,7 @@ export const sessionTypeService = {
     },
 
     create: async (dto: CreateSessionTypeDto): Promise<SessionType> => {
-        const response = await httpClient<any>("/api/staff/session-types", {
+        const response = await httpClient<any>("/staff/session-types", {
             method: HttpMethod.POST,
             body: JSON.stringify(dto),
         });
@@ -28,7 +28,7 @@ export const sessionTypeService = {
     },
 
     update: async (id: string, dto: UpdateSessionTypeDto): Promise<SessionType> => {
-        const response = await httpClient<any>(`/api/staff/session-types/${id}`, {
+        const response = await httpClient<any>(`/staff/session-types/${id}`, {
             method: HttpMethod.PATCH,
             body: JSON.stringify(dto),
         });
@@ -36,12 +36,12 @@ export const sessionTypeService = {
     },
 
     remove: async (id: string): Promise<{ success: boolean; hardDeleted?: boolean; deactivatedOnly?: boolean }> => {
-        const response = await httpClient<any>(`/api/staff/session-types/${id}`, { method: HttpMethod.DELETE });
+        const response = await httpClient<any>(`/staff/session-types/${id}`, { method: HttpMethod.DELETE });
         return unwrap(response) || { success: true };
     },
 
     reorder: async (ids: string[]): Promise<{ success: boolean }> => {
-        const response = await httpClient<any>("/api/staff/session-types/reorder", {
+        const response = await httpClient<any>("/staff/session-types/reorder", {
             method: HttpMethod.PUT,
             body: JSON.stringify({ ids }),
         });

@@ -10,14 +10,14 @@ function unwrapList<T>(response: any): T[] {
 
 export const coursewareService = {
     getBlockTypes: async (): Promise<BlockTypeCatalogEntity[]> => {
-        const response = await httpClient<any>("/api/staff/courseware/block-types", {
+        const response = await httpClient<any>("/staff/courseware/block-types", {
             method: HttpMethod.GET,
         });
         return unwrapList<BlockTypeCatalogEntity>(response);
     },
 
     getSessionBlocks: async (sessionId: string): Promise<CoursewareBlockEntity[]> => {
-        const response = await httpClient<any>(`/api/staff/sessions/${sessionId}/blocks`, {
+        const response = await httpClient<any>(`/staff/sessions/${sessionId}/blocks`, {
             method: HttpMethod.GET,
         });
         return unwrapList<CoursewareBlockEntity>(response).map((b: any) => ({
@@ -32,7 +32,7 @@ export const coursewareService = {
     },
 
     getLessonBlocks: async (lessonId: string): Promise<CoursewareBlockEntity[]> => {
-        const response = await httpClient<any>(`/api/staff/lessons/${lessonId}/blocks`, {
+        const response = await httpClient<any>(`/staff/lessons/${lessonId}/blocks`, {
             method: HttpMethod.GET,
         });
         return unwrapList<CoursewareBlockEntity>(response).map((b: any) => ({
@@ -48,9 +48,15 @@ export const coursewareService = {
 
     updateBlock: async (
         blockId: string,
-        body: Partial<{ title: string; description: string; isRequired: boolean; payload: Record<string, unknown>; completionCriteria: Record<string, unknown> }>,
+        body: Partial<{
+            title: string;
+            description: string;
+            isRequired: boolean;
+            payload: Record<string, unknown>;
+            completionCriteria: Record<string, unknown>;
+        }>,
     ): Promise<CoursewareBlockEntity> => {
-        const response = await httpClient<any>(`/api/staff/blocks/${blockId}`, {
+        const response = await httpClient<any>(`/staff/blocks/${blockId}`, {
             method: HttpMethod.PATCH,
             body: JSON.stringify(body),
         });
@@ -77,7 +83,7 @@ export const coursewareService = {
             position?: number;
         },
     ): Promise<CoursewareBlockEntity> => {
-        const response = await httpClient<any>(`/api/staff/sessions/${sessionId}/blocks`, {
+        const response = await httpClient<any>(`/staff/sessions/${sessionId}/blocks`, {
             method: HttpMethod.POST,
             body: JSON.stringify({
                 payload: {},
@@ -97,7 +103,7 @@ export const coursewareService = {
     },
 
     deleteBlock: async (blockId: string): Promise<void> => {
-        await httpClient<any>(`/api/staff/blocks/${blockId}`, {
+        await httpClient<any>(`/staff/blocks/${blockId}`, {
             method: HttpMethod.DELETE,
         });
     },

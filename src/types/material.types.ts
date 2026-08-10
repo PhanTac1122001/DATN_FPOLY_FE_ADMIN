@@ -41,7 +41,8 @@ export interface Homework {
     sampleLink?: string;
     expectedTime?: number;
     position?: number;
-    /* eslint-disable-next-line @typescript-eslint/no-magic-numbers */
+    difficultyLevel?: string;
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
     status: 0 | 1 | 2; // 0: Pending, 1: Approved, 2: Rejected
 }
 

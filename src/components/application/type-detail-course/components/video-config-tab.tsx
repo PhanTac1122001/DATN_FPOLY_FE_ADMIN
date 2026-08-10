@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, Plus, Trash2, Video } from "lucide-react";
+import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import {
     QuestionTypeEnum,
@@ -11,12 +12,23 @@ import {
     type YTGlobal,
     type YTPlayer,
 } from "@/types/courseware.types";
-import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { LinkVideoModal, SelectVideoSourceModal } from "../modals/select-video-source-modal";
 
 export type { VideoQuestion, VideoQuestionOption };
 
-export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFile, questions, setQuestions, onDelete: _onDelete, onRegisterOpenModal, submitted = false }: VideoConfigTabProps) {
+export function VideoConfigTab({
+    url,
+    setUrl,
+    duration,
+    setDuration,
+    file,
+    setFile,
+    questions,
+    setQuestions,
+    onDelete: _onDelete,
+    onRegisterOpenModal,
+    submitted = false,
+}: VideoConfigTabProps) {
     const [, setVideoType] = useState<"link" | "file" | "">("");
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
@@ -330,9 +342,10 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                     {isExpanded && (
                                         <div className="flex flex-col gap-3 border-t border-slate-100/60 p-3.5 pt-3">
                                             <div className="grid grid-cols-3 gap-3">
-                                                <div className="col-span-2 flex flex-col gap-1.5">
+                                                <div className="flex flex-col gap-1.5">
                                                     <label className="text-xs font-bold text-slate-700">
-                                                        {UI_TEXT.videoConfigTab.questionContentLabel} <span className="text-red-500">*</span>
+                                                        {UI_TEXT.videoConfigTab.questionContentLabel}{" "}
+                                                        <span className="text-red-500">{UI_TEXT.videoConfigTab.asterisk}</span>
                                                     </label>
                                                     <input
                                                         type="text"
@@ -343,19 +356,20 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                             setQuestions(copy);
                                                         }}
                                                         placeholder={UI_TEXT.videoConfigTab.questionContentPlaceholder}
-                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:ring-2 focus:outline-none ${
                                                             submitted && !(q.content || "").trim()
                                                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
                                                                 : "border-slate-200 focus:border-wine focus:ring-wine/10"
                                                         }`}
                                                     />
                                                     {submitted && !(q.content || "").trim() && (
-                                                        <p className="mt-0.5 text-[11px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                                        <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.common.fieldRequired}</p>
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col gap-1.5">
                                                     <label className="text-xs font-bold text-slate-700">
-                                                        {UI_TEXT.videoConfigTab.timestampLabel} <span className="text-red-500">*</span>
+                                                        {UI_TEXT.videoConfigTab.timestampLabel}{" "}
+                                                        <span className="text-red-500">{UI_TEXT.videoConfigTab.asterisk}</span>
                                                     </label>
                                                     <input
                                                         type="number"
@@ -370,14 +384,14 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                             setQuestions(copy);
                                                         }}
                                                         onFocus={(e) => e.target.select()}
-                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:ring-2 focus:outline-none ${
                                                             submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0)
                                                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
                                                                 : "border-slate-200 focus:border-wine focus:ring-wine/10"
                                                         }`}
                                                     />
                                                     {submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0) && (
-                                                        <p className="mt-0.5 text-[11px] font-medium text-red-500">Thời điểm không hợp lệ.</p>
+                                                        <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.videoConfigTab.invalidTimeError}</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -429,7 +443,9 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                                         <span
                                                                             className={`text-[11px] font-bold ${isCorrect ? "text-emerald-600" : "text-slate-400"}`}
                                                                         >
-                                                                            {isCorrect ? UI_TEXT.videoConfigTab.correctText : UI_TEXT.videoConfigTab.incorrectText}
+                                                                            {isCorrect
+                                                                                ? UI_TEXT.videoConfigTab.correctText
+                                                                                : UI_TEXT.videoConfigTab.incorrectText}
                                                                         </span>
                                                                     </button>
                                                                     {q.options.length > minOptionsCount && (
@@ -461,14 +477,16 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                                                                             setQuestions(copy);
                                                                         }}
                                                                         placeholder={UI_TEXT.videoConfigTab.optionContentPlaceholder}
-                                                                        className={`w-full rounded-full border bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 transition duration-150 focus:outline-none focus:ring-2 ${
+                                                                        className={`w-full rounded-full border bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 transition duration-150 focus:ring-2 focus:outline-none ${
                                                                             submitted && !(opt.content || "").trim()
                                                                                 ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
                                                                                 : "border-slate-200 focus:border-wine focus:ring-wine/10"
                                                                         }`}
                                                                     />
                                                                     {submitted && !(opt.content || "").trim() && (
-                                                                        <p className="px-1 text-[10px] font-medium text-red-500">Vui lòng điền vào trường này.</p>
+                                                                        <p className="px-1 text-[10px] font-medium text-red-500">
+                                                                            {UI_TEXT.common.fieldRequired}
+                                                                        </p>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -494,16 +512,14 @@ export function VideoConfigTab({ url, setUrl, duration, setDuration, file, setFi
                         const copy = [...questions];
                         copy.splice(deleteQuestionIndex, 1);
                         setQuestions(copy);
-                        setExpandedQuestionIndices((prev) =>
-                            prev.filter((i) => i !== deleteQuestionIndex).map((i) => (i > deleteQuestionIndex ? i - 1 : i))
-                        );
+                        setExpandedQuestionIndices((prev) => prev.filter((i) => i !== deleteQuestionIndex).map((i) => (i > deleteQuestionIndex ? i - 1 : i)));
                         setDeleteQuestionIndex(null);
                     }
                 }}
-                title="Xác nhận xóa"
-                message="Bạn có chắc chắn muốn xóa câu hỏi nhúng này không?"
-                confirmText="Xóa"
-                cancelText="Hủy"
+                title={UI_TEXT.common.confirmDeleteTitle}
+                message={UI_TEXT.videoConfigTab.confirmDeleteQuestionMsg}
+                confirmText={UI_TEXT.common.delete}
+                cancelText={UI_TEXT.common.cancel}
                 variant="danger"
             />
         </div>

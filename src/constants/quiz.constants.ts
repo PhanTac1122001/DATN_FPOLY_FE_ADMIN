@@ -1,0 +1,1 @@
+export const DEFAULT_PASS_THRESHOLD = 80;

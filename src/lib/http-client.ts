@@ -6,6 +6,7 @@ import { APP_CONFIG } from "@/constants/app.constants";
 import { HTTP_STATUS_NO_CONTENT, HTTP_STATUS_UNAUTHORIZED } from "@/constants/http.constants";
 import { HttpMethod } from "@/types/api-types";
 import type { EventStreamClientOptions, HttpClientOptions, HttpParseMode } from "@/types/http-client.types";
+import { formatApiPath } from "@/utils/url.utils";
 
 export type { HttpParseMode, HttpClientOptions };
 
@@ -37,8 +38,25 @@ async function resolveAccessToken(): Promise<string | undefined> {
     return Cookies.get(APP_CONFIG.ACCESS_TOKEN_KEY);
 }
 
-function resolveBaseUrl() {
-    return typeof window === "undefined" ? process.env.API_URL || "http://backend:3000" : "";
+function resolveBaseUrl(path?: string) {
+    if (typeof window !== "undefined") {
+        return "";
+    }
+
+    const isAuthRoute =
+        path &&
+        (path.includes("/auth/login") ||
+            path.includes("/auth/renew-otp") ||
+            path.includes("/auth/logout") ||
+            path.includes("/auth/refresh-token") ||
+            path.includes("/auth/verify-otp") ||
+            path.includes("/auth/activate"));
+
+    if (isAuthRoute) {
+        return process.env.AUTH_URL || process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:65432";
+    }
+
+    return process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:6789";
 }
 
 async function buildRequestHeaders(headers: HeadersInit | undefined, body: BodyInit | null | undefined, requireAuth: boolean) {
@@ -135,13 +153,14 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 export async function httpClient<TResponse = unknown>(path: string, options?: HttpClientOptions): Promise<TResponse> {
-    const defaultBaseUrl = resolveBaseUrl();
+    const targetPath = formatApiPath(path);
+    const defaultBaseUrl = resolveBaseUrl(targetPath);
 
     const { baseUrl = defaultBaseUrl, parseAs = "json", requireAuth = true, headers, cache, ...rest } = options ?? {};
     const finalHeaders = await buildRequestHeaders(headers, rest.body, requireAuth);
 
     try {
-        const response = await fetch(`${baseUrl}${path}`, {
+        const response = await fetch(`${baseUrl}${targetPath}`, {
             ...rest,
             headers: finalHeaders,
             credentials: "include",
@@ -253,12 +272,13 @@ export function eventStreamClient(path: string, options: EventStreamClientOption
 
 async function runEventStream(path: string, options: EventStreamClientOptions, controller: AbortController, hasRetriedUnauthorized: boolean): Promise<void> {
     const defaultBaseUrl = resolveBaseUrl();
+    const targetPath = formatApiPath(path);
     const { baseUrl = defaultBaseUrl, requireAuth = true, headers, body, onopen, onerror, openWhenHidden = true, ...rest } = options;
     const finalHeaders = await buildRequestHeaders(headers, body, requireAuth);
     let errorHandled = false;
 
     try {
-        await fetchEventSource(`${baseUrl}${path}`, {
+        await fetchEventSource(`${baseUrl}${targetPath}`, {
             ...rest,
             body,
             headers: Object.fromEntries(finalHeaders.entries()),

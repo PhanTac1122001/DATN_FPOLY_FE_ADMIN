@@ -139,7 +139,6 @@ export function ClassesListView() {
                                     <th className="px-6 py-4">{UI_TEXT.classes.thClassName}</th>
                                     <th className="w-32 px-6 py-4 text-center">{UI_TEXT.classes.thType}</th>
                                     <th className="w-32 px-6 py-4 text-center">{UI_TEXT.classes.thCourses}</th>
-                                    <th className="w-32 px-6 py-4 text-center">{UI_TEXT.classes.thStudents}</th>
                                     <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
                                 </tr>
                             </thead>
@@ -172,9 +171,6 @@ export function ClassesListView() {
                                         </td>
                                         <td className="border-b border-line px-6 py-4 text-center text-xs font-semibold text-muted">
                                             {cls.courseCount ?? cls.courseIds?.length ?? 0} {UI_TEXT.classes.coursesAssigned}
-                                        </td>
-                                        <td className="border-b border-line px-6 py-4 text-center text-xs font-semibold text-muted">
-                                            {cls.studentCount ?? cls.userIds?.length ?? 0} {UI_TEXT.classes.studentsEnrolled}
                                         </td>
                                         <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50">
                                             <div className="flex justify-center">

@@ -3,17 +3,17 @@ import { HttpMethod } from "@/types/api-types";
 import type { Homework } from "@/types/material.types";
 
 export async function getHomeworkBySession(sessionId: string): Promise<Homework[]> {
-    const res = await httpClient<any>(`/api/homework/session/${sessionId}`, { method: HttpMethod.GET });
+    const res = await httpClient<any>(`/homework/session/${sessionId}`, { method: HttpMethod.GET });
     return res.data || res || [];
 }
 
 export async function getHomeworkById(id: string): Promise<Homework> {
-    const res = await httpClient<any>(`/api/homework/${id}`, { method: HttpMethod.GET });
+    const res = await httpClient<any>(`/homework/${id}`, { method: HttpMethod.GET });
     return res.data || res;
 }
 
 export async function createHomework(body: Partial<Homework>): Promise<Homework> {
-    const res = await httpClient<any>("/api/homework", {
+    const res = await httpClient<any>("/homework", {
         method: HttpMethod.POST,
         body: JSON.stringify(body),
     });
@@ -21,7 +21,7 @@ export async function createHomework(body: Partial<Homework>): Promise<Homework>
 }
 
 export async function updateHomework(id: string, body: Partial<Homework>): Promise<Homework> {
-    const res = await httpClient<any>(`/api/homework/${id}`, {
+    const res = await httpClient<any>(`/homework/${id}`, {
         method: HttpMethod.PATCH,
         body: JSON.stringify(body),
     });
@@ -29,21 +29,21 @@ export async function updateHomework(id: string, body: Partial<Homework>): Promi
 }
 
 export async function deleteHomework(id: string): Promise<void> {
-    await httpClient<any>(`/api/homework/${id}`, { method: HttpMethod.DELETE });
+    await httpClient<any>(`/homework/${id}`, { method: HttpMethod.DELETE });
 }
 
 export async function approveHomework(id: string): Promise<Homework> {
-    const res = await httpClient<any>(`/api/homework/${id}/approve`, { method: HttpMethod.PATCH });
+    const res = await httpClient<any>(`/homework/${id}/approve`, { method: HttpMethod.PATCH });
     return res.data || res;
 }
 
 export async function rejectHomework(id: string): Promise<Homework> {
-    const res = await httpClient<any>(`/api/homework/${id}/reject`, { method: HttpMethod.PATCH });
+    const res = await httpClient<any>(`/homework/${id}/reject`, { method: HttpMethod.PATCH });
     return res.data || res;
 }
 
 export async function bulkApproveHomework(ids: string[]): Promise<any> {
-    const res = await httpClient<any>("/api/homework/bulk/approve", {
+    const res = await httpClient<any>("/homework/bulk/approve", {
         method: HttpMethod.PATCH,
         body: JSON.stringify({ ids }),
     });
@@ -51,7 +51,7 @@ export async function bulkApproveHomework(ids: string[]): Promise<any> {
 }
 
 export async function bulkRejectHomework(ids: string[]): Promise<any> {
-    const res = await httpClient<any>("/api/homework/bulk/reject", {
+    const res = await httpClient<any>("/homework/bulk/reject", {
         method: HttpMethod.PATCH,
         body: JSON.stringify({ ids }),
     });

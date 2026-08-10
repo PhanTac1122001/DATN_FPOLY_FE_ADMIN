@@ -69,37 +69,25 @@ const nextConfig: NextConfig = {
         ],
     },
     async rewrites() {
-        const apiUrl = process.env.API_URL || "http://backend:3000";
-
-        let authDest = apiUrl;
+        const authUrl = process.env.AUTH_URL || process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:65432";
+        const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:6789";
+        let authDest = authUrl;
         let apiDest = apiUrl;
 
         // Route dynamically to the correct ports if using the staging IP
         if (apiUrl.includes("103.118.29.137")) {
             authDest = "http://103.118.29.137:65432";
             apiDest = "http://103.118.29.137:6789";
-
-            return [
-                {
-                    source: "/api/:path*",
-                    destination: `${apiDest}/v1/:path*`,
-                },
-                {
-                    source: "/v1/:path*",
-                    destination: `${authDest}/v1/:path*`,
-                },
-            ];
         }
 
-        // Default fallback behavior
         return [
             {
                 source: "/api/:path*",
-                destination: `${apiUrl}/api/:path*`,
+                destination: `${apiDest}/v1/:path*`,
             },
             {
                 source: "/v1/:path*",
-                destination: `${apiUrl}/v1/:path*`,
+                destination: `${authDest}/v1/:path*`,
             },
         ];
     },

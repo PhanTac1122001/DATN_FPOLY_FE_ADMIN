@@ -38,3 +38,10 @@ export interface SessionTypeModalProps {
     onClose: () => void;
     onChanged?: () => void;
 }
+
+export interface SessionTypeFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    editingType?: SessionType | null;
+}

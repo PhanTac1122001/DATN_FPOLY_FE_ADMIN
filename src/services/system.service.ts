@@ -6,7 +6,7 @@ let mockSystems: System[] = [];
 
 export async function getSystemsList(): Promise<System[]> {
     try {
-        const response = await httpClient<any>("/api/systems", { method: HttpMethod.GET });
+        const response = await httpClient<any>("/systems", { method: HttpMethod.GET });
         if (response?.data && Array.isArray(response.data)) {
             return response.data;
         }
@@ -21,7 +21,7 @@ export async function getSystemsList(): Promise<System[]> {
 
 export async function createSystem(data: CreateSystemRequest): Promise<System> {
     try {
-        const response = await httpClient<any>("/api/systems", {
+        const response = await httpClient<any>("/systems", {
             method: HttpMethod.POST,
             body: JSON.stringify(data),
         });
@@ -41,7 +41,7 @@ export async function createSystem(data: CreateSystemRequest): Promise<System> {
 
 export async function updateSystem(id: string, data: UpdateSystemRequest): Promise<System> {
     try {
-        const response = await httpClient<any>(`/api/systems/${id}`, {
+        const response = await httpClient<any>(`/systems/${id}`, {
             method: HttpMethod.PUT,
             body: JSON.stringify(data),
         });
@@ -63,7 +63,7 @@ export async function updateSystem(id: string, data: UpdateSystemRequest): Promi
 
 export async function deleteSystem(id: string): Promise<void> {
     try {
-        await httpClient<any>(`/api/systems/${id}`, { method: HttpMethod.DELETE });
+        await httpClient<any>(`/systems/${id}`, { method: HttpMethod.DELETE });
     } catch {
         // Fallback mock
     }
@@ -72,7 +72,7 @@ export async function deleteSystem(id: string): Promise<void> {
 
 export async function getSpecializesList(): Promise<Specialize[]> {
     try {
-        const response = await httpClient<any>("/api/staff/specializes", { method: HttpMethod.GET });
+        const response = await httpClient<any>("/staff/specializes", { method: HttpMethod.GET });
         if (response?.data) return response.data;
     } catch {
         // Fallback to empty array
@@ -81,7 +81,7 @@ export async function getSpecializesList(): Promise<Specialize[]> {
 }
 
 export async function createSpecialize(data: { name: string; systemId: string }): Promise<Specialize> {
-    const response = await httpClient<any>("/api/staff/specializes", {
+    const response = await httpClient<any>("/staff/specializes", {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
     });
@@ -89,7 +89,7 @@ export async function createSpecialize(data: { name: string; systemId: string })
 }
 
 export async function updateSpecialize(id: string, data: { name: string }): Promise<Specialize> {
-    const response = await httpClient<any>(`/api/staff/specializes/${id}`, {
+    const response = await httpClient<any>(`/staff/specializes/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(data),
     });
@@ -97,17 +97,17 @@ export async function updateSpecialize(id: string, data: { name: string }): Prom
 }
 
 export async function deleteSpecialize(id: string): Promise<void> {
-    const response = await httpClient<any>(`/api/staff/specializes/${id}`, { method: HttpMethod.DELETE });
+    const response = await httpClient<any>(`/staff/specializes/${id}`, { method: HttpMethod.DELETE });
     return response?.data || response;
 }
 
 export async function getSemestersBySpecialize(specializeId: string): Promise<Semester[]> {
-    const response = await httpClient<any>(`/api/staff/semesters/specialize/${specializeId}`, { method: HttpMethod.GET });
+    const response = await httpClient<any>(`/staff/semesters/specialize/${specializeId}`, { method: HttpMethod.GET });
     return response?.data || response || [];
 }
 
 export async function createSemester(data: { name: string; priority: number; specializeId: string }): Promise<Semester> {
-    const response = await httpClient<any>("/api/staff/semesters", {
+    const response = await httpClient<any>("/staff/semesters", {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
     });
@@ -115,7 +115,7 @@ export async function createSemester(data: { name: string; priority: number; spe
 }
 
 export async function updateSemester(id: string, data: { name: string }): Promise<Semester> {
-    const response = await httpClient<any>(`/api/staff/semesters/${id}`, {
+    const response = await httpClient<any>(`/staff/semesters/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(data),
     });
@@ -123,6 +123,6 @@ export async function updateSemester(id: string, data: { name: string }): Promis
 }
 
 export async function deleteSemester(id: string): Promise<void> {
-    const response = await httpClient<any>(`/api/staff/semesters/${id}`, { method: HttpMethod.DELETE });
+    const response = await httpClient<any>(`/staff/semesters/${id}`, { method: HttpMethod.DELETE });
     return response?.data || response;
 }

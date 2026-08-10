@@ -12,14 +12,14 @@ function unwrapData<T>(response: unknown): T {
 
 export const completionRuleService = {
     getSessionRule: async (sessionId: string): Promise<CompletionRule> => {
-        const response = await httpClient<unknown>(`/api/staff/sessions/${sessionId}/completion-rule`, {
+        const response = await httpClient<unknown>(`/staff/sessions/${sessionId}/completion-rule`, {
             method: HttpMethod.GET,
         });
         return unwrapData<CompletionRule>(response);
     },
 
     setSessionRule: async (sessionId: string, rule: CompletionRule): Promise<CompletionRule> => {
-        const response = await httpClient<unknown>(`/api/staff/sessions/${sessionId}/completion-rule`, {
+        const response = await httpClient<unknown>(`/staff/sessions/${sessionId}/completion-rule`, {
             method: HttpMethod.PUT,
             body: JSON.stringify(rule),
         });
@@ -27,14 +27,14 @@ export const completionRuleService = {
     },
 
     getLessonRule: async (lessonId: string): Promise<CompletionRule> => {
-        const response = await httpClient<unknown>(`/api/staff/lessons/${lessonId}/completion-rule`, {
+        const response = await httpClient<unknown>(`/staff/lessons/${lessonId}/completion-rule`, {
             method: HttpMethod.GET,
         });
         return unwrapData<CompletionRule>(response);
     },
 
     setLessonRule: async (lessonId: string, rule: CompletionRule): Promise<CompletionRule> => {
-        const response = await httpClient<unknown>(`/api/staff/lessons/${lessonId}/completion-rule`, {
+        const response = await httpClient<unknown>(`/staff/lessons/${lessonId}/completion-rule`, {
             method: HttpMethod.PUT,
             body: JSON.stringify(rule),
         });

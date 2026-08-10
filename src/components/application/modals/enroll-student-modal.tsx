@@ -228,6 +228,8 @@ export function EnrollStudentModal({ isOpen, onClose, classId, enrollmentData }:
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.enrollStudentModal.toastEnrollSuccess);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
+            queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-groups"] });
             onClose();
         },
         onError: (err: Error) => {
@@ -244,6 +246,8 @@ export function EnrollStudentModal({ isOpen, onClose, classId, enrollmentData }:
         onSuccess: () => {
             toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.enrollStudentModal.toastUpdateSuccess);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
+            queryClient.invalidateQueries({ queryKey: ["classes"] });
+            queryClient.invalidateQueries({ queryKey: ["class-groups"] });
             onClose();
         },
         onError: (err: Error) => {

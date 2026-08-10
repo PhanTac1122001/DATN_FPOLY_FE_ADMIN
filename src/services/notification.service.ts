@@ -19,7 +19,7 @@ export const notificationService = {
         if (params?.offset !== undefined) query.set("offset", String(params.offset));
         const queryString = query.toString() ? `?${query.toString()}` : "";
 
-        const response = await httpClient<any>(`/api/staff/notifications${queryString}`, { method: HttpMethod.GET });
+        const response = await httpClient<any>(`/staff/notifications${queryString}`, { method: HttpMethod.GET });
         const raw = response?.data ?? response;
         if (raw && typeof raw === "object") {
             return {
@@ -33,7 +33,7 @@ export const notificationService = {
     },
 
     createStaffNotification: async (dto: CreateStaffNotificationDto): Promise<LmsNotificationEntity> => {
-        const response = await httpClient<any>("/api/staff/notifications", {
+        const response = await httpClient<any>("/staff/notifications", {
             method: HttpMethod.POST,
             body: JSON.stringify(dto),
         });
@@ -41,7 +41,7 @@ export const notificationService = {
     },
 
     updateStaffNotification: async (id: string, dto: UpdateStaffNotificationDto): Promise<LmsNotificationEntity> => {
-        const response = await httpClient<any>(`/api/staff/notifications/${id}`, {
+        const response = await httpClient<any>(`/staff/notifications/${id}`, {
             method: HttpMethod.PUT,
             body: JSON.stringify(dto),
         });
@@ -49,12 +49,12 @@ export const notificationService = {
     },
 
     deleteStaffNotification: async (id: string): Promise<void> => {
-        const response = await httpClient<any>(`/api/staff/notifications/${id}`, { method: HttpMethod.DELETE });
+        const response = await httpClient<any>(`/staff/notifications/${id}`, { method: HttpMethod.DELETE });
         return response?.data ?? response;
     },
 
     listCategories: async (): Promise<{ items: NotificationCategory[] }> => {
-        const response = await httpClient<any>("/api/staff/notification-categories", { method: HttpMethod.GET });
+        const response = await httpClient<any>("/staff/notification-categories", { method: HttpMethod.GET });
         const raw = response?.data ?? response;
         if (Array.isArray(raw)) {
             return { items: raw };
@@ -66,7 +66,7 @@ export const notificationService = {
     },
 
     createCategory: async (dto: CreateNotificationCategoryDto): Promise<NotificationCategory> => {
-        const response = await httpClient<any>("/api/staff/notification-categories", {
+        const response = await httpClient<any>("/staff/notification-categories", {
             method: HttpMethod.POST,
             body: JSON.stringify(dto),
         });
@@ -74,7 +74,7 @@ export const notificationService = {
     },
 
     updateCategory: async (code: string, dto: UpdateNotificationCategoryDto): Promise<NotificationCategory> => {
-        const response = await httpClient<any>(`/api/staff/notification-categories/${code}`, {
+        const response = await httpClient<any>(`/staff/notification-categories/${code}`, {
             method: HttpMethod.PUT,
             body: JSON.stringify(dto),
         });
@@ -82,7 +82,7 @@ export const notificationService = {
     },
 
     deleteCategory: async (code: string): Promise<void> => {
-        const response = await httpClient<any>(`/api/staff/notification-categories/${code}`, { method: HttpMethod.DELETE });
+        const response = await httpClient<any>(`/staff/notification-categories/${code}`, { method: HttpMethod.DELETE });
         return response?.data ?? response;
     },
 };

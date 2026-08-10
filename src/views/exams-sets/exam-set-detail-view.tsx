@@ -1,29 +1,86 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, CheckCircle2, ChevronRight, Circle, Edit, FileText, Folder, HelpCircle, Info, Plus, Trash2, Award } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Award, Calendar, CheckCircle2, ChevronRight, Circle, Edit, FileText, Folder, HelpCircle, Info, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
-import { QuestionModal } from "@/components/application/modals/question-modal";
 import { EssayQuestionModal } from "@/components/application/modals/essay-question-modal";
+import { QuestionModal } from "@/components/application/modals/question-modal";
 import { Button } from "@/components/base/buttons/button";
 import { EXAM_SETS_MOCK } from "@/constants/exam-set-mock.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { getQuizById, updateQuiz } from "@/services/quiz.service";
 import { toast } from "@/services/toast.service";
-import type { ExamSetDetailViewProps, QuestionMock, EssayQuestionMock } from "@/types/exam-set.types";
+import type { EssayQuestionMock, ExamSetDetailViewProps, ExamSetMock, QuestionMock } from "@/types/exam-set.types";
+import { type QuizBackendEntity, mapBackendQuizToExamSet, mapUiQuestionsToBackendDtos } from "@/types/quiz.types";
 import { cx } from "@/utils/cx";
 
 export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
-    const selectedSet = EXAM_SETS_MOCK.find((item) => item.id === id);
+    const [selectedSet, setSelectedSet] = useState<ExamSetMock | null>(null);
+    const [rawQuiz, setRawQuiz] = useState<QuizBackendEntity | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [activeTab, setActiveTab] = useState<"quiz" | "essay">("quiz");
-    const [questions, setQuestions] = useState<QuestionMock[]>(selectedSet?.questions || []);
+    const [questions, setQuestions] = useState<QuestionMock[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState<QuestionMock | null>(null);
 
-    const [essayQuestions, setEssayQuestions] = useState<EssayQuestionMock[]>(selectedSet?.essayQuestions || []);
+    const [essayQuestions, setEssayQuestions] = useState<EssayQuestionMock[]>([]);
     const [isEssayModalOpen, setIsEssayModalOpen] = useState(false);
     const [selectedEssayQuestion, setSelectedEssayQuestion] = useState<EssayQuestionMock | null>(null);
+
+    useEffect(() => {
+        const fetchDetail = async () => {
+            try {
+                setIsLoading(true);
+                const quizData = await getQuizById(id);
+                if (quizData && quizData.id) {
+                    setRawQuiz(quizData);
+                    const mapped = mapBackendQuizToExamSet(quizData);
+                    setSelectedSet(mapped);
+                    setQuestions(mapped.questions);
+                } else {
+                    const mock = EXAM_SETS_MOCK.find((item) => item.id === id);
+                    if (mock) {
+                        setSelectedSet(mock);
+                        setQuestions(mock.questions);
+                        setEssayQuestions(mock.essayQuestions || []);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching quiz detail:", error);
+                const mock = EXAM_SETS_MOCK.find((item) => item.id === id);
+                if (mock) {
+                    setSelectedSet(mock);
+                    setQuestions(mock.questions);
+                    setEssayQuestions(mock.essayQuestions || []);
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        void fetchDetail();
+    }, [id]);
+
+    const syncQuestionsToBackend = async (newQuestions: QuestionMock[]) => {
+        if (!rawQuiz) return;
+        try {
+            const dtoQuestions = mapUiQuestionsToBackendDtos(newQuestions);
+            const updatedQuiz = await updateQuiz(rawQuiz.id, {
+                questions: dtoQuestions,
+            });
+            if (updatedQuiz) {
+                setRawQuiz(updatedQuiz);
+                const mapped = mapBackendQuizToExamSet(updatedQuiz);
+                setSelectedSet(mapped);
+                setQuestions(mapped.questions);
+            }
+        } catch (error) {
+            console.error("Sync questions error:", error);
+            toast.error(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.toastSaveQuestionsError);
+        }
+    };
 
     const handleCreateQuestion = () => {
         setSelectedQuestion(null);
@@ -35,20 +92,29 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
         setIsModalOpen(true);
     };
 
-    const handleDeleteQuestion = (qId: string) => {
-        setQuestions((prev) => prev.filter((q) => q.id !== qId));
+    const handleDeleteQuestion = async (qId: string) => {
+        const updated = questions.filter((q) => q.id !== qId);
+        setQuestions(updated);
         toast.success(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.deleteSet);
+
+        if (rawQuiz) {
+            await syncQuestionsToBackend(updated);
+        }
     };
 
-    const handleSaveQuestion = (q: QuestionMock) => {
-        setQuestions((prev) => {
-            const exists = prev.some((item) => item.id === q.id);
-            if (exists) {
-                return prev.map((item) => (item.id === q.id ? q : item));
-            } else {
-                return [...prev, q];
-            }
-        });
+    const handleSaveQuestion = async (q: QuestionMock) => {
+        let updated: QuestionMock[] = [];
+        const exists = questions.some((item) => item.id === q.id);
+        if (exists) {
+            updated = questions.map((item) => (item.id === q.id ? q : item));
+        } else {
+            updated = [...questions, q];
+        }
+        setQuestions(updated);
+
+        if (rawQuiz) {
+            await syncQuestionsToBackend(updated);
+        }
     };
 
     const handleCreateEssayQuestion = () => {
@@ -76,6 +142,14 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
             }
         });
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-white p-8">
+                <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
+            </div>
+        );
+    }
 
     if (!selectedSet) {
         return (
@@ -166,8 +240,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                         <div className="flex flex-col">
                             <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{UI_TEXT.examsSetsEl.labelTotalPoints}</span>
                             <span className="mt-1 text-[13px] font-extrabold text-slate-800">
-                                {questions.reduce((sum, q) => sum + q.points, 0) +
-                                    essayQuestions.reduce((sum, q) => sum + q.points, 0)}
+                                {questions.reduce((sum, q) => sum + q.points, 0) + essayQuestions.reduce((sum, q) => sum + q.points, 0)}
                                 {UI_TEXT.examsSetsEl.pointsSuffix}
                             </span>
                         </div>
@@ -328,7 +401,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                                                     {UI_TEXT.examsSetsEl.dotSeparator}
                                                     {q.title}
                                                 </h4>
-                                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mt-1">
+                                                <div className="mt-1 flex items-center gap-2 text-xs font-semibold text-slate-400">
                                                     <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">{q.language}</span>
                                                     <span>{"•"}</span>
                                                     <span>
@@ -362,36 +435,41 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                                         </div>
 
                                         {/* Detail box */}
-                                        <div 
-                                            className="rounded-lg border border-slate-100 bg-slate-50/40 p-4 text-[13px] leading-relaxed font-medium text-slate-500 prose max-w-none"
+                                        <div
+                                            className="prose max-w-none rounded-lg border border-slate-100 bg-slate-50/40 p-4 text-[13px] leading-relaxed font-medium text-slate-500"
                                             dangerouslySetInnerHTML={{ __html: q.detail }}
                                         />
 
                                         {/* Template Code Preview */}
                                         {q.templateCode && (
-                                            <div className="rounded-lg bg-slate-900 p-4 font-mono text-xs text-emerald-400 overflow-x-auto whitespace-pre">
+                                            <div className="overflow-x-auto rounded-lg bg-slate-900 p-4 font-mono text-xs whitespace-pre text-emerald-400">
                                                 {q.templateCode}
                                             </div>
                                         )}
 
                                         {/* Test cases summary */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
-                                            {q.testCases.filter(tc => tc.input || tc.output).map((tc, idx) => (
-                                                <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50/20 p-3 text-[11px] font-semibold text-slate-500">
-                                                    <span className="text-[10px] font-bold text-rose-600 block mb-1">
-                                                        {UI_TEXT.examsSetsEl.labelTestCasePrefix}
-                                                        {idx + 1}
-                                                    </span>
-                                                    <div className="truncate">
-                                                        <span className="text-slate-400">{UI_TEXT.examsSetsEl.labelInputPrefix}</span>
-                                                        {tc.input || UI_TEXT.examsSetsEl.labelNotAvailable}
+                                        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                            {q.testCases
+                                                .filter((tc) => tc.input || tc.output)
+                                                .map((tc, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className="rounded-xl border border-slate-100 bg-slate-50/20 p-3 text-[11px] font-semibold text-slate-500"
+                                                    >
+                                                        <span className="mb-1 block text-[10px] font-bold text-rose-600">
+                                                            {UI_TEXT.examsSetsEl.labelTestCasePrefix}
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="truncate">
+                                                            <span className="text-slate-400">{UI_TEXT.examsSetsEl.labelInputPrefix}</span>
+                                                            {tc.input || UI_TEXT.examsSetsEl.labelNotAvailable}
+                                                        </div>
+                                                        <div className="truncate">
+                                                            <span className="text-slate-400">{UI_TEXT.examsSetsEl.labelOutputPrefix}</span>
+                                                            {tc.output || UI_TEXT.examsSetsEl.labelNotAvailable}
+                                                        </div>
                                                     </div>
-                                                    <div className="truncate">
-                                                        <span className="text-slate-400">{UI_TEXT.examsSetsEl.labelOutputPrefix}</span>
-                                                        {tc.output || UI_TEXT.examsSetsEl.labelNotAvailable}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
                                         </div>
                                     </div>
                                 ))

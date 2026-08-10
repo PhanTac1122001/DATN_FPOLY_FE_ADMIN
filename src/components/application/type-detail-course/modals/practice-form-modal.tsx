@@ -9,22 +9,9 @@ import { BlockTypeEnum } from "@/constants/application.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { coursewareService } from "@/services/courseware.service";
 import { toast } from "@/services/toast.service";
-import type { CoursewareBlockEntity } from "@/types/completion-rule.types";
-import { SubmissionTypeEnum } from "@/types/courseware.types";
+import { PracticeFormModalProps, SubmissionTypeEnum } from "@/types/courseware.types";
 import { isValidUrl } from "@/utils/url.utils";
 import { PracticeFormFields } from "../components/practice-form-fields";
-
-export interface PracticeFormModalProps {
-    mode?: "create" | "edit";
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    sessionId: string;
-    courseId?: string;
-    sessionName?: string;
-    initialData?: CoursewareBlockEntity | null;
-    onSuccess?: () => void;
-    onBack?: () => void;
-}
 
 export function PracticeFormModal({
     mode = "create",

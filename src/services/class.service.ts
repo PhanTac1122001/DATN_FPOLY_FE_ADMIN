@@ -12,43 +12,23 @@ import type {
 } from "@/types/class.types";
 
 export async function getClassList(): Promise<ClassEntity[]> {
-    const response = await httpClient<any>("/api/staff/classes", { method: HttpMethod.GET });
-    const classesList: ClassEntity[] = response?.data || response || [];
-
-    if (!Array.isArray(classesList) || classesList.length === 0) {
-        return [];
-    }
-
-    const enrichedClasses = await Promise.all(
-        classesList.map(async (cls) => {
-            try {
-                const detail = await getClassDetail(cls.id);
-                return {
-                    ...cls,
-                    courseCount: detail?.summary?.courseCount ?? detail?.courses?.length ?? 0,
-                    studentCount: detail?.summary?.studentCount ?? detail?.students?.length ?? 0,
-                };
-            } catch {
-                return cls;
-            }
-        }),
-    );
-
-    return enrichedClasses;
+    const response = await httpClient<any>("/staff/classes", { method: HttpMethod.GET });
+    const classesList = response?.data || response || [];
+    return Array.isArray(classesList) ? classesList : [];
 }
 
 export async function getClassById(id: string): Promise<ClassEntity> {
-    const response = await httpClient<any>(`/api/staff/classes/${id}`, { method: HttpMethod.GET });
+    const response = await httpClient<any>(`/staff/classes/${id}`, { method: HttpMethod.GET });
     return response?.data || response;
 }
 
 export async function getClassDetail(id: string): Promise<ClassDetail> {
-    const response = await httpClient<any>(`/api/staff/classes/${id}/detail`, { method: HttpMethod.GET });
+    const response = await httpClient<any>(`/staff/classes/${id}/detail`, { method: HttpMethod.GET });
     return response?.data || response;
 }
 
 export async function createClass(data: CreateClassRequest): Promise<ClassEntity> {
-    const response = await httpClient<any>("/api/staff/classes", {
+    const response = await httpClient<any>("/staff/classes", {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
     });
@@ -56,7 +36,7 @@ export async function createClass(data: CreateClassRequest): Promise<ClassEntity
 }
 
 export async function updateClass(id: string, data: UpdateClassRequest): Promise<ClassEntity> {
-    const response = await httpClient<any>(`/api/staff/classes/${id}`, {
+    const response = await httpClient<any>(`/staff/classes/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(data),
     });
@@ -64,14 +44,14 @@ export async function updateClass(id: string, data: UpdateClassRequest): Promise
 }
 
 export async function deleteClass(id: string): Promise<void> {
-    const response = await httpClient<any>(`/api/staff/classes/${id}`, { method: HttpMethod.DELETE });
+    const response = await httpClient<any>(`/staff/classes/${id}`, { method: HttpMethod.DELETE });
     return response?.data || response;
 }
 
 /* ==================== COURSE-CLASS MANAGEMENT ==================== */
 
 export async function assignCourseToClass(data: CreateCourseClassRequest): Promise<any> {
-    const response = await httpClient<any>("/api/staff/course-classes", {
+    const response = await httpClient<any>("/staff/course-classes", {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
     });
@@ -79,7 +59,7 @@ export async function assignCourseToClass(data: CreateCourseClassRequest): Promi
 }
 
 export async function updateCourseClass(id: string, data: UpdateCourseClassRequest): Promise<any> {
-    const response = await httpClient<any>(`/api/staff/course-classes/${id}`, {
+    const response = await httpClient<any>(`/staff/course-classes/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(data),
     });
@@ -87,14 +67,14 @@ export async function updateCourseClass(id: string, data: UpdateCourseClassReque
 }
 
 export async function deleteCourseClass(id: string): Promise<void> {
-    const response = await httpClient<any>(`/api/staff/course-classes/${id}`, { method: HttpMethod.DELETE });
+    const response = await httpClient<any>(`/staff/course-classes/${id}`, { method: HttpMethod.DELETE });
     return response?.data || response;
 }
 
 /* ==================== STUDENT-CLASS (ROSTER) MANAGEMENT ==================== */
 
 export async function enrollStudentInClass(data: CreateStudentClassRequest): Promise<any> {
-    const response = await httpClient<any>("/api/staff/student-classes", {
+    const response = await httpClient<any>("/staff/student-classes", {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
     });
@@ -102,7 +82,7 @@ export async function enrollStudentInClass(data: CreateStudentClassRequest): Pro
 }
 
 export async function updateStudentClass(id: string, data: UpdateStudentClassRequest): Promise<any> {
-    const response = await httpClient<any>(`/api/staff/student-classes/${id}`, {
+    const response = await httpClient<any>(`/staff/student-classes/${id}`, {
         method: HttpMethod.PUT,
         body: JSON.stringify(data),
     });
@@ -110,6 +90,6 @@ export async function updateStudentClass(id: string, data: UpdateStudentClassReq
 }
 
 export async function deleteStudentFromClass(id: string): Promise<void> {
-    const response = await httpClient<any>(`/api/staff/student-classes/${id}`, { method: HttpMethod.DELETE });
+    const response = await httpClient<any>(`/staff/student-classes/${id}`, { method: HttpMethod.DELETE });
     return response?.data || response;
 }

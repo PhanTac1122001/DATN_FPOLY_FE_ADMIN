@@ -9,4 +9,5 @@ export const RIKKEI_LOGO_SPLASH_WIDTH = 240;
 export const RIKKEI_LOGO_LOGIN_WIDTH = 188;
 export const MOCK_LOGIN_DELAY_MS = 300;
 export const OTP_LENGTH = 6;
+export const MIN_PASSWORD_LENGTH = 6;
 export const OTP_RESEND_COUNTDOWN_SECONDS = 60;

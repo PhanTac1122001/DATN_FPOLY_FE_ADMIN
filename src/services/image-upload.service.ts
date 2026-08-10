@@ -22,7 +22,7 @@ export async function uploadImage(file: File, options?: UploadImageOptions): Pro
             url: presignedPutUrl,
             publicUrl,
             key,
-        } = await httpClient<UploadUrlResponseDto>(`/api/upload/image?${queryParams.toString()}`, {
+        } = await httpClient<UploadUrlResponseDto>(`/upload/image?${queryParams.toString()}`, {
             method: HttpMethod.GET,
         });
 
@@ -59,7 +59,7 @@ export async function deleteImage(url: string): Promise<void> {
     if (!url) return;
 
     try {
-        await httpClient(`/api/upload/image?url=${encodeURIComponent(url)}`, {
+        await httpClient(`/upload/image?url=${encodeURIComponent(url)}`, {
             method: HttpMethod.DELETE,
         });
     } catch (error) {

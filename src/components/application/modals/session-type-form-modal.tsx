@@ -7,21 +7,9 @@ import { APP_CONFIG } from "@/constants/app.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { sessionTypeService } from "@/services/session-type.service";
 import { toast } from "@/services/toast.service";
-import type { SessionType } from "@/types/session-type.types";
+import type { SessionTypeFormModalProps } from "@/types/session-type.types";
 
-export interface SessionTypeFormModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: () => void;
-    editingType?: SessionType | null;
-}
-
-export function SessionTypeFormModal({
-    isOpen,
-    onClose,
-    onSuccess,
-    editingType,
-}: SessionTypeFormModalProps) {
+export function SessionTypeFormModal({ isOpen, onClose, onSuccess, editingType }: SessionTypeFormModalProps) {
     const isEdit = !!editingType;
 
     const [code, setCode] = useState("");
@@ -103,12 +91,8 @@ export function SessionTypeFormModal({
                                 <Tag className="size-5" />
                             </div>
                             <div>
-                                <h2 className="text-base font-extrabold text-slate-900">
-                                    {isEdit ? "Chỉnh sửa loại buổi học" : "Thêm loại buổi học mới"}
-                                </h2>
-                                <p className="text-xs font-semibold text-slate-400">
-                                    {isEdit ? "Cập nhật thông tin hiển thị loại buổi" : "Nhập mã và tên loại buổi học mới"}
-                                </p>
+                                <h2 className="text-base font-extrabold text-slate-900">{isEdit ? t.editTitle : t.createTitle}</h2>
+                                <p className="text-xs font-semibold text-slate-400">{isEdit ? t.editSubtitle : t.createSubtitle}</p>
                             </div>
                         </div>
                         <button
@@ -122,37 +106,33 @@ export function SessionTypeFormModal({
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6">
-                        {error && (
-                            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600">
-                                {error}
-                            </div>
-                        )}
+                        {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600">{error}</div>}
 
                         <div className="flex flex-col gap-1.5">
                             <label className="text-xs font-extrabold text-slate-700">
-                                {t.codeLabel} {!isEdit && <span className="text-rose-500">*</span>}
+                                {t.codeLabel} {!isEdit && <span className="text-rose-500">{t.asterisk}</span>}
                             </label>
                             <input
                                 type="text"
                                 disabled={isEdit}
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                placeholder="VD: LY_THUYET, THUC_HANH"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold uppercase text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine disabled:bg-slate-100 disabled:text-slate-500"
+                                placeholder={t.placeholderCode}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 uppercase transition outline-none focus:border-wine focus:ring-1 focus:ring-wine disabled:bg-slate-100 disabled:text-slate-500"
                             />
                         </div>
 
                         <div className="flex flex-col gap-1.5">
                             <label className="text-xs font-extrabold text-slate-700">
-                                {t.nameLabel} <span className="text-rose-500">*</span>
+                                {t.nameLabel} <span className="text-rose-500">{t.asterisk}</span>
                             </label>
                             <input
                                 type="text"
                                 required
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="VD: Lý thuyết, Thực hành..."
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                placeholder={t.placeholderName}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                 autoFocus
                             />
                         </div>
@@ -162,14 +142,14 @@ export function SessionTypeFormModal({
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Mô tả chi tiết về loại buổi học này..."
+                                placeholder={t.placeholderDesc}
                                 rows={3}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                             />
                         </div>
 
                         {/* Footer */}
-                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+                        <div className="mt-2 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
                             <button
                                 type="button"
                                 onClick={onClose}
@@ -189,7 +169,7 @@ export function SessionTypeFormModal({
                                 ) : (
                                     <Plus className="size-3.5" />
                                 )}
-                                <span>{isEdit ? UI_TEXT.common.save : "Tạo loại mới"}</span>
+                                <span>{isEdit ? UI_TEXT.common.save : t.createButton}</span>
                             </button>
                         </div>
                     </form>
