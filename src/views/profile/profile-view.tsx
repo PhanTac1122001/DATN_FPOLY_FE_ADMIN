@@ -1,15 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Camera, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Save, ShieldCheck, User } from "lucide-react";
+import { Camera, CheckCircle2, KeyRound, Loader2, Save, ShieldCheck, User } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
+import { SelectItem } from "@/components/base/select/select-item";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
-import { MIN_PASSWORD_LENGTH } from "@/constants/auth.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
+import { type ChangePasswordFormData, type UpdateProfileFormData, changePasswordSchema, updateProfileSchema } from "@/schemas/auth.schema";
 import { changePassword, updateProfile, uploadAvatar } from "@/services/auth.service";
 import { toast } from "@/services/toast.service";
 
@@ -20,22 +25,47 @@ export function ProfileView() {
 
     const [activeTab, setActiveTab] = useState<"info" | "password">("info");
 
-    // Profile info form state
-    const [fullName, setFullName] = useState("");
-    const [phone, setPhone] = useState("");
-    const [address, setAddress] = useState("");
-    const [gender, setGender] = useState<string>("MALE");
     const [isSavingInfo, setIsSavingInfo] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-    // Change password form state
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    // Password visibility state
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+    // Profile Info Form
+    const {
+        handleSubmit: handleUpdateProfileSubmit,
+        control: infoControl,
+        reset: resetInfo,
+        clearErrors: clearInfoErrors,
+        formState: { errors: infoErrors },
+    } = useForm<UpdateProfileFormData>({
+        resolver: zodResolver(updateProfileSchema),
+        defaultValues: {
+            fullName: "",
+            phone: "",
+            address: "",
+            gender: "MALE",
+        },
+    });
+
+    // Change Password Form
+    const {
+        handleSubmit: handleChangePasswordSubmit,
+        control: passwordControl,
+        reset: resetPasswordForm,
+        clearErrors: clearPasswordErrors,
+        formState: { errors: passwordErrors },
+    } = useForm<ChangePasswordFormData>({
+        resolver: zodResolver(changePasswordSchema),
+        defaultValues: {
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+        },
+    });
 
     useEffect(() => {
         const tabParam = searchParams.get("tab");
@@ -47,12 +77,14 @@ export function ProfileView() {
     // Populate user details when user data is fetched
     useEffect(() => {
         if (user) {
-            setFullName(user.fullName || "");
-            setPhone(user.phone || user.phoneNumber || "");
-            setAddress(user.address || "");
-            setGender((user.gender as string) || "MALE");
+            resetInfo({
+                fullName: user.fullName || "",
+                phone: user.phone || user.phoneNumber || "",
+                address: user.address || "",
+                gender: (user.gender as "MALE" | "FEMALE" | "OTHER") || "MALE",
+            });
         }
-    }, [user]);
+    }, [user, resetInfo]);
 
     // Handle avatar file selection & upload
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,20 +111,14 @@ export function ProfileView() {
     };
 
     // Handle Profile Info Submit
-    const handleUpdateProfile = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!fullName.trim()) {
-            toast.error(UI_TEXT.profile.toastNoticeTitle, UI_TEXT.profile.toastFullNameRequired);
-            return;
-        }
-
+    const onUpdateProfile = async (data: UpdateProfileFormData) => {
         try {
             setIsSavingInfo(true);
             await updateProfile({
-                fullName: fullName.trim(),
-                phone: phone.trim(),
-                address: address.trim(),
-                gender: gender,
+                fullName: data.fullName.trim(),
+                phone: data.phone?.trim(),
+                address: data.address?.trim(),
+                gender: data.gender,
             });
             await queryClient.invalidateQueries({ queryKey: queryKeys.profile() });
             toast.success(UI_TEXT.common.successTitle, UI_TEXT.profile.toastInfoSuccess);
@@ -105,31 +131,19 @@ export function ProfileView() {
     };
 
     // Handle Password Change Submit
-    const handleChangePassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!currentPassword) {
-            toast.error(UI_TEXT.profile.toastNoticeTitle, UI_TEXT.profile.changePassword.errors.currentPasswordRequired);
-            return;
-        }
-        if (!newPassword || newPassword.length < MIN_PASSWORD_LENGTH) {
-            toast.error(UI_TEXT.profile.toastNoticeTitle, UI_TEXT.common.password.errors.minLength);
-            return;
-        }
-        if (newPassword !== confirmPassword) {
-            toast.error(UI_TEXT.profile.toastNoticeTitle, UI_TEXT.common.password.errors.mismatch);
-            return;
-        }
-
+    const onChangePassword = async (data: ChangePasswordFormData) => {
         try {
             setIsChangingPassword(true);
             await changePassword({
-                currentPassword,
-                newPassword,
-                confirmPassword,
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword,
+                confirmPassword: data.confirmPassword,
             });
-            setCurrentPassword("");
-            setNewPassword("");
-            setConfirmPassword("");
+            resetPasswordForm({
+                currentPassword: "",
+                newPassword: "",
+                confirmPassword: "",
+            });
             toast.success(UI_TEXT.common.successTitle, UI_TEXT.profile.toastPasswordSuccess);
         } catch (error) {
             const message = error instanceof Error ? error.message : UI_TEXT.profile.toastPasswordErrorDefault;
@@ -251,70 +265,97 @@ export function ProfileView() {
 
                     {/* Tab 1: Personal Information */}
                     {activeTab === "info" && (
-                        <form onSubmit={handleUpdateProfile} className="mt-6 space-y-6">
+                        <form onSubmit={handleUpdateProfileSubmit(onUpdateProfile)} className="mt-6 space-y-6">
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                        {UI_TEXT.profile.labelFullName}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        placeholder={UI_TEXT.profile.placeholderFullName}
-                                        className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
-                                        required
-                                    />
-                                </div>
+                                <Controller
+                                    name="fullName"
+                                    control={infoControl}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={
+                                                <span>
+                                                    {UI_TEXT.profile.labelFullName.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                                </span>
+                                            }
+                                            placeholder={UI_TEXT.profile.placeholderFullName}
+                                            hint={infoErrors.fullName?.message}
+                                            isInvalid={!!infoErrors.fullName}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearInfoErrors("fullName");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
+                                />
+
+                                <Controller
+                                    name="phone"
+                                    control={infoControl}
+                                    render={({ field }) => (
+                                        <Input
+                                            label={UI_TEXT.profile.labelPhone}
+                                            placeholder={UI_TEXT.profile.placeholderPhone}
+                                            hint={infoErrors.phone?.message}
+                                            isInvalid={!!infoErrors.phone}
+                                            value={field.value || ""}
+                                            onChange={(val) => {
+                                                field.onChange(val);
+                                                clearInfoErrors("phone");
+                                            }}
+                                            onBlur={field.onBlur}
+                                            ref={field.ref}
+                                        />
+                                    )}
+                                />
+
+                                <Controller
+                                    name="gender"
+                                    control={infoControl}
+                                    render={({ field }) => (
+                                        <Select
+                                            label={UI_TEXT.profile.labelGender}
+                                            placeholder={UI_TEXT.profile.labelGender}
+                                            selectedKey={field.value || "MALE"}
+                                            onSelectionChange={(key) => {
+                                                field.onChange(key as string);
+                                                clearInfoErrors("gender");
+                                            }}
+                                            hint={infoErrors.gender?.message}
+                                            isInvalid={!!infoErrors.gender}
+                                        >
+                                            <SelectItem id="MALE">{UI_TEXT.staff.genderMale}</SelectItem>
+                                            <SelectItem id="FEMALE">{UI_TEXT.staff.genderFemale}</SelectItem>
+                                            <SelectItem id="OTHER">{UI_TEXT.staff.genderOther}</SelectItem>
+                                        </Select>
+                                    )}
+                                />
 
                                 <div>
-                                    <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">{UI_TEXT.profile.labelPhone}</label>
-                                    <input
-                                        type="text"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
-                                        placeholder={UI_TEXT.profile.placeholderPhone}
-                                        className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                        {UI_TEXT.profile.labelGender}
-                                    </label>
-                                    <select
-                                        value={gender}
-                                        onChange={(e) => setGender(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
-                                    >
-                                        <option value="MALE">{UI_TEXT.staff.genderMale}</option>
-                                        <option value="FEMALE">{UI_TEXT.staff.genderFemale}</option>
-                                        <option value="OTHER">{UI_TEXT.staff.genderOther}</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                        {UI_TEXT.profile.labelEmailFixed}
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={user?.email || ""}
-                                        disabled
-                                        className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-500"
-                                    />
+                                    <Input label={UI_TEXT.profile.labelEmailFixed} type="email" value={user?.email || ""} isDisabled />
                                 </div>
 
                                 <div className="sm:col-span-2">
-                                    <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                        {UI_TEXT.profile.labelAddress}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        placeholder={UI_TEXT.profile.placeholderAddress}
-                                        className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
+                                    <Controller
+                                        name="address"
+                                        control={infoControl}
+                                        render={({ field }) => (
+                                            <Input
+                                                label={UI_TEXT.profile.labelAddress}
+                                                placeholder={UI_TEXT.profile.placeholderAddress}
+                                                hint={infoErrors.address?.message}
+                                                isInvalid={!!infoErrors.address}
+                                                value={field.value || ""}
+                                                onChange={(val) => {
+                                                    field.onChange(val);
+                                                    clearInfoErrors("address");
+                                                }}
+                                                onBlur={field.onBlur}
+                                                ref={field.ref}
+                                            />
+                                        )}
                                     />
                                 </div>
                             </div>
@@ -323,7 +364,7 @@ export function ProfileView() {
                                 <button
                                     type="submit"
                                     disabled={isSavingInfo}
-                                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-wine-bright to-wine px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:opacity-90 disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-full bg-gradient-to-r from-wine-bright to-wine px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:opacity-90 disabled:opacity-50"
                                 >
                                     {isSavingInfo ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                                     <span>{UI_TEXT.profile.btnSave}</span>
@@ -334,86 +375,98 @@ export function ProfileView() {
 
                     {/* Tab 2: Change Password */}
                     {activeTab === "password" && (
-                        <form onSubmit={handleChangePassword} className="mt-6 max-w-xl space-y-6">
+                        <form onSubmit={handleChangePasswordSubmit(onChangePassword)} className="mt-6 max-w-xl space-y-6">
                             <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-900">
                                 <ShieldCheck className="size-5 shrink-0 text-amber-600" />
                                 <span>{UI_TEXT.profile.passwordHint}</span>
                             </div>
 
-                            <div>
-                                <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                    {UI_TEXT.profile.labelCurrentPassword}
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showCurrentPassword ? "text" : "password"}
-                                        value={currentPassword}
-                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                            <Controller
+                                name="currentPassword"
+                                control={passwordControl}
+                                render={({ field }) => (
+                                    <Input
+                                        type="password"
+                                        label={
+                                            <span>
+                                                {UI_TEXT.profile.labelCurrentPassword.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                            </span>
+                                        }
                                         placeholder={UI_TEXT.profile.placeholderCurrentPassword}
-                                        className="w-full rounded-xl border border-slate-300 py-2.5 pr-10 pl-4 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
-                                        required
+                                        showPassword={showCurrentPassword}
+                                        onTogglePassword={() => setShowCurrentPassword((prev) => !prev)}
+                                        hint={passwordErrors.currentPassword?.message}
+                                        isInvalid={!!passwordErrors.currentPassword}
+                                        value={field.value || ""}
+                                        onChange={(val) => {
+                                            field.onChange(val);
+                                            clearPasswordErrors("currentPassword");
+                                        }}
+                                        onBlur={field.onBlur}
+                                        ref={field.ref}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCurrentPassword((prev) => !prev)}
-                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                    >
-                                        {showCurrentPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                                    </button>
-                                </div>
-                            </div>
+                                )}
+                            />
 
-                            <div>
-                                <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                    {UI_TEXT.profile.labelNewPassword}
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showNewPassword ? "text" : "password"}
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
+                            <Controller
+                                name="newPassword"
+                                control={passwordControl}
+                                render={({ field }) => (
+                                    <Input
+                                        type="password"
+                                        label={
+                                            <span>
+                                                {UI_TEXT.profile.labelNewPassword.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                            </span>
+                                        }
                                         placeholder={UI_TEXT.profile.placeholderNewPassword}
-                                        className="w-full rounded-xl border border-slate-300 py-2.5 pr-10 pl-4 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
-                                        required
+                                        showPassword={showNewPassword}
+                                        onTogglePassword={() => setShowNewPassword((prev) => !prev)}
+                                        hint={passwordErrors.newPassword?.message}
+                                        isInvalid={!!passwordErrors.newPassword}
+                                        value={field.value || ""}
+                                        onChange={(val) => {
+                                            field.onChange(val);
+                                            clearPasswordErrors("newPassword");
+                                        }}
+                                        onBlur={field.onBlur}
+                                        ref={field.ref}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNewPassword((prev) => !prev)}
-                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                    >
-                                        {showNewPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                                    </button>
-                                </div>
-                            </div>
+                                )}
+                            />
 
-                            <div>
-                                <label className="mb-2 block text-xs font-bold tracking-wider text-slate-700 uppercase">
-                                    {UI_TEXT.profile.labelConfirmPassword}
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                            <Controller
+                                name="confirmPassword"
+                                control={passwordControl}
+                                render={({ field }) => (
+                                    <Input
+                                        type="password"
+                                        label={
+                                            <span>
+                                                {UI_TEXT.profile.labelConfirmPassword.replace(" *", "")} <span className="font-bold text-red-500">{"*"}</span>
+                                            </span>
+                                        }
                                         placeholder={UI_TEXT.profile.placeholderConfirmPassword}
-                                        className="w-full rounded-xl border border-slate-300 py-2.5 pr-10 pl-4 text-sm font-medium text-slate-900 transition focus:border-wine focus:ring-2 focus:ring-wine/20 focus:outline-none"
-                                        required
+                                        showPassword={showConfirmPassword}
+                                        onTogglePassword={() => setShowConfirmPassword((prev) => !prev)}
+                                        hint={passwordErrors.confirmPassword?.message}
+                                        isInvalid={!!passwordErrors.confirmPassword}
+                                        value={field.value || ""}
+                                        onChange={(val) => {
+                                            field.onChange(val);
+                                            clearPasswordErrors("confirmPassword");
+                                        }}
+                                        onBlur={field.onBlur}
+                                        ref={field.ref}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword((prev) => !prev)}
-                                        className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                                    </button>
-                                </div>
-                            </div>
+                                )}
+                            />
 
                             <div className="flex justify-end pt-4">
                                 <button
                                     type="submit"
                                     disabled={isChangingPassword}
-                                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-wine-bright to-wine px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:opacity-90 disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-full bg-gradient-to-r from-wine-bright to-wine px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:opacity-90 disabled:opacity-50"
                                 >
                                     {isChangingPassword ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
                                     <span>{UI_TEXT.profile.btnUpdatePassword}</span>

@@ -157,7 +157,7 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                     <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         <div className="custom-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto p-6">
                             {/* Points Input Row */}
-                            <div className="flex flex-col gap-1.5 max-w-[200px]">
+                            <div className="flex max-w-[200px] flex-col gap-1.5">
                                 <label className="text-[12.5px] font-bold text-slate-700">{UI_TEXT.examsSetsEl.labelPoints}</label>
                                 <input
                                     type="number"
@@ -187,7 +187,7 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                                 "relative flex cursor-pointer flex-col gap-3.5 rounded-2xl border p-4.5 transition duration-150 focus-within:ring-1",
                                                 opt.isCorrect
                                                     ? "border-emerald-500 bg-emerald-50/20 shadow-xs shadow-emerald-50 focus-within:border-emerald-500 focus-within:ring-emerald-500"
-                                                    : "border-slate-200 bg-white hover:border-slate-800 focus-within:border-wine focus-within:ring-wine",
+                                                    : "border-slate-200 bg-white focus-within:border-wine focus-within:ring-wine hover:border-slate-800",
                                             )}
                                             onClick={() => handleSelectCorrect(index)}
                                         >
@@ -196,9 +196,16 @@ export function QuestionModal({ isOpen, onClose, onSave, question }: QuestionMod
                                                 <div className="flex items-center gap-2">
                                                     <div className="relative flex items-center justify-center">
                                                         {opt.isCorrect ? (
-                                                            <div className="flex size-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-                                                                <Check className="size-3.5 text-white stroke-[3]" />
+                                                            <div
+                                                                className={cx(
+                                                                    "flex size-5 items-center justify-center bg-emerald-500 text-white",
+                                                                    isMulti ? "rounded-md" : "rounded-full",
+                                                                )}
+                                                            >
+                                                                <Check className="size-3.5 stroke-[3] text-white" />
                                                             </div>
+                                                        ) : isMulti ? (
+                                                            <div className="size-5 rounded-md border-2 border-slate-300 bg-white" />
                                                         ) : (
                                                             <Circle className="size-5 text-slate-400" />
                                                         )}

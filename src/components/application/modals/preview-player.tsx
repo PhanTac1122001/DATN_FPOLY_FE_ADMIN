@@ -10,18 +10,20 @@ const oneSecondMs = 1000;
 const feedbackTimeoutMs = 2000;
 const percentageMultiplier = 100;
 
-export function PreviewPlayer({ lesson }: { lesson: Lesson }) {
-    const [currentTab, setCurrentTab] = useState<"video" | "reading" | "quiz">("video");
+export function PreviewPlayer({ lesson, initialSubTab }: { lesson: Lesson; initialSubTab?: "video" | "reading" | "quiz" }) {
+    const [currentTab, setCurrentTab] = useState<"video" | "reading" | "quiz">(initialSubTab || "video");
 
     useEffect(() => {
-        if (lesson.videoUrl || (lesson.video && lesson.video.url)) {
+        if (initialSubTab) {
+            setCurrentTab(initialSubTab);
+        } else if (lesson.videoUrl || (lesson.video && lesson.video.url)) {
             setCurrentTab("video");
         } else if (lesson.pdf || (lesson.reading && (lesson.reading.content || lesson.reading.pdf))) {
             setCurrentTab("reading");
         } else if (lesson.quizId) {
             setCurrentTab("quiz");
         }
-    }, [lesson]);
+    }, [lesson, initialSubTab]);
 
     return (
         <div className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-slate-50/20 p-4">

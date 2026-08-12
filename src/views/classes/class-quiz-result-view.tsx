@@ -2,29 +2,29 @@
 
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { ArrowLeft, Play, Square, Target } from "lucide-react";
-import { io, Socket } from "socket.io-client";
-import { AdminLayout } from "@/components/layout/admin/admin-layout";
+import { Clock, Play, Square, Target } from "lucide-react";
+import { Socket, io } from "socket.io-client";
+import { Breadcrumb } from "@/components/application/breadcrumb";
+import { QuizDashboardModal } from "@/components/application/modals/quiz-dashboard-modal";
+import { QuizReviewModal } from "@/components/application/modals/quiz-review-modal";
 import { Button } from "@/components/base/buttons/button";
+import { Select } from "@/components/base/select/select";
+import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { APP_CONFIG } from "@/constants/app.constants";
-import { useAppRouter } from "@/hooks/use-app-router";
+import { DEFAULT_QUIZ_DURATION_MINUTES, MILLISECONDS_PER_SECOND, PAD_TWO_DIGITS, SECONDS_PER_MINUTE } from "@/constants/options.constants";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { StudentQuizResultItem, getActiveQuizSession, startQuizSession, stopQuizSession } from "@/services/class-quiz-session.service";
 import { getClassDetail } from "@/services/class.service";
-import { getSessionsByCourse } from "@/services/material.service";
 import { getCourseById } from "@/services/course.service";
+import { getSessionsByCourse } from "@/services/material.service";
 import { getSessionQuizzes } from "@/services/session-quiz.service";
-import {
-    getActiveQuizSession,
-    startQuizSession,
-    stopQuizSession,
-    StudentQuizResultItem,
-} from "@/services/class-quiz-session.service";
 import { toast } from "@/services/toast.service";
 import type { ClassEntity } from "@/types/class.types";
-import type { SessionQuizItem } from "@/types/session-quiz.types";
+import { type ActiveQuizSessionResponse, QuizSessionStatusEnum, type SessionQuizItem, StudentQuizStatusEnum } from "@/types/session-quiz.types";
 
 export function ClassQuizResultView({ classId }: { classId: string }) {
-    const router = useAppRouter();
     const [classData, setClassData] = useState<ClassEntity | null>(null);
+    const [studentCount, setStudentCount] = useState<number | null>(null);
     const [subjects, setSubjects] = useState<{ id: string; code: string; title: string; educationProgramId?: string }[]>([]);
     const [selectedSubjectId, setSelectedSubjectId] = useState<string>("");
     const [sessions, setSessions] = useState<{ id: string; title: string }[]>([]);
@@ -32,10 +32,16 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
     const [quizList, setQuizList] = useState<SessionQuizItem[]>([]);
     const [selectedQuizId, setSelectedQuizId] = useState<string>("");
 
-    const [activeSession, setActiveSession] = useState<{ id?: string; _id?: string; status: "IDLE" | "ACTIVE" | "CLOSED" } | null>(null);
+    const [activeSession, setActiveSession] = useState<ActiveQuizSessionResponse["session"]>(null);
     const [results, setResults] = useState<StudentQuizResultItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+    const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+
+    const selectedQuiz = quizList.find((q) => q.id === (activeSession?.quizId || selectedQuizId));
+    const durationMinutes = selectedQuiz?.durationMinutes || DEFAULT_QUIZ_DURATION_MINUTES;
 
     // Socket state
     useEffect(() => {
@@ -79,6 +85,8 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 const detail = await getClassDetail(classId);
                 const cls = detail?.class || null;
                 setClassData(cls);
+                const count = detail?.students?.length ?? detail?.summary?.studentCount ?? 0;
+                setStudentCount(count);
 
                 const assignedCourses = detail?.courses || [];
                 const loadedSubjects: { id: string; code: string; title: string; educationProgramId?: string }[] = [];
@@ -86,15 +94,24 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 for (const cc of assignedCourses) {
                     const rawCourse = cc.courseId;
                     if (rawCourse && typeof rawCourse === "object") {
-                        const cId = (rawCourse as any).id || (rawCourse as any)._id;
-                        const cCode = (rawCourse as any).courseCode || (rawCourse as any).code || "";
-                        const cTitle = (rawCourse as any).title || (rawCourse as any).name || "";
+                        const courseObj = rawCourse as {
+                            id?: string;
+                            _id?: string;
+                            courseCode?: string;
+                            code?: string;
+                            title?: string;
+                            name?: string;
+                            educationProgramId?: string;
+                        };
+                        const cId = courseObj.id || courseObj._id;
+                        const cCode = courseObj.courseCode || courseObj.code || "";
+                        const cTitle = courseObj.title || courseObj.name || "";
                         if (cId) {
                             loadedSubjects.push({
                                 id: String(cId),
                                 code: cCode,
                                 title: cTitle,
-                                educationProgramId: (rawCourse as any).educationProgramId || (cls as any)?.educationProgramId,
+                                educationProgramId: courseObj.educationProgramId || (cls as { educationProgramId?: string } | null)?.educationProgramId,
                             });
                         }
                     } else if (typeof rawCourse === "string") {
@@ -105,7 +122,9 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                     id: course.id,
                                     code: course.code,
                                     title: course.title,
-                                    educationProgramId: (course as any).educationProgramId || (cls as any)?.educationProgramId,
+                                    educationProgramId:
+                                        (course as { educationProgramId?: string }).educationProgramId ||
+                                        (cls as { educationProgramId?: string } | null)?.educationProgramId,
                                 });
                             }
                         } catch {
@@ -135,13 +154,14 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
             try {
                 const loadedSessions = await getSessionsByCourse(selectedSubjectId);
                 setSessions(
-                    (loadedSessions || []).map((s: any, idx: number) => ({
+                    (loadedSessions || []).map((s: { id?: string; _id?: string; title?: string; name?: string }, idx: number) => ({
                         id: String(s.id || s._id || idx),
                         title: s.title || s.name || `Session ${idx + 1}`,
                     })),
                 );
                 if (loadedSessions && loadedSessions.length > 0) {
-                    setSelectedSessionId(String(loadedSessions[0].id || (loadedSessions[0] as any)._id));
+                    const firstSession = loadedSessions[0] as { id?: string; _id?: string };
+                    setSelectedSessionId(String(firstSession.id || firstSession._id));
                 } else {
                     setSelectedSessionId("");
                 }
@@ -199,16 +219,23 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
         if (classId) {
             void fetchSessionState();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [classId, selectedSubjectId, selectedSessionId, selectedQuizId]);
 
     const handleStart = async () => {
+        if (studentCount === 0) {
+            toast.error(UI_TEXT.classQuizResultPage.toastStartTitle, UI_TEXT.classQuizResultPage.toastStartErrorSelect);
+            return;
+        }
+
         if (!selectedQuizId) {
-            toast.error("Bắt đầu Quizzi", "Vui lòng chọn bài Quizzi trước khi bắt đầu");
+            toast.error(UI_TEXT.classQuizResultPage.toastStartTitle, UI_TEXT.classQuizResultPage.toastStartErrorSelect);
             return;
         }
 
         const currentSub = subjects.find((s) => s.id === selectedSubjectId);
-        const programId = currentSub?.educationProgramId || (classData as any)?.educationProgramId || "6a5840dfcb86a0edcb952250";
+        const programId =
+            currentSub?.educationProgramId || (classData as { educationProgramId?: string } | null)?.educationProgramId || "6a5840dfcb86a0edcb952250";
 
         try {
             setIsActionLoading(true);
@@ -220,20 +247,22 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 quizId: selectedQuizId,
             });
             setActiveSession(session);
-            toast.success("Bắt đầu Quizzi", "Đã mở bài làm Quizzi cho toàn bộ lớp học");
+            toast.success(UI_TEXT.classQuizResultPage.toastStartTitle, UI_TEXT.classQuizResultPage.toastStartSuccess);
             void fetchSessionState();
         } catch (error) {
             console.error("Start quiz error:", error);
-            toast.error("Bắt đầu Quizzi", "Không thể kích hoạt bài Quizzi");
+            const errObj = error as { response?: { data?: { message?: string } }; message?: string };
+            const errorMsg = errObj?.response?.data?.message || errObj?.message || UI_TEXT.classQuizResultPage.toastStartError;
+            toast.error(UI_TEXT.classQuizResultPage.toastStartTitle, errorMsg);
         } finally {
             setIsActionLoading(false);
         }
     };
 
     const handleStop = async () => {
-        const sessionId = activeSession?.id || (activeSession as any)?._id;
+        const sessionId = activeSession?.id || activeSession?._id;
         if (!sessionId) {
-            toast.error("Đóng Quizzi", "Không có phiên Quizzi nào đang chạy");
+            toast.error(UI_TEXT.classQuizResultPage.toastStopTitle, UI_TEXT.classQuizResultPage.toastStopErrorNoSession);
             return;
         }
 
@@ -244,108 +273,143 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 quizSessionId: sessionId,
             });
             setActiveSession(session);
-            toast.success("Đóng Quizzi", "Đã đóng bài làm Quizzi và gửi lệnh nộp bài tới sinh viên");
+            toast.success(UI_TEXT.classQuizResultPage.toastStopTitle, UI_TEXT.classQuizResultPage.toastStopSuccess);
             void fetchSessionState();
         } catch (error) {
             console.error("Stop quiz error:", error);
-            toast.error("Đóng Quizzi", "Lỗi khi đóng phiên Quizzi");
+            toast.error(UI_TEXT.classQuizResultPage.toastStopTitle, UI_TEXT.classQuizResultPage.toastStopError);
         } finally {
             setIsActionLoading(false);
         }
     };
 
-    const isRunning = activeSession?.status === "ACTIVE";
+    const isRunning = activeSession?.status === QuizSessionStatusEnum.ACTIVE;
+
+    useEffect(() => {
+        if (!isRunning || !activeSession?.startedAt) {
+            setTimeLeft(null);
+            return;
+        }
+
+        const startTime = new Date(activeSession.startedAt).getTime();
+        const durationMs = durationMinutes * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+        const endTime = startTime + durationMs;
+
+        const updateTimer = () => {
+            const now = Date.now();
+            const remainingSec = Math.max(0, Math.floor((endTime - now) / MILLISECONDS_PER_SECOND));
+            setTimeLeft(remainingSec);
+        };
+
+        updateTimer();
+        const timerId = setInterval(updateTimer, MILLISECONDS_PER_SECOND);
+
+        return () => clearInterval(timerId);
+    }, [isRunning, activeSession?.startedAt, durationMinutes]);
+
+    const formatTimeLeft = (seconds: number | null) => {
+        if (seconds === null || seconds < 0) return "00:00";
+        const m = Math.floor(seconds / SECONDS_PER_MINUTE);
+        const s = seconds % SECONDS_PER_MINUTE;
+        return `${String(m).padStart(PAD_TWO_DIGITS, "0")}:${String(s).padStart(PAD_TWO_DIGITS, "0")}`;
+    };
+
+    const formatDateTime = (dateInput?: string | Date) => {
+        if (!dateInput) return "";
+        const d = new Date(dateInput);
+        if (isNaN(d.getTime())) return "";
+        const hours = String(d.getHours()).padStart(PAD_TWO_DIGITS, "0");
+        const minutes = String(d.getMinutes()).padStart(PAD_TWO_DIGITS, "0");
+        const seconds = String(d.getSeconds()).padStart(PAD_TWO_DIGITS, "0");
+        const day = String(d.getDate()).padStart(PAD_TWO_DIGITS, "0");
+        const month = String(d.getMonth() + 1).padStart(PAD_TWO_DIGITS, "0");
+        const year = d.getFullYear();
+        return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+    };
+
+    const PlayIcon = (props: React.SVGProps<SVGSVGElement>) => <Play {...props} className="size-4 shrink-0 fill-white text-white" />;
+    const SquareIcon = (props: React.SVGProps<SVGSVGElement>) => <Square {...props} className="size-4 shrink-0 fill-white text-white" />;
 
     return (
         <AdminLayout
-            title="Kết quả kiểm tra đầu giờ"
-            subtitle={`Lớp: ${classData?.classCode || classData?.name || classId}`}
+            title={UI_TEXT.classQuizResultPage.title}
+            subtitle={`${UI_TEXT.classQuizResultPage.classSubtitlePrefix}${classData?.classCode || classData?.name || classId}`}
         >
             <div className="flex w-full flex-col gap-6">
-                {/* Header Controls & Filters */}
-                <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
+                {/* Breadcrumb Header */}
+                <Breadcrumb
+                    items={[
+                        { label: UI_TEXT.classes.title, href: "/classes" },
+                        { label: classData?.name ? `${classData.name} (${classData.classCode})` : classId, href: `/classes/${classId}` },
+                        { label: UI_TEXT.classQuizResultPage.title },
+                    ]}
+                />
+
+                {/* Filters Row */}
+                <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xs">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:flex-1">
+                        <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
                             {/* Select Subject */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">Chọn môn học</label>
-                                <select
-                                    value={selectedSubjectId}
-                                    onChange={(e) => setSelectedSubjectId(e.target.value)}
-                                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-800 outline-none transition focus:border-purple-600"
+                            <div className="w-full">
+                                <Select
+                                    label={UI_TEXT.classQuizResultPage.selectSubjectLabel}
+                                    placeholder={UI_TEXT.classQuizResultPage.selectSubjectLabel}
+                                    isClearable={false}
+                                    selectedKey={selectedSubjectId || undefined}
+                                    onSelectionChange={(key) => setSelectedSubjectId(String(key || ""))}
+                                    items={subjects.map((sub) => ({ id: sub.id, label: `[${sub.code}] ${sub.title}` }))}
                                 >
-                                    {subjects.length === 0 ? (
-                                        <option value="">Chưa có môn học nào</option>
-                                    ) : (
-                                        subjects.map((sub) => (
-                                            <option key={sub.id} value={sub.id}>
-                                                [{sub.code}] {sub.title}
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
+                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                </Select>
                             </div>
 
                             {/* Select Session */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">Chọn session</label>
-                                <select
-                                    value={selectedSessionId}
-                                    onChange={(e) => setSelectedSessionId(e.target.value)}
-                                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-800 outline-none transition focus:border-purple-600"
+                            <div className="w-full">
+                                <Select
+                                    label={UI_TEXT.classQuizResultPage.selectSessionLabel}
+                                    placeholder={UI_TEXT.classQuizResultPage.selectSessionLabel}
+                                    isClearable={false}
+                                    selectedKey={selectedSessionId || undefined}
+                                    onSelectionChange={(key) => setSelectedSessionId(String(key || ""))}
+                                    items={sessions.map((sess) => ({ id: sess.id, label: sess.title }))}
                                 >
-                                    {sessions.length === 0 ? (
-                                        <option value="">Chưa có session</option>
-                                    ) : (
-                                        sessions.map((sess) => (
-                                            <option key={sess.id} value={sess.id}>
-                                                {sess.title}
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
+                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                </Select>
                             </div>
 
                             {/* Select Quiz */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">Chọn bài Quiz</label>
-                                <select
-                                    value={selectedQuizId}
-                                    onChange={(e) => setSelectedQuizId(e.target.value)}
-                                    className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-800 outline-none transition focus:border-purple-600"
+                            <div className="w-full">
+                                <Select
+                                    label={UI_TEXT.classQuizResultPage.selectQuizLabel}
+                                    placeholder={UI_TEXT.classQuizResultPage.selectQuizLabel}
+                                    isClearable={false}
+                                    selectedKey={selectedQuizId || undefined}
+                                    onSelectionChange={(key) => setSelectedQuizId(String(key || ""))}
+                                    items={quizList.map((q) => ({
+                                        id: q.id,
+                                        label: `${q.title} (${q.questions?.length || 0} ${UI_TEXT.classQuizResultPage.questionsCountSuffix})`,
+                                    }))}
                                 >
-                                    {quizList.length === 0 ? (
-                                        <option value="">Không có bài Quizzi nào</option>
-                                    ) : (
-                                        quizList.map((q) => (
-                                            <option key={q.id} value={q.id}>
-                                                {q.title} ({q.questions?.length || 0} câu)
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
+                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                </Select>
                             </div>
                         </div>
 
                         {/* Top Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                             <Button color="primary" size="md" onClick={fetchSessionState} className="!bg-indigo-600 hover:!bg-indigo-700">
-                                Tìm kiếm
+                                {UI_TEXT.classQuizResultPage.btnSearch}
                             </Button>
-                            <Button color="secondary" size="md" className="!bg-sky-500 !text-white hover:!bg-sky-600">
-                                Review
-                            </Button>
-                            <Button color="secondary" size="md" className="!bg-rose-500 !text-white hover:!bg-rose-600">
-                                Dashboard
+                            <Button color="secondary" size="md" onClick={() => setIsReviewOpen(true)} className="!bg-sky-500 !text-white hover:!bg-sky-600">
+                                {UI_TEXT.classQuizResultPage.btnReview}
                             </Button>
                             <Button
                                 color="secondary"
                                 size="md"
-                                onClick={() => router.back()}
-                                className="gap-1.5 bg-slate-100 font-semibold text-slate-700 hover:bg-slate-200"
+                                onClick={() => setIsDashboardOpen(true)}
+                                className="!bg-rose-500 !text-white hover:!bg-rose-600"
                             >
-                                <ArrowLeft className="size-4" />
-                                Quay lại
+                                {UI_TEXT.classQuizResultPage.btnDashboard}
                             </Button>
                         </div>
                     </div>
@@ -353,54 +417,91 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
 
                 {/* Session Control Card */}
                 <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-xs">
-                    <div className="flex items-center gap-2 text-base font-bold text-slate-800">
-                        <Target className="size-5 text-rose-500" />
-                        <span>Quản lý Quiz Session</span>
-                    </div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-2 text-base font-bold text-slate-800">
+                                <Target className="size-5 text-rose-500" />
+                                <span>{UI_TEXT.classQuizResultPage.sessionManagementTitle}</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-semibold text-slate-700">
+                                <div className="flex items-center gap-1.5">
+                                    <span>{UI_TEXT.classQuizResultPage.statusLabel}</span>
+                                    {isRunning ? (
+                                        <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600">
+                                            <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
+                                            {UI_TEXT.classQuizResultPage.statusActive}
+                                        </span>
+                                    ) : activeSession?.status === QuizSessionStatusEnum.CLOSED ? (
+                                        <span className="inline-flex items-center gap-1.5 font-bold text-rose-600">
+                                            <span className="size-2.5 rounded-full bg-rose-500" />
+                                            {UI_TEXT.classQuizResultPage.statusClosed}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-500">
+                                            <span className="size-2.5 rounded-full bg-slate-400" />
+                                            {UI_TEXT.classQuizResultPage.statusIdle}
+                                        </span>
+                                    )}
+                                </div>
 
-                    <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span>Trạng thái:</span>
+                                {activeSession?.startedAt && (
+                                    <div className="flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50/70 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                                        <span>{UI_TEXT.classQuizResultPage.openedAtPrefix}</span>
+                                        <strong className="font-mono font-bold text-emerald-900">{formatDateTime(activeSession.startedAt)}</strong>
+                                    </div>
+                                )}
+
+                                {activeSession?.stoppedAt && activeSession.status === QuizSessionStatusEnum.CLOSED && (
+                                    <div className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-800">
+                                        <span>{UI_TEXT.classQuizResultPage.closedAtPrefix}</span>
+                                        <strong className="font-mono font-bold text-rose-900">{formatDateTime(activeSession.stoppedAt)}</strong>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
                             {isRunning ? (
-                                <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600">
-                                    <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
-                                    Đang diễn ra
-                                </span>
-                            ) : activeSession?.status === "CLOSED" ? (
-                                <span className="inline-flex items-center gap-1.5 font-bold text-rose-600">
-                                    <span className="size-2.5 rounded-full bg-rose-500" />
-                                    Đã đóng
-                                </span>
+                                <div className="flex items-center gap-2 rounded-xl border border-purple-100 bg-purple-50 px-3.5 py-2 text-xs font-bold text-purple-700 shadow-2xs">
+                                    <Clock className="size-4 animate-pulse text-purple-600" />
+                                    <span>
+                                        {UI_TEXT.classQuizResultPage.timeLeftPrefix}{" "}
+                                        <strong className="font-mono text-sm text-purple-900">{formatTimeLeft(timeLeft)}</strong>
+                                    </span>
+                                </div>
                             ) : (
-                                <span className="inline-flex items-center gap-1.5 font-bold text-slate-500">
-                                    <span className="size-2.5 rounded-full bg-slate-400" />
-                                    Chưa mở
-                                </span>
+                                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs">
+                                    <Clock className="size-4 text-slate-500" />
+                                    <span>
+                                        {UI_TEXT.classQuizResultPage.selectQuizLabel}{" "}
+                                        <strong className="font-mono text-sm text-slate-900">{formatTimeLeft(durationMinutes * SECONDS_PER_MINUTE)}</strong>
+                                    </span>
+                                </div>
+                            )}
+                            {!isRunning ? (
+                                <Button
+                                    color="primary"
+                                    size="md"
+                                    iconLeading={PlayIcon}
+                                    disabled={isActionLoading}
+                                    onClick={handleStart}
+                                    className="!bg-emerald-600 font-bold !text-white *:!text-white hover:!bg-emerald-700 hover:!text-white hover:*:!text-white disabled:opacity-50"
+                                >
+                                    {UI_TEXT.classQuizResultPage.btnStart}
+                                </Button>
+                            ) : (
+                                <Button
+                                    color="primary"
+                                    size="md"
+                                    iconLeading={SquareIcon}
+                                    disabled={isActionLoading}
+                                    onClick={handleStop}
+                                    className="!bg-rose-600 font-bold !text-white *:!text-white hover:!bg-rose-700 hover:!text-white hover:*:!text-white disabled:opacity-50"
+                                >
+                                    {UI_TEXT.classQuizResultPage.btnStop}
+                                </Button>
                             )}
                         </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center gap-3">
-                        <Button
-                            color="primary"
-                            size="md"
-                            disabled={isActionLoading || isRunning}
-                            onClick={handleStart}
-                            className="gap-2 !bg-purple-600 font-bold hover:!bg-purple-700 disabled:opacity-50"
-                        >
-                            <Play className="size-4 fill-white" />
-                            START
-                        </Button>
-                        <Button
-                            color="secondary"
-                            size="md"
-                            disabled={isActionLoading || !isRunning}
-                            onClick={handleStop}
-                            className="gap-2 bg-slate-200 font-bold text-slate-700 hover:bg-slate-300 disabled:opacity-50"
-                        >
-                            <Square className="size-4 fill-slate-600 text-slate-600" />
-                            STOP
-                        </Button>
                     </div>
                 </div>
 
@@ -408,29 +509,29 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
                     <div className="w-full overflow-x-auto">
                         <table className="w-full text-left text-xs text-slate-600">
-                            <thead className="bg-slate-50/50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                            <thead className="bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                 <tr>
-                                    <th className="px-5 py-4 text-center">No.</th>
-                                    <th className="px-5 py-4">MSSV</th>
-                                    <th className="px-5 py-4">Tên</th>
-                                    <th className="px-5 py-4">Ngày sinh</th>
-                                    <th className="px-5 py-4 text-center">Điểm</th>
-                                    <th className="px-5 py-4 text-center">Trạng thái</th>
-                                    <th className="px-5 py-4">Thời gian nộp</th>
-                                    <th className="px-5 py-4 text-right">Hành động</th>
+                                    <th className="px-5 py-4 text-center">{UI_TEXT.classQuizResultPage.tableHeaderNo}</th>
+                                    <th className="px-5 py-4">{UI_TEXT.classQuizResultPage.tableHeaderMssv}</th>
+                                    <th className="px-5 py-4">{UI_TEXT.classQuizResultPage.tableHeaderName}</th>
+                                    <th className="px-5 py-4">{UI_TEXT.classQuizResultPage.tableHeaderDob}</th>
+                                    <th className="px-5 py-4 text-center">{UI_TEXT.classQuizResultPage.tableHeaderScore}</th>
+                                    <th className="px-5 py-4 text-center">{UI_TEXT.classQuizResultPage.tableHeaderStatus}</th>
+                                    <th className="px-5 py-4">{UI_TEXT.classQuizResultPage.tableHeaderSubmittedAt}</th>
+                                    <th className="px-5 py-4 text-right">{UI_TEXT.classQuizResultPage.tableHeaderActions}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium">
                                 {isLoading ? (
                                     <tr>
                                         <td colSpan={8} className="p-8 text-center text-slate-400">
-                                            Đang tải dữ liệu lớp học...
+                                            {UI_TEXT.classQuizResultPage.loadingClassData}
                                         </td>
                                     </tr>
                                 ) : results.length === 0 ? (
                                     <tr>
                                         <td colSpan={8} className="p-12 text-center text-slate-400">
-                                            Chưa có dữ liệu làm bài
+                                            {studentCount === 0 ? UI_TEXT.classQuizResultPage.toastStartErrorSelect : UI_TEXT.classQuizResultPage.emptyResults}
                                         </td>
                                     </tr>
                                 ) : (
@@ -448,13 +549,13 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                                 </span>
                                             </td>
                                             <td className="px-5 py-4 text-center">
-                                                {item.status === "SUBMITTED" ? (
+                                                {item.status === StudentQuizStatusEnum.SUBMITTED || activeSession?.status === QuizSessionStatusEnum.CLOSED ? (
                                                     <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                                                        Đã nộp bài
+                                                        {UI_TEXT.classQuizResultPage.statusSubmitted}
                                                     </span>
                                                 ) : (
                                                     <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
-                                                        Đang làm
+                                                        {UI_TEXT.classQuizResultPage.statusDoing}
                                                     </span>
                                                 )}
                                             </td>
@@ -462,8 +563,8 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                                 {item.submittedAt ? new Date(item.submittedAt).toLocaleTimeString("vi-VN") : "---"}
                                             </td>
                                             <td className="px-5 py-4 text-right">
-                                                <span className="text-[11px] font-semibold text-purple-600 hover:underline cursor-pointer">
-                                                    Xem chi tiết
+                                                <span className="cursor-pointer text-[11px] font-semibold text-purple-600 hover:underline">
+                                                    {UI_TEXT.classQuizResultPage.actionDetail}
                                                 </span>
                                             </td>
                                         </tr>
@@ -474,6 +575,22 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                     </div>
                 </div>
             </div>
+
+            <QuizReviewModal
+                isOpen={isReviewOpen}
+                onClose={() => setIsReviewOpen(false)}
+                quizzes={quizList}
+                selectedQuizId={selectedQuizId}
+                onSelectQuiz={(qId) => setSelectedQuizId(qId)}
+            />
+
+            <QuizDashboardModal
+                isOpen={isDashboardOpen}
+                onClose={() => setIsDashboardOpen(false)}
+                results={results}
+                activeQuiz={selectedQuiz}
+                isClosed={activeSession?.status === QuizSessionStatusEnum.CLOSED}
+            />
         </AdminLayout>
     );
 }

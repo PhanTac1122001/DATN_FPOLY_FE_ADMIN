@@ -1,21 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HelpCircle, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { DEFAULT_PASS_THRESHOLD } from "@/constants/quiz.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { createQuiz } from "@/services/quiz.service";
+import { createQuiz, updateQuiz } from "@/services/quiz.service";
 import { toast } from "@/services/toast.service";
 import type { CreateQuizModalProps } from "@/types/quiz.types";
 
-export function CreateQuizModal({ isOpen, onClose, onSuccess }: CreateQuizModalProps) {
+export function CreateQuizModal({ isOpen, onClose, onSuccess, initialData }: CreateQuizModalProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [passThreshold, setPassThreshold] = useState<number>(DEFAULT_PASS_THRESHOLD);
     const [courseId, setCourseId] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                const name = "name" in initialData ? initialData.name : initialData.title;
+                setTitle(name || "");
+                setDescription(initialData.description || "");
+                setPassThreshold(initialData.passThreshold || DEFAULT_PASS_THRESHOLD);
+                setCourseId(initialData.courseId || "");
+            } else {
+                setTitle("");
+                setDescription("");
+                setPassThreshold(DEFAULT_PASS_THRESHOLD);
+                setCourseId("");
+            }
+        }
+    }, [isOpen, initialData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,25 +43,30 @@ export function CreateQuizModal({ isOpen, onClose, onSuccess }: CreateQuizModalP
 
         try {
             setIsSubmitting(true);
-            const created = await createQuiz({
-                title: title.trim(),
-                description: description.trim() || undefined,
-                passThreshold: Number(passThreshold) || DEFAULT_PASS_THRESHOLD,
-                courseId: courseId.trim() || undefined,
-                questions: [],
-            });
-
-            toast.success(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.toastCreateSuccess);
-            onSuccess(created);
+            if (initialData) {
+                const updated = await updateQuiz(initialData.id, {
+                    title: title.trim(),
+                    description: description.trim() || undefined,
+                    passThreshold: Number(passThreshold) || DEFAULT_PASS_THRESHOLD,
+                    courseId: courseId.trim() || undefined,
+                });
+                toast.success(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.toastQuestionUpdated);
+                onSuccess(updated);
+            } else {
+                const created = await createQuiz({
+                    title: title.trim(),
+                    description: description.trim() || undefined,
+                    passThreshold: Number(passThreshold) || DEFAULT_PASS_THRESHOLD,
+                    courseId: courseId.trim() || undefined,
+                    questions: [],
+                });
+                toast.success(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.toastCreateSuccess);
+                onSuccess(created);
+            }
             onClose();
-            // Reset state
-            setTitle("");
-            setDescription("");
-            setPassThreshold(DEFAULT_PASS_THRESHOLD);
-            setCourseId("");
         } catch (error) {
-            console.error("Create quiz error:", error);
-            toast.error(UI_TEXT.examsSetsEl.title, UI_TEXT.examsSetsEl.toastCreateError);
+            console.error("Save quiz error:", error);
+            toast.error(UI_TEXT.examsSetsEl.title, initialData ? UI_TEXT.examsSetsEl.toastSaveQuestionsError : UI_TEXT.examsSetsEl.toastCreateError);
         } finally {
             setIsSubmitting(false);
         }
@@ -62,7 +84,7 @@ export function CreateQuizModal({ isOpen, onClose, onSuccess }: CreateQuizModalP
                             </div>
                             <div className="flex flex-col">
                                 <Heading slot="title" className="text-[16px] leading-snug font-extrabold text-slate-800">
-                                    {UI_TEXT.examsSetsEl.createModalTitle}
+                                    {initialData ? UI_TEXT.examsSetsEl.editSet : UI_TEXT.examsSetsEl.createModalTitle}
                                 </Heading>
                             </div>
                         </div>
@@ -146,7 +168,7 @@ export function CreateQuizModal({ isOpen, onClose, onSuccess }: CreateQuizModalP
                                 disabled={isSubmitting}
                                 className="rounded-xl bg-wine px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-wine/10 transition hover:bg-wine-deep disabled:opacity-50"
                             >
-                                {isSubmitting ? UI_TEXT.examsSetsEl.submitting : UI_TEXT.examsSetsEl.btnCreateQuiz}
+                                {isSubmitting ? UI_TEXT.examsSetsEl.submitting : initialData ? UI_TEXT.examsSetsEl.btnSave : UI_TEXT.examsSetsEl.btnCreateQuiz}
                             </button>
                         </div>
                     </form>

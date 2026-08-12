@@ -10,8 +10,9 @@ import { Breadcrumb } from "@/components/application/breadcrumb";
 import { AssignCourseModal } from "@/components/application/modals/assign-course-modal";
 import { Button } from "@/components/base/buttons/button";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { getCoursesBySystem } from "@/services/material.service";
+import { assignCoursesToSystem, getCoursesBySystem } from "@/services/material.service";
 import { getSystemsList } from "@/services/system.service";
+import { toast } from "@/services/toast.service";
 import type { CourseItem } from "@/types/course.types";
 import type { SystemCourseItem, TypeDetailViewProps } from "@/types/type.types";
 
@@ -19,10 +20,13 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
     const [search, setSearch] = useState("");
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
     const [isAssignOpen, setIsAssignOpen] = useState(false);
-    const [assignedLocalCourses, setAssignedLocalCourses] = useState<SystemCourseItem[]>([]);
 
     // Query for system and its courses
-    const { data: detail, isLoading } = useQuery({
+    const {
+        data: detail,
+        isLoading,
+        refetch,
+    } = useQuery({
         queryKey: ["system-courses-detail", id],
         queryFn: async () => {
             const systems = await getSystemsList();
@@ -39,17 +43,15 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
     });
 
     const handleAssignCourses = async (selected: CourseItem[]) => {
-        const mapped = selected.map((item, idx) => ({
-            id: item.id,
-            courseCode: item.code,
-            name: item.title,
-            hour: 40,
-            category: item.category,
-            description: item.description,
-            isVisible: true,
-            position: (detail?.courses.length || 0) + idx + 1,
-        }));
-        setAssignedLocalCourses((prev) => [...prev, ...mapped]);
+        if (!selected.length) return;
+        try {
+            const courseIds = selected.map((item) => item.id);
+            await assignCoursesToSystem(id, courseIds);
+            await refetch();
+            toast.success(UI_TEXT.common.successTitle, UI_TEXT.trainingSystem.toastUpdateSuccess);
+        } catch (error) {
+            toast.error(UI_TEXT.common.errorTitle, error instanceof Error ? error.message : UI_TEXT.trainingSystem.toastUpdateError);
+        }
     };
 
     const formatDate = (dateStr: string) => {
@@ -82,7 +84,7 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
         );
     }
 
-    const allCourses = [...(detail.courses as SystemCourseItem[]), ...assignedLocalCourses];
+    const allCourses = (detail.courses as SystemCourseItem[]) || [];
 
     // Filter courses by search query
     const filteredCourses = allCourses.filter((course) => {

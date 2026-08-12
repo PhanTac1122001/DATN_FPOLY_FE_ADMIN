@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { BlockTypeEnum } from "@/constants/application.constants";
+import { FULL_PERCENT } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { completionRuleService } from "@/services/completion-rule.service";
 import { coursewareService } from "@/services/courseware.service";
@@ -12,10 +13,7 @@ import type { CoursewareBlockEntity, LessonCompletionRuleSectionProps } from "@/
 import { isDefaultLessonRule } from "@/utils/completion-rule.utils";
 import { extractErrorMessages } from "@/utils/http-error-message.utils";
 
-export function LessonCompletionRuleSection({
-    lessonId,
-    onRegisterSave,
-}: LessonCompletionRuleSectionProps) {
+export function LessonCompletionRuleSection({ lessonId, onRegisterSave }: LessonCompletionRuleSectionProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [blocks, setBlocks] = useState<CoursewareBlockEntity[]>([]);
     const [criteriaMap, setCriteriaMap] = useState<Record<string, Record<string, unknown>>>({});
@@ -129,7 +127,7 @@ export function LessonCompletionRuleSection({
                         isRequired,
                         completionCriteria: criteria,
                     });
-                })
+                }),
             );
 
             await updateLesson(lessonId, { sequentialBlocks });
@@ -200,9 +198,7 @@ export function LessonCompletionRuleSection({
                                 <ShieldAlert className="size-4 text-amber-600" />
                                 <span>{UI_TEXT.lessonCompletionRuleSection.customRuleTitle}</span>
                             </div>
-                            <p className="text-xs text-amber-800">
-                                {UI_TEXT.lessonCompletionRuleSection.customRuleNotice}
-                            </p>
+                            <p className="text-xs text-amber-800">{UI_TEXT.lessonCompletionRuleSection.customRuleNotice}</p>
                             <button
                                 type="button"
                                 onClick={handleResetToDefault}
@@ -216,9 +212,7 @@ export function LessonCompletionRuleSection({
 
                     {/* Blocks list */}
                     {blocks.length === 0 ? (
-                        <p className="text-sm font-medium text-slate-500 italic">
-                            {UI_TEXT.lessonCompletionRuleSection.empty}
-                        </p>
+                        <p className="text-sm font-medium text-slate-500 italic">{UI_TEXT.lessonCompletionRuleSection.empty}</p>
                     ) : (
                         <div className="space-y-3">
                             {blocks.map((block) => {
@@ -227,15 +221,15 @@ export function LessonCompletionRuleSection({
                                 const bType = (block.type || "").toUpperCase();
 
                                 return (
-                                    <div key={block.id} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 space-y-2.5">
+                                    <div key={block.id} className="space-y-2.5 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs font-bold text-slate-800">{block.title || block.id}</span>
-                                            <label className="flex items-center cursor-pointer">
+                                            <label className="flex cursor-pointer items-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={isReq}
                                                     onChange={() => toggleBlockIsRequired(block.id)}
-                                                    className="size-4 accent-wine rounded cursor-pointer"
+                                                    className="size-4 cursor-pointer rounded accent-wine"
                                                 />
                                             </label>
                                         </div>
@@ -243,14 +237,16 @@ export function LessonCompletionRuleSection({
                                         {bType === BlockTypeEnum.VIDEO && (
                                             <div className="grid grid-cols-2 gap-3 pt-1">
                                                 <div>
-                                                    <label className="text-[11px] font-medium text-slate-600">{UI_TEXT.lessonCompletionRuleSection.minWatchPercentLabel}</label>
+                                                    <label className="text-[11px] font-medium text-slate-600">
+                                                        {UI_TEXT.lessonCompletionRuleSection.minWatchPercentLabel}
+                                                    </label>
                                                     <input
                                                         type="number"
                                                         min={0}
                                                         max={100}
                                                         value={typeof criteria.minWatchPercent === "number" ? criteria.minWatchPercent : 0}
                                                         onChange={(e) => updateBlockCriteria(block.id, "minWatchPercent", Number(e.target.value))}
-                                                        className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs font-bold bg-white"
+                                                        className="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold"
                                                     />
                                                 </div>
                                                 <div className="flex items-center gap-2 pt-4">
@@ -259,7 +255,7 @@ export function LessonCompletionRuleSection({
                                                         id={`sec-req-qs-${block.id}`}
                                                         checked={criteria.requireAllQuestionsCorrect !== false}
                                                         onChange={(e) => updateBlockCriteria(block.id, "requireAllQuestionsCorrect", e.target.checked)}
-                                                        className="size-3.5 accent-wine rounded"
+                                                        className="size-3.5 rounded accent-wine"
                                                     />
                                                     <label htmlFor={`sec-req-qs-${block.id}`} className="text-xs font-medium text-slate-700">
                                                         {UI_TEXT.lessonCompletionRuleSection.requireAllQuestionsCorrectLabel}
@@ -271,24 +267,30 @@ export function LessonCompletionRuleSection({
                                         {bType === BlockTypeEnum.QUIZ && (
                                             <div className="grid grid-cols-2 gap-3 pt-1">
                                                 <div>
-                                                    <label className="text-[11px] font-medium text-slate-600">{UI_TEXT.lessonCompletionRuleSection.minScorePercentLabel}</label>
+                                                    <label className="text-[11px] font-medium text-slate-600">
+                                                        {UI_TEXT.lessonCompletionRuleSection.minScorePercentLabel}
+                                                    </label>
                                                     <input
                                                         type="number"
                                                         min={0}
-                                                        max={100}
-                                                        value={typeof criteria.minScorePercent === "number" ? criteria.minScorePercent : 100}
+                                                        max={FULL_PERCENT}
+                                                        value={typeof criteria.minScorePercent === "number" ? criteria.minScorePercent : FULL_PERCENT}
                                                         onChange={(e) => updateBlockCriteria(block.id, "minScorePercent", Number(e.target.value))}
-                                                        className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs font-bold bg-white"
+                                                        className="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-[11px] font-medium text-slate-600">{UI_TEXT.lessonCompletionRuleSection.maxAttemptsLabel}</label>
+                                                    <label className="text-[11px] font-medium text-slate-600">
+                                                        {UI_TEXT.lessonCompletionRuleSection.maxAttemptsLabel}
+                                                    </label>
                                                     <input
                                                         type="number"
                                                         min={1}
                                                         value={criteria.maxAttempts != null ? Number(criteria.maxAttempts) : ""}
-                                                        onChange={(e) => updateBlockCriteria(block.id, "maxAttempts", e.target.value ? Number(e.target.value) : null)}
-                                                        className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs font-bold bg-white"
+                                                        onChange={(e) =>
+                                                            updateBlockCriteria(block.id, "maxAttempts", e.target.value ? Number(e.target.value) : null)
+                                                        }
+                                                        className="mt-1 w-full rounded border border-slate-300 bg-white px-2 py-1 text-xs font-bold"
                                                         placeholder={UI_TEXT.lessonCompletionRuleSection.unlimitedPlaceholder}
                                                     />
                                                 </div>

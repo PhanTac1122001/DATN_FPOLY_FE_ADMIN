@@ -9,6 +9,13 @@ export async function getCoursesBySystem(systemId: string): Promise<Course[]> {
     return res.data || res || [];
 }
 
+export async function assignCoursesToSystem(systemId: string, courseIds: string[]): Promise<void> {
+    await httpClient<any>(`/staff/courses/system/${systemId}/assign`, {
+        method: HttpMethod.POST,
+        body: JSON.stringify({ courseIds }),
+    });
+}
+
 export async function getSessionsByCourse(courseId: string): Promise<Session[]> {
     const res = await httpClient<any>(`/staff/sessions/course/${courseId}`, { method: HttpMethod.GET });
     return res.data || res || [];

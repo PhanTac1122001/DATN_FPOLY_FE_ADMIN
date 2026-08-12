@@ -86,10 +86,7 @@ export function ClassGroupsTab({ classId, initialGroups, availableSubjects = [] 
     };
 
     const subjectFilterItems = useMemo(() => {
-        return [
-            { id: "", label: UI_TEXT.classGroupsTab.allSubjectsFilter },
-            ...allFilterSubjects.map((sub) => ({ id: sub.id, label: sub.name })),
-        ];
+        return [{ id: "", label: UI_TEXT.classGroupsTab.allSubjectsFilter }, ...allFilterSubjects.map((sub) => ({ id: sub.id, label: sub.name }))];
     }, [allFilterSubjects]);
 
     return (
@@ -103,7 +100,7 @@ export function ClassGroupsTab({ classId, initialGroups, availableSubjects = [] 
                             value={search}
                             onChange={(val) => setSearch(val)}
                             placeholder={UI_TEXT.classGroupsTab.searchPlaceholder}
-                            icon={Search as any}
+                            icon={Search}
                             size="sm"
                         />
                     </div>

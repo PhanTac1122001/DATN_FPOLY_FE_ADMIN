@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, KeyRound, LogOut, User as UserIcon } from "lucide-react";
+import { KeyRound, LogOut, User as UserIcon } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -9,7 +9,6 @@ import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAuth } from "@/hooks/use-auth";
 import { useLogout } from "@/hooks/use-logout";
 import { RoleEnum } from "@/types/staff.types";
-import { cx } from "@/utils/cx";
 
 export function UserDropdown() {
     const { user } = useAuth();
@@ -52,8 +51,9 @@ export function UserDropdown() {
     return (
         <div className="relative" ref={dropdownRef}>
             <button
+                type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className="flex items-center gap-2.5 rounded-full border border-line bg-white px-3 py-1 shadow-xs transition duration-150 hover:border-wine/30 hover:bg-slate-50 focus:outline-none"
+                className="flex cursor-pointer items-center gap-2.5 rounded-full border border-line bg-white px-3 py-1 shadow-xs transition duration-150 hover:border-wine/30 hover:bg-slate-50 focus:outline-none"
                 aria-expanded={isOpen}
             >
                 <div className="text-right">
@@ -67,7 +67,6 @@ export function UserDropdown() {
                     alt={user?.fullName}
                     className="bg-gradient-to-br from-wine-bright to-wine font-extrabold text-white"
                 />
-                <ChevronDown className={cx("size-3.5 text-muted transition-transform duration-200", isOpen && "rotate-180")} />
             </button>
 
             {isOpen && (

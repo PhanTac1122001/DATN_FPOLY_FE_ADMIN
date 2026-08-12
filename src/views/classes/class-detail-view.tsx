@@ -227,12 +227,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
         <div className="flex w-full flex-1 flex-col gap-6">
             {/* Breadcrumb Header Bar */}
             <div className="flex flex-col gap-3">
-                <Breadcrumb
-                    items={[
-                        { label: UI_TEXT.classes.title, href: "/classes" },
-                        { label: classInfo?.name ? `${classInfo.name} (${classInfo.classCode})` : "Chi tiết lớp học" },
-                    ]}
-                />
+                <Breadcrumb items={[{ label: UI_TEXT.classes.title, href: "/classes" }, { label: classInfo?.name || "Chi tiết lớp học" }]} />
             </div>
 
             {/* Navigation Tabs Header */}
@@ -304,9 +299,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                     {/* Class Name Header & Actions */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">
-                                {classInfo?.name ? `${classInfo.name} (${classInfo.classCode})` : UI_TEXT.classDetail.title}
-                            </h2>
+                            <h2 className="text-xl font-bold text-slate-900">{classInfo?.name || UI_TEXT.classDetail.title}</h2>
                             <p className="mt-0.5 text-xs font-medium text-slate-500">
                                 {UI_TEXT.classDetail.labelClassType} <strong className="text-slate-700">{getClassTypeLabel(classInfo?.type)}</strong>
                             </p>

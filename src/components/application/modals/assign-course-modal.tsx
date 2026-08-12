@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
+import { Heading } from "react-aria-components";
+import { Button } from "@/components/base/buttons/button";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { ALL_CATEGORY_OPTION } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -61,62 +65,61 @@ export function AssignCourseModal({ isOpen, onOpenChange, systemName, onAssign }
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onOpenChange}>
-            <CustomModal.Content className="w-full max-w-2xl overflow-hidden !rounded-[24px]">
-                <Dialog className="flex flex-col outline-none">
+            <CustomModal.Content className="w-full max-w-2xl !rounded-[24px]">
+                <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-line px-6 py-4">
-                        <div>
-                            <h2 className="text-lg font-extrabold text-ink">{UI_TEXT.trainingSystem.assignCourseModal.title}</h2>
-                            <p className="text-xs text-muted">
-                                {UI_TEXT.trainingSystem.assignCourseModal.labelSystemPrefix}
-                                <strong className="text-wine">{systemName}</strong>
-                            </p>
-                        </div>
+                    <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
+                        <Heading slot="title" className="text-xl font-bold text-slate-900">
+                            {UI_TEXT.trainingSystem.assignCourseModal.title}
+                        </Heading>
+                        <p className="mt-1 text-xs text-slate-500">
+                            {UI_TEXT.trainingSystem.assignCourseModal.labelSystemPrefix} <strong className="font-bold text-purple-700">{systemName}</strong>
+                        </p>
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="cursor-pointer rounded-full p-1.5 text-muted transition hover:bg-slate-100 hover:text-ink"
+                            className="absolute top-5 right-5 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            aria-label="Close"
                         >
                             <X className="size-5" />
                         </button>
                     </div>
 
-                    <div className="flex flex-col gap-4 p-6">
+                    {/* Scrollable Body */}
+                    <div className="custom-scrollbar flex flex-1 flex-col gap-4 overflow-y-auto p-6">
                         {/* Filter Bar */}
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="relative">
-                                <Search className="absolute top-3 left-3.5 size-4 text-muted" />
-                                <input
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder={UI_TEXT.trainingSystem.assignCourseModal.searchPlaceholder}
-                                    className="w-full rounded-xl border border-line py-2 pr-4 pl-10 text-xs font-medium text-ink outline-none focus:border-wine"
-                                />
-                            </div>
+                            <Input
+                                icon={Search}
+                                value={search}
+                                onChange={(val) => setSearch(val)}
+                                placeholder={UI_TEXT.trainingSystem.assignCourseModal.searchPlaceholder}
+                                size="sm"
+                            />
 
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="w-full cursor-pointer rounded-xl border border-line bg-white px-3 py-2 text-xs font-bold text-ink outline-none focus:border-wine"
+                            <Select
+                                aria-label={UI_TEXT.trainingSystem.assignCourseModal.allCategories}
+                                selectedKey={selectedCategory}
+                                onSelectionChange={(key) => setSelectedCategory((key as string) || ALL_CATEGORY_OPTION)}
+                                items={[
+                                    { id: ALL_CATEGORY_OPTION, label: UI_TEXT.trainingSystem.assignCourseModal.allCategories },
+                                    ...categories.map((cat) => ({ id: cat, label: cat })),
+                                ]}
+                                size="sm"
+                                isClearable={false}
                             >
-                                <option value={ALL_CATEGORY_OPTION}>{UI_TEXT.trainingSystem.assignCourseModal.allCategories}</option>
-                                {categories.map((cat) => (
-                                    <option key={cat} value={cat}>
-                                        {cat}
-                                    </option>
-                                ))}
-                            </select>
+                                {(item) => <Select.Item id={item.id} label={item.label} />}
+                            </Select>
                         </div>
 
                         {/* Courses Select Table */}
-                        <div className="max-h-[350px] overflow-y-auto rounded-2xl border border-line bg-slate-50/50">
+                        <div className="max-h-[350px] overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50/50">
                             {isCoursesLoading ? (
-                                <div className="p-8 text-center text-xs text-muted">{UI_TEXT.trainingSystem.assignCourseModal.loading}</div>
+                                <div className="p-8 text-center text-xs text-slate-500">{UI_TEXT.trainingSystem.assignCourseModal.loading}</div>
                             ) : filteredCourses.length === 0 ? (
-                                <div className="p-8 text-center text-xs text-muted">{UI_TEXT.trainingSystem.assignCourseModal.noData}</div>
+                                <div className="p-8 text-center text-xs text-slate-500">{UI_TEXT.trainingSystem.assignCourseModal.noData}</div>
                             ) : (
-                                <div className="divide-y divide-line">
+                                <div className="divide-y divide-slate-100">
                                     {filteredCourses.map((c) => {
                                         const isChecked = selectedCourseIds.includes(c.id);
                                         return (
@@ -124,7 +127,7 @@ export function AssignCourseModal({ isOpen, onOpenChange, systemName, onAssign }
                                                 key={c.id}
                                                 onClick={() => handleToggleSelect(c.id)}
                                                 className={`flex cursor-pointer items-center justify-between p-3.5 transition hover:bg-white ${
-                                                    isChecked ? "bg-wine/5" : ""
+                                                    isChecked ? "bg-purple-50/60" : ""
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -132,12 +135,12 @@ export function AssignCourseModal({ isOpen, onOpenChange, systemName, onAssign }
                                                         type="checkbox"
                                                         checked={isChecked}
                                                         onChange={() => {}}
-                                                        className="size-4 cursor-pointer rounded accent-wine"
+                                                        className="size-4 cursor-pointer rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                                                     />
                                                     <div className="flex flex-col">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-mono text-xs font-bold text-wine">{c.code}</span>
-                                                            <span className="text-xs font-bold text-ink">{c.title}</span>
+                                                            <span className="font-mono text-xs font-bold text-purple-700">{c.code}</span>
+                                                            <span className="text-xs font-bold text-slate-800">{c.title}</span>
                                                         </div>
                                                         <div className="mt-0.5 flex items-center gap-2">
                                                             <span className="rounded bg-slate-200/70 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
@@ -161,28 +164,27 @@ export function AssignCourseModal({ isOpen, onOpenChange, systemName, onAssign }
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between border-t border-line bg-slate-50/50 px-6 py-4">
-                        <span className="text-xs font-semibold text-muted">
-                            {UI_TEXT.trainingSystem.assignCourseModal.selectedPrefix}
-                            <strong className="text-wine">{selectedCourseIds.length}</strong>
+                    <div className="flex items-center justify-between rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
+                        <span className="text-xs font-semibold text-slate-600">
+                            {UI_TEXT.trainingSystem.assignCourseModal.selectedPrefix}{" "}
+                            <strong className="font-bold text-purple-600">{selectedCourseIds.length}</strong>{" "}
                             {UI_TEXT.trainingSystem.assignCourseModal.selectedSuffix}
                         </span>
                         <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => onOpenChange(false)}
-                                className="cursor-pointer rounded-xl border border-line px-4 py-2 text-xs font-bold text-ink transition hover:bg-slate-100"
-                            >
+                            <Button type="button" color="secondary-gray" size="md" onClick={() => onOpenChange(false)} isDisabled={isAssigning}>
                                 {UI_TEXT.trainingSystem.assignCourseModal.btnCancel}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                color="primary"
+                                size="md"
                                 type="button"
-                                disabled={selectedCourseIds.length === 0 || isAssigning}
+                                isDisabled={selectedCourseIds.length === 0}
+                                isLoading={isAssigning}
                                 onClick={handleConfirmAssign}
-                                className="cursor-pointer rounded-xl bg-wine px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-wine/90 disabled:opacity-50"
+                                className="border-none bg-purple-600 font-bold text-white hover:bg-purple-700"
                             >
                                 {isAssigning ? UI_TEXT.trainingSystem.assignCourseModal.btnAssigning : UI_TEXT.trainingSystem.assignCourseModal.btnAssign}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </Dialog>

@@ -402,7 +402,9 @@ export function LessonEditorWrapper({ lessonId, quizzes, activeTab, onRegisterSa
         quizSaveRef,
     ]);
 
-    handleSaveAllRef.current = handleSaveAll;
+    useEffect(() => {
+        handleSaveAllRef.current = handleSaveAll;
+    });
 
     useEffect(() => {
         if (onRegisterSave) {

@@ -59,6 +59,7 @@ export interface CreateQuizModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: (newQuiz: QuizBackendEntity) => void;
+    initialData?: ExamSetMock | QuizBackendEntity | null;
 }
 
 export function mapBackendQuizToExamSet(quiz: QuizBackendEntity): ExamSetMock {
@@ -83,6 +84,9 @@ export function mapBackendQuizToExamSet(quiz: QuizBackendEntity): ExamSetMock {
     return {
         id: quiz.id,
         name: quiz.title,
+        description: quiz.description,
+        passThreshold: quiz.passThreshold,
+        courseId: quiz.courseId,
         questionCount: questions.length,
         createdAt: quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString("vi-VN") : new Date().toLocaleDateString("vi-VN"),
         questions,

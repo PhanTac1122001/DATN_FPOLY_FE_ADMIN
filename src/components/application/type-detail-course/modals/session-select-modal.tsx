@@ -9,20 +9,13 @@ import type { SessionSelectItem, SessionSelectModalProps } from "@/types/complet
 
 export type { SessionSelectItem };
 
-export function SessionSelectModal({
-    isOpen,
-    onOpenChange,
-    sessions,
-    onSelectSession,
-}: SessionSelectModalProps) {
+export function SessionSelectModal({ isOpen, onOpenChange, sessions, onSelectSession }: SessionSelectModalProps) {
     const [searchQuery, setSearchQuery] = useState("");
 
     const filteredSessions = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         if (!query) return sessions;
-        return sessions.filter(
-            (s) => s.name.toLowerCase().includes(query) || (s.type && s.type.toLowerCase().includes(query)),
-        );
+        return sessions.filter((s) => s.name.toLowerCase().includes(query) || (s.type && s.type.toLowerCase().includes(query)));
     }, [sessions, searchQuery]);
 
     const handleSelect = (session: SessionSelectItem) => {
@@ -42,9 +35,7 @@ export function SessionSelectModal({
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900">{UI_TEXT.sessionSelectModal.title}</h3>
-                                <p className="text-xs font-medium text-slate-500">
-                                    {UI_TEXT.sessionSelectModal.subtitle}
-                                </p>
+                                <p className="text-xs font-medium text-slate-500">{UI_TEXT.sessionSelectModal.subtitle}</p>
                             </div>
                         </div>
                         <button
@@ -65,7 +56,7 @@ export function SessionSelectModal({
                                 onChange={(val) => setSearchQuery(val)}
                                 className="pl-10"
                             />
-                            <Search className="absolute top-3 left-3.5 size-4 text-slate-400 pointer-events-none" />
+                            <Search className="pointer-events-none absolute top-3 left-3.5 size-4 text-slate-400" />
                         </div>
 
                         {/* Sessions Table */}
@@ -76,13 +67,13 @@ export function SessionSelectModal({
                                     <p className="mt-2 text-xs font-medium">{UI_TEXT.sessionSelectModal.empty}</p>
                                 </div>
                             ) : (
-                                <table className="w-full text-left border-collapse text-sm">
+                                <table className="w-full border-collapse text-left text-sm">
                                     <thead>
-                                        <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold uppercase tracking-wider text-slate-600">
-                                            <th className="py-3.5 px-4.5 w-16 text-center">{UI_TEXT.sessionSelectModal.thStt}</th>
-                                            <th className="py-3.5 px-4.5">{UI_TEXT.sessionSelectModal.thSessionName}</th>
-                                            <th className="py-3.5 px-4.5 w-40">{UI_TEXT.sessionSelectModal.thType}</th>
-                                            <th className="py-3.5 px-4.5 w-40 text-right">{UI_TEXT.sessionSelectModal.thActions}</th>
+                                        <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold tracking-wider text-slate-600 uppercase">
+                                            <th className="w-16 px-4.5 py-3.5 text-center">{UI_TEXT.sessionSelectModal.thStt}</th>
+                                            <th className="px-4.5 py-3.5">{UI_TEXT.sessionSelectModal.thSessionName}</th>
+                                            <th className="w-40 px-4.5 py-3.5">{UI_TEXT.sessionSelectModal.thType}</th>
+                                            <th className="w-40 px-4.5 py-3.5 text-right">{UI_TEXT.sessionSelectModal.thActions}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -92,22 +83,20 @@ export function SessionSelectModal({
                                                 onClick={() => handleSelect(session)}
                                                 className="group cursor-pointer transition hover:bg-wine/5"
                                             >
-                                                <td className="py-3.5 px-4.5 text-center font-extrabold text-slate-400 text-sm">
-                                                    {index + 1}
-                                                </td>
-                                                <td className="py-3.5 px-4.5 font-bold text-slate-800 text-sm group-hover:text-wine transition">
+                                                <td className="px-4.5 py-3.5 text-center text-sm font-extrabold text-slate-400">{index + 1}</td>
+                                                <td className="px-4.5 py-3.5 text-sm font-bold text-slate-800 transition group-hover:text-wine">
                                                     {session.name}
                                                 </td>
-                                                <td className="py-3.5 px-4.5 font-medium text-slate-500">
+                                                <td className="px-4.5 py-3.5 font-medium text-slate-500">
                                                     {session.type ? (
                                                         <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
                                                             {session.type}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-slate-400">—</span>
+                                                        <span className="text-slate-400">{"—"}</span>
                                                     )}
                                                 </td>
-                                                <td className="py-3.5 px-4.5 text-right">
+                                                <td className="px-4.5 py-3.5 text-right">
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {

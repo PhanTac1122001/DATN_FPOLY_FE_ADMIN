@@ -6,12 +6,9 @@ import { AlertCircle, Award, Info, RotateCcw, Save, Trash2, X } from "lucide-rea
 import { Heading } from "react-aria-components";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { ROUND_FACTOR } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import {
-    deleteCourseRpointFormula,
-    getCourseRpointFormula,
-    setCourseRpointFormula,
-} from "@/services/auto-rpoint.service";
+import { deleteCourseRpointFormula, getCourseRpointFormula, setCourseRpointFormula } from "@/services/auto-rpoint.service";
 import { toast } from "@/services/toast.service";
 import type { CourseRpointConfigModalProps, CourseRpointTabType, RpointFormula, RpointTier } from "@/types/rpoint.types";
 import { cloneRpointFormula } from "@/utils/rpoint-formula.utils";
@@ -158,7 +155,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
         setIsDefault(false);
     };
 
-    const addTierRow = (key: "preparation" | "compliance") => {
+    const _addTierRow = (key: "preparation" | "compliance") => {
         if (!formula) return;
         const currentGroup = formula[key];
         const maxMinCount = currentGroup.tiers.reduce((max, item) => Math.max(max, item.minCount), 0);
@@ -199,7 +196,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
             <CustomModal.Content className="w-full max-w-3xl overflow-hidden !rounded-[24px] bg-white shadow-2xl">
                 <Dialog className="flex flex-col outline-none">
                     {/* Header */}
-                    <div className="relative flex flex-col  px-6 pt-6 ">
+                    <div className="relative flex flex-col px-6 pt-6">
                         <div className="flex items-center gap-3">
                             <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-100 bg-amber-50 font-bold text-amber-600">
                                 <Award className="size-5" />
@@ -273,7 +270,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                             <>
                                 {/* Validation Error Banner */}
                                 {validationErrors.length > 0 && (
-                                    <div className="flex flex-col gap-1 p-4 rounded-2xl border border-rose-200 bg-rose-50/70 text-xs text-rose-700">
+                                    <div className="flex flex-col gap-1 rounded-2xl border border-rose-200 bg-rose-50/70 p-4 text-xs text-rose-700">
                                         <div className="flex items-center gap-2 font-bold text-rose-800">
                                             <AlertCircle className="size-4 shrink-0" />
                                             <span>
@@ -294,10 +291,8 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                 {activeTab === "linear" && (
                                     <div className="flex flex-col gap-8">
                                         {/* Attendance */}
-                                        <div className="flex flex-col gap-3 rounded-2xl ">
-                                            <h3 className="text-xs font-bold text-slate-800">
-                                                {t.attendanceSection}
-                                            </h3>
+                                        <div className="flex flex-col gap-3 rounded-2xl">
+                                            <h3 className="text-xs font-bold text-slate-800">{t.attendanceSection}</h3>
                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <Input
                                                     label={t.attendanceMaxLabel}
@@ -316,12 +311,15 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                 />
                                             </div>
                                             {formula.attendance.deductionPerPercent > 0 && (
-                                                <div className="flex items-center gap-1.5 text-[11px] text-amber-700 font-semibold bg-amber-50  rounded-lg p-2">
+                                                <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 p-2 text-[11px] font-semibold text-amber-700">
                                                     <Info className="size-3.5 shrink-0" />
                                                     <span>
                                                         {t.attendanceThresholdHint.replace(
                                                             "{percent}",
-                                                            String(Math.round((formula.attendance.max / formula.attendance.deductionPerPercent) * 10) / 10),
+                                                            String(
+                                                                Math.round((formula.attendance.max / formula.attendance.deductionPerPercent) * ROUND_FACTOR) /
+                                                                    ROUND_FACTOR,
+                                                            ),
                                                         )}
                                                     </span>
                                                 </div>
@@ -329,10 +327,8 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                         </div>
 
                                         {/* Assignment */}
-                                        <div className="flex flex-col gap-3 rounded-2xl ">
-                                            <h3 className="text-xs font-bold text-slate-800">
-                                                {t.assignmentSection}
-                                            </h3>
+                                        <div className="flex flex-col gap-3 rounded-2xl">
+                                            <h3 className="text-xs font-bold text-slate-800">{t.assignmentSection}</h3>
                                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                                 <Input
                                                     label={t.assignmentMaxLabel}
@@ -351,12 +347,15 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                 />
                                             </div>
                                             {formula.assignment.deductionPerPercent > 0 && (
-                                                <div className="flex items-center gap-1.5 text-[11px] text-amber-700 font-semibold bg-amber-50  rounded-lg p-2">
+                                                <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 p-2 text-[11px] font-semibold text-amber-700">
                                                     <Info className="size-3.5 shrink-0" />
                                                     <span>
                                                         {t.assignmentThresholdHint.replace(
                                                             "{percent}",
-                                                            String(Math.round((formula.assignment.max / formula.assignment.deductionPerPercent) * 10) / 10),
+                                                            String(
+                                                                Math.round((formula.assignment.max / formula.assignment.deductionPerPercent) * ROUND_FACTOR) /
+                                                                    ROUND_FACTOR,
+                                                            ),
                                                         )}
                                                     </span>
                                                 </div>
@@ -366,19 +365,18 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                         {/* Preparation Tiers */}
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center justify-between gap-4">
-                                                <h3 className="text-xs font-bold text-slate-800">
-                                                    {t.preparationSection}
-                                                </h3>
+                                                <h3 className="text-xs font-bold text-slate-800">{t.preparationSection}</h3>
                                                 <div className="flex items-center gap-2">
-                                                    <label className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                                                        {t.preparationMaxLabel}:
+                                                    <label className="text-xs font-bold whitespace-nowrap text-slate-600">
+                                                        {t.preparationMaxLabel}
+                                                        {":"}
                                                     </label>
                                                     <input
                                                         type="number"
                                                         min={0}
                                                         value={formula.preparation.max}
                                                         onChange={(e) => updateTierMax("preparation", Number(e.target.value))}
-                                                        className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                        className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                     />
                                                 </div>
                                             </div>
@@ -405,8 +403,10 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                                             type="number"
                                                                             min={0}
                                                                             value={tier.minCount}
-                                                                            onChange={(e) => updateTierRow("preparation", idx, "minCount", Number(e.target.value))}
-                                                                            className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                                            onChange={(e) =>
+                                                                                updateTierRow("preparation", idx, "minCount", Number(e.target.value))
+                                                                            }
+                                                                            className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                                         />
                                                                     </td>
                                                                     <td className="w-48 px-4 py-2.5 align-middle">
@@ -415,14 +415,16 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                                             min={0}
                                                                             max={formula.preparation.max}
                                                                             value={deduction}
-                                                                            onChange={(e) => updateTierRow("preparation", idx, "deduction", Number(e.target.value))}
-                                                                            className="w-24 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-rose-600 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                                            onChange={(e) =>
+                                                                                updateTierRow("preparation", idx, "deduction", Number(e.target.value))
+                                                                            }
+                                                                            className="w-24 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-rose-600 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                                         />
                                                                     </td>
                                                                     <td className="px-4 py-2.5 align-middle font-bold text-slate-700">
-                                                                        {tier.score} / {formula.preparation.max}
+                                                                        {tier.score} {"/"} {formula.preparation.max}
                                                                     </td>
-                                                                    <td className="w-28 px-4 py-2.5 align-middle text-center">
+                                                                    <td className="w-28 px-4 py-2.5 text-center align-middle">
                                                                         <button
                                                                             type="button"
                                                                             disabled={isMandatoryZero}
@@ -439,7 +441,6 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                     </tbody>
                                                 </table>
                                             </div>
-
                                         </div>
                                     </div>
                                 )}
@@ -450,19 +451,18 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                         {/* Compliance Tiers */}
                                         <div className="flex flex-col gap-3">
                                             <div className="flex items-center justify-between gap-4">
-                                                <h3 className="text-xs font-bold text-slate-800">
-                                                    {t.complianceSection}
-                                                </h3>
+                                                <h3 className="text-xs font-bold text-slate-800">{t.complianceSection}</h3>
                                                 <div className="flex items-center gap-2">
-                                                    <label className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                                                        {t.complianceMaxLabel}:
+                                                    <label className="text-xs font-bold whitespace-nowrap text-slate-600">
+                                                        {t.complianceMaxLabel}
+                                                        {":"}
                                                     </label>
                                                     <input
                                                         type="number"
                                                         min={0}
                                                         value={formula.compliance.max}
                                                         onChange={(e) => updateTierMax("compliance", Number(e.target.value))}
-                                                        className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                        className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                     />
                                                 </div>
                                             </div>
@@ -489,8 +489,10 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                                             type="number"
                                                                             min={0}
                                                                             value={tier.minCount}
-                                                                            onChange={(e) => updateTierRow("compliance", idx, "minCount", Number(e.target.value))}
-                                                                            className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                                            onChange={(e) =>
+                                                                                updateTierRow("compliance", idx, "minCount", Number(e.target.value))
+                                                                            }
+                                                                            className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                                         />
                                                                     </td>
                                                                     <td className="w-48 px-4 py-2.5 align-middle">
@@ -499,14 +501,16 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                                             min={0}
                                                                             max={formula.compliance.max}
                                                                             value={deduction}
-                                                                            onChange={(e) => updateTierRow("compliance", idx, "deduction", Number(e.target.value))}
-                                                                            className="w-24 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-rose-600 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                                            onChange={(e) =>
+                                                                                updateTierRow("compliance", idx, "deduction", Number(e.target.value))
+                                                                            }
+                                                                            className="w-24 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-rose-600 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                                         />
                                                                     </td>
                                                                     <td className="px-4 py-2.5 align-middle font-bold text-slate-700">
-                                                                        {tier.score} / {formula.compliance.max}
+                                                                        {tier.score} {"/"} {formula.compliance.max}
                                                                     </td>
-                                                                    <td className="w-28 px-4 py-2.5 align-middle text-center">
+                                                                    <td className="w-28 px-4 py-2.5 text-center align-middle">
                                                                         <button
                                                                             type="button"
                                                                             disabled={isMandatoryZero}
@@ -523,7 +527,6 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                                     </tbody>
                                                 </table>
                                             </div>
-
                                         </div>
                                     </div>
                                 )}
@@ -532,19 +535,18 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                 {activeTab === "bonus" && (
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center justify-between gap-4">
-                                            <h3 className="text-xs font-bold text-slate-800">
-                                                {t.bonusSection}
-                                            </h3>
+                                            <h3 className="text-xs font-bold text-slate-800">{t.bonusSection}</h3>
                                             <div className="flex items-center gap-2">
-                                                <label className="text-xs font-bold text-slate-600 whitespace-nowrap">
-                                                    {t.bonusCapLabel}:
+                                                <label className="text-xs font-bold whitespace-nowrap text-slate-600">
+                                                    {t.bonusCapLabel}
+                                                    {":"}
                                                 </label>
                                                 <input
                                                     type="number"
                                                     min={0}
                                                     value={formula.bonus.cap}
                                                     onChange={(e) => updateBonusCap(Number(e.target.value))}
-                                                    className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 outline-none transition focus:border-wine focus:ring-1 focus:ring-wine"
+                                                    className="w-20 rounded-full border border-slate-200 px-3 py-1.5 text-center font-bold text-slate-800 transition outline-none focus:border-wine focus:ring-1 focus:ring-wine"
                                                 />
                                             </div>
                                         </div>

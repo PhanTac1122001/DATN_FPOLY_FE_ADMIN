@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CheckSquare, Loader2, ShieldAlert, ShieldCheck, X } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { BlockTypeEnum, CompletionModeEnum } from "@/constants/application.constants";
+import { FULL_PERCENT } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { completionRuleService } from "@/services/completion-rule.service";
 import { coursewareService } from "@/services/courseware.service";
@@ -14,13 +15,7 @@ import type { CoursewareBlockEntity, LessonCompletionRuleModalProps } from "@/ty
 import { isDefaultLessonRule } from "@/utils/completion-rule.utils";
 import { extractErrorMessages } from "@/utils/http-error-message.utils";
 
-export function LessonCompletionRuleModal({
-    isOpen,
-    onOpenChange,
-    lessonId,
-    lessonTitle,
-    lessonName: propsLessonName,
-}: LessonCompletionRuleModalProps) {
+export function LessonCompletionRuleModal({ isOpen, onOpenChange, lessonId, lessonTitle, lessonName: propsLessonName }: LessonCompletionRuleModalProps) {
     const lessonName = lessonTitle || propsLessonName || "";
     const queryClient = useQueryClient();
     const [blocks, setBlocks] = useState<CoursewareBlockEntity[]>([]);
@@ -155,7 +150,7 @@ export function LessonCompletionRuleModal({
                         isRequired,
                         completionCriteria: criteria,
                     });
-                })
+                }),
             );
 
             // 2. Save sequentialBlocks setting on lesson
@@ -191,17 +186,16 @@ export function LessonCompletionRuleModal({
                     </button>
 
                     {/* Header */}
-                    <div className="pr-8 flex flex-col gap-1 border-b border-slate-100 pb-4">
+                    <div className="flex flex-col gap-1 border-b border-slate-100 pr-8 pb-4">
                         <div className="flex items-center gap-2.5">
                             <div className="flex size-9 items-center justify-center rounded-xl bg-wine/10 text-wine">
                                 <ShieldCheck className="size-5" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900">
-                                {UI_TEXT.lessonCompletionRuleModal.modalTitle}
-                            </h3>
+                            <h3 className="text-lg font-bold text-slate-900">{UI_TEXT.lessonCompletionRuleModal.modalTitle}</h3>
                         </div>
                         <p className="text-xs font-semibold text-slate-600">
-                            {UI_TEXT.lessonCompletionRuleModal.modalSubtitlePrefix}<strong className="text-wine font-extrabold">{lessonName}</strong>
+                            {UI_TEXT.lessonCompletionRuleModal.modalSubtitlePrefix}
+                            <strong className="font-extrabold text-wine">{lessonName}</strong>
                         </p>
                     </div>
 
@@ -221,7 +215,7 @@ export function LessonCompletionRuleModal({
                                             <ShieldAlert className="size-5 shrink-0 text-amber-600" />
                                             <span>{UI_TEXT.lessonCompletionRuleModal.customRuleTitle}</span>
                                         </div>
-                                        <p className="text-xs font-medium leading-relaxed text-amber-800">
+                                        <p className="text-xs leading-relaxed font-medium text-amber-800">
                                             {UI_TEXT.lessonCompletionRuleModal.customRuleNotice}
                                         </p>
                                         <div className="pt-1">
@@ -240,12 +234,12 @@ export function LessonCompletionRuleModal({
 
                                 {/* Section 1: Block Level Criteria & isRequired */}
                                 <div className="space-y-4">
-                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-indigo-700">
+                                    <h4 className="text-xs font-extrabold tracking-wider text-indigo-700 uppercase">
                                         {UI_TEXT.lessonCompletionRuleModal.level1Header}
                                     </h4>
 
                                     {blocks.length === 0 ? (
-                                        <p className="py-6 text-center text-xs italic font-semibold text-slate-500">
+                                        <p className="py-6 text-center text-xs font-semibold text-slate-500 italic">
                                             {UI_TEXT.lessonCompletionRuleModal.empty}
                                         </p>
                                     ) : (
@@ -256,18 +250,20 @@ export function LessonCompletionRuleModal({
                                                 const bType = (block.type || "").toUpperCase();
 
                                                 return (
-                                                    <div key={block.id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 space-y-3 shadow-2xs">
+                                                    <div key={block.id} className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 shadow-2xs">
                                                         {/* Block Title & isRequired switch */}
                                                         <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
-                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                <span className="text-sm font-extrabold text-slate-800 truncate">{block.title || block.id}</span>
+                                                            <div className="flex min-w-0 items-center gap-2">
+                                                                <span className="truncate text-sm font-extrabold text-slate-800">
+                                                                    {block.title || block.id}
+                                                                </span>
                                                             </div>
-                                                            <label className="flex items-center cursor-pointer shrink-0 select-none">
+                                                            <label className="flex shrink-0 cursor-pointer items-center select-none">
                                                                 <input
                                                                     type="checkbox"
                                                                     checked={isReq}
                                                                     onChange={() => toggleBlockIsRequired(block.id)}
-                                                                    className="size-4.5 accent-wine rounded cursor-pointer"
+                                                                    className="size-4.5 cursor-pointer rounded accent-wine"
                                                                 />
                                                             </label>
                                                         </div>
@@ -276,14 +272,18 @@ export function LessonCompletionRuleModal({
                                                         {bType === BlockTypeEnum.VIDEO && (
                                                             <div className="grid grid-cols-2 gap-4 pt-1">
                                                                 <div>
-                                                                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.lessonCompletionRuleModal.minWatchPercentLabel}</label>
+                                                                    <label className="text-xs font-bold text-slate-700">
+                                                                        {UI_TEXT.lessonCompletionRuleModal.minWatchPercentLabel}
+                                                                    </label>
                                                                     <input
                                                                         type="number"
                                                                         min={0}
                                                                         max={100}
                                                                         value={typeof criteria.minWatchPercent === "number" ? criteria.minWatchPercent : 0}
-                                                                        onChange={(e) => updateBlockCriteria(block.id, "minWatchPercent", Number(e.target.value))}
-                                                                        className="mt-1.5 w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 transition focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10 shadow-2xs"
+                                                                        onChange={(e) =>
+                                                                            updateBlockCriteria(block.id, "minWatchPercent", Number(e.target.value))
+                                                                        }
+                                                                        className="mt-1.5 w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 shadow-2xs transition focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                                     />
                                                                 </div>
                                                                 <div className="flex items-center gap-2 pt-6">
@@ -291,10 +291,15 @@ export function LessonCompletionRuleModal({
                                                                         type="checkbox"
                                                                         id={`req-qs-${block.id}`}
                                                                         checked={criteria.requireAllQuestionsCorrect !== false}
-                                                                        onChange={(e) => updateBlockCriteria(block.id, "requireAllQuestionsCorrect", e.target.checked)}
-                                                                        className="size-4 accent-wine rounded cursor-pointer"
+                                                                        onChange={(e) =>
+                                                                            updateBlockCriteria(block.id, "requireAllQuestionsCorrect", e.target.checked)
+                                                                        }
+                                                                        className="size-4 cursor-pointer rounded accent-wine"
                                                                     />
-                                                                    <label htmlFor={`req-qs-${block.id}`} className="text-xs font-bold text-slate-700 cursor-pointer select-none">
+                                                                    <label
+                                                                        htmlFor={`req-qs-${block.id}`}
+                                                                        className="cursor-pointer text-xs font-bold text-slate-700 select-none"
+                                                                    >
                                                                         {UI_TEXT.lessonCompletionRuleModal.requireAllQuestionsCorrectLabel}
                                                                     </label>
                                                                 </div>
@@ -308,10 +313,15 @@ export function LessonCompletionRuleModal({
                                                                         type="checkbox"
                                                                         id={`req-rd-${block.id}`}
                                                                         checked={criteria.requireAllQuestionsAnswered !== false}
-                                                                        onChange={(e) => updateBlockCriteria(block.id, "requireAllQuestionsAnswered", e.target.checked)}
-                                                                        className="size-4 accent-wine rounded cursor-pointer"
+                                                                        onChange={(e) =>
+                                                                            updateBlockCriteria(block.id, "requireAllQuestionsAnswered", e.target.checked)
+                                                                        }
+                                                                        className="size-4 cursor-pointer rounded accent-wine"
                                                                     />
-                                                                    <label htmlFor={`req-rd-${block.id}`} className="text-xs font-bold text-slate-700 cursor-pointer select-none">
+                                                                    <label
+                                                                        htmlFor={`req-rd-${block.id}`}
+                                                                        className="cursor-pointer text-xs font-bold text-slate-700 select-none"
+                                                                    >
                                                                         {UI_TEXT.lessonCompletionRuleModal.requireAllQuestionsAnsweredLabel}
                                                                     </label>
                                                                 </div>
@@ -321,9 +331,12 @@ export function LessonCompletionRuleModal({
                                                                         id={`ai-rv-${block.id}`}
                                                                         disabled
                                                                         checked={false}
-                                                                        className="size-4 rounded cursor-not-allowed"
+                                                                        className="size-4 cursor-not-allowed rounded"
                                                                     />
-                                                                    <label htmlFor={`ai-rv-${block.id}`} className="text-xs font-bold text-slate-500 cursor-not-allowed select-none">
+                                                                    <label
+                                                                        htmlFor={`ai-rv-${block.id}`}
+                                                                        className="cursor-not-allowed text-xs font-bold text-slate-500 select-none"
+                                                                    >
                                                                         {UI_TEXT.lessonCompletionRuleModal.aiGradeLabel}
                                                                     </label>
                                                                     <span className="rounded bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
@@ -336,24 +349,40 @@ export function LessonCompletionRuleModal({
                                                         {bType === BlockTypeEnum.QUIZ && (
                                                             <div className="grid grid-cols-2 gap-4 pt-1">
                                                                 <div>
-                                                                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.lessonCompletionRuleModal.minScorePercentLabel}</label>
+                                                                    <label className="text-xs font-bold text-slate-700">
+                                                                        {UI_TEXT.lessonCompletionRuleModal.minScorePercentLabel}
+                                                                    </label>
                                                                     <input
                                                                         type="number"
                                                                         min={0}
-                                                                        max={100}
-                                                                        value={typeof criteria.minScorePercent === "number" ? criteria.minScorePercent : 100}
-                                                                        onChange={(e) => updateBlockCriteria(block.id, "minScorePercent", Number(e.target.value))}
-                                                                        className="mt-1.5 w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 transition focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10 shadow-2xs"
+                                                                        max={FULL_PERCENT}
+                                                                        value={
+                                                                            typeof criteria.minScorePercent === "number"
+                                                                                ? criteria.minScorePercent
+                                                                                : FULL_PERCENT
+                                                                        }
+                                                                        onChange={(e) =>
+                                                                            updateBlockCriteria(block.id, "minScorePercent", Number(e.target.value))
+                                                                        }
+                                                                        className="mt-1.5 w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 shadow-2xs transition focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                                     />
                                                                 </div>
                                                                 <div>
-                                                                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.lessonCompletionRuleModal.maxAttemptsLabel}</label>
+                                                                    <label className="text-xs font-bold text-slate-700">
+                                                                        {UI_TEXT.lessonCompletionRuleModal.maxAttemptsLabel}
+                                                                    </label>
                                                                     <input
                                                                         type="number"
                                                                         min={1}
                                                                         value={criteria.maxAttempts != null ? Number(criteria.maxAttempts) : ""}
-                                                                        onChange={(e) => updateBlockCriteria(block.id, "maxAttempts", e.target.value ? Number(e.target.value) : null)}
-                                                                        className="mt-1.5 w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 transition focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10 shadow-2xs"
+                                                                        onChange={(e) =>
+                                                                            updateBlockCriteria(
+                                                                                block.id,
+                                                                                "maxAttempts",
+                                                                                e.target.value ? Number(e.target.value) : null,
+                                                                            )
+                                                                        }
+                                                                        className="mt-1.5 w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-extrabold text-slate-800 shadow-2xs transition focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                                         placeholder={UI_TEXT.lessonCompletionRuleModal.unlimitedPlaceholder}
                                                                     />
                                                                 </div>
@@ -367,24 +396,40 @@ export function LessonCompletionRuleModal({
                                                                     id={`req-sub-${block.id}`}
                                                                     checked={criteria.requireSubmission !== false}
                                                                     onChange={(e) => updateBlockCriteria(block.id, "requireSubmission", e.target.checked)}
-                                                                    className="size-4 accent-wine rounded cursor-pointer"
+                                                                    className="size-4 cursor-pointer rounded accent-wine"
                                                                 />
-                                                                <label htmlFor={`req-sub-${block.id}`} className="text-xs font-bold text-slate-700 cursor-pointer select-none">
+                                                                <label
+                                                                    htmlFor={`req-sub-${block.id}`}
+                                                                    className="cursor-pointer text-xs font-bold text-slate-700 select-none"
+                                                                >
                                                                     {UI_TEXT.lessonCompletionRuleModal.requireSubmissionLabel}
                                                                 </label>
                                                             </div>
                                                         )}
 
-                                                        {[BlockTypeEnum.FILE, BlockTypeEnum.LINK, BlockTypeEnum.EMBED, BlockTypeEnum.MINDMAP].includes(bType as BlockTypeEnum) && (
+                                                        {[BlockTypeEnum.FILE, BlockTypeEnum.LINK, BlockTypeEnum.EMBED, BlockTypeEnum.MINDMAP].includes(
+                                                            bType as BlockTypeEnum,
+                                                        ) && (
                                                             <div className="flex items-center gap-3 pt-1">
-                                                                <label className="text-xs font-bold text-slate-700">{UI_TEXT.lessonCompletionRuleModal.completionModeLabel}</label>
+                                                                <label className="text-xs font-bold text-slate-700">
+                                                                    {UI_TEXT.lessonCompletionRuleModal.completionModeLabel}
+                                                                </label>
                                                                 <select
-                                                                    value={(criteria.mode as string) || (bType === BlockTypeEnum.EMBED ? CompletionModeEnum.ACKNOWLEDGE : CompletionModeEnum.AUTO_ON_OPEN)}
+                                                                    value={
+                                                                        (criteria.mode as string) ||
+                                                                        (bType === BlockTypeEnum.EMBED
+                                                                            ? CompletionModeEnum.ACKNOWLEDGE
+                                                                            : CompletionModeEnum.AUTO_ON_OPEN)
+                                                                    }
                                                                     onChange={(e) => updateBlockCriteria(block.id, "mode", e.target.value)}
-                                                                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 transition focus:border-wine focus:outline-none focus:ring-2 focus:ring-wine/10 shadow-2xs"
+                                                                    className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-extrabold text-slate-800 shadow-2xs transition focus:border-wine focus:ring-2 focus:ring-wine/10 focus:outline-none"
                                                                 >
-                                                                    <option value={CompletionModeEnum.AUTO_ON_OPEN}>{UI_TEXT.lessonCompletionRuleModal.autoOnOpenOption}</option>
-                                                                    <option value={CompletionModeEnum.ACKNOWLEDGE}>{UI_TEXT.lessonCompletionRuleModal.acknowledgeOption}</option>
+                                                                    <option value={CompletionModeEnum.AUTO_ON_OPEN}>
+                                                                        {UI_TEXT.lessonCompletionRuleModal.autoOnOpenOption}
+                                                                    </option>
+                                                                    <option value={CompletionModeEnum.ACKNOWLEDGE}>
+                                                                        {UI_TEXT.lessonCompletionRuleModal.acknowledgeOption}
+                                                                    </option>
                                                                 </select>
                                                             </div>
                                                         )}
@@ -399,7 +444,7 @@ export function LessonCompletionRuleModal({
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-2 flex w-full shrink-0 items-center gap-3 border-t border-slate-100 pt-4 bg-white">
+                    <div className="mt-2 flex w-full shrink-0 items-center gap-3 border-t border-slate-100 bg-white pt-4">
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}

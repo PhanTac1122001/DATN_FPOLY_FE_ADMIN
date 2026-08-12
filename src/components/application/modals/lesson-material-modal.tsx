@@ -23,9 +23,25 @@ const minSpaceAboveForQuizDropdown = 250;
 const modalBottomOffset = 6;
 const quizDropdownTopOffset = 42;
 
-export function LessonMaterialModal({ isOpen, onClose, lesson }: { isOpen: boolean; onClose: () => void; lesson: Lesson }) {
-    const [activeTab, setActiveTab] = useState<"video" | "reading" | "quiz" | "preview">("video");
+export function LessonMaterialModal({
+    isOpen,
+    onClose,
+    lesson,
+    initialTab = "video",
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    lesson: Lesson;
+    initialTab?: "video" | "reading" | "quiz" | "preview";
+}) {
+    const [activeTab, setActiveTab] = useState<"video" | "reading" | "quiz" | "preview">(initialTab);
     const [localLesson, setLocalLesson] = useState<Lesson>(lesson);
+
+    useEffect(() => {
+        if (isOpen) {
+            setActiveTab(initialTab);
+        }
+    }, [isOpen, initialTab]);
 
     const { data: updatedLesson } = useQuery({
         queryKey: ["lesson-details", lesson.id],
@@ -105,7 +121,12 @@ export function LessonMaterialModal({ isOpen, onClose, lesson }: { isOpen: boole
                         {activeTab === "video" && <VideoConfigTab lesson={localLesson} onSave={setLocalLesson} />}
                         {activeTab === "reading" && <ReadingConfigTab lesson={localLesson} onSave={setLocalLesson} />}
                         {activeTab === "quiz" && <QuizConfigTab lesson={localLesson} quizzes={quizzes} onSave={setLocalLesson} />}
-                        {activeTab === "preview" && <PreviewPlayer lesson={localLesson} />}
+                        {activeTab === "preview" && (
+                            <PreviewPlayer
+                                lesson={localLesson}
+                                initialSubTab={initialTab === "video" || initialTab === "reading" || initialTab === "quiz" ? initialTab : undefined}
+                            />
+                        )}
                     </div>
                 </Dialog>
             </CustomModal.Content>

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
+import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useAuth } from "@/hooks/use-auth";
 import { QuizziSetListView } from "./quizzi-set-list-view";
@@ -31,7 +32,7 @@ export function QuizziSetClientView() {
     }
 
     return (
-        <AdminLayout title="Quản lý bộ đề Quizzi" subtitle="Tạo mới, chỉnh sửa và quản lý các bộ đề quiz theo Session học bài">
+        <AdminLayout title={UI_TEXT.quizziSetsPage.title} subtitle={UI_TEXT.quizziSetsPage.subtitle}>
             <QuizziSetListView />
         </AdminLayout>
     );

@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Award, Calendar, CheckCircle2, ChevronRight, Circle, Edit, FileText, Folder, HelpCircle, Info, Plus, Trash2 } from "lucide-react";
+import { Award, Calendar, Check, CheckCircle2, ChevronRight, FileText, Folder, HelpCircle, Pencil, Plus, Target, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { EssayQuestionModal } from "@/components/application/modals/essay-question-modal";
 import { QuestionModal } from "@/components/application/modals/question-modal";
-import { Button } from "@/components/base/buttons/button";
 import { EXAM_SETS_MOCK } from "@/constants/exam-set-mock.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { getQuizById, updateQuiz } from "@/services/quiz.service";
@@ -177,7 +176,7 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                     {UI_TEXT.examsSetsEl.breadcrumbTitle}
                 </Link>
                 <ChevronRight className="size-4 text-slate-400" />
-                <span className="font-medium text-slate-400">{UI_TEXT.examsSetsEl.breadcrumbDetail}</span>
+                <span className="font-medium text-slate-400">{selectedSet.name}</span>
             </nav>
 
             {/* Header info cards */}
@@ -196,14 +195,18 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                         </div>
                     </div>
 
-                    {/* Mã bộ đề */}
+                    {/* Tỷ lệ pass */}
                     <div className="flex items-center gap-3 pt-4 sm:pt-0 lg:pl-6">
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                            <Info className="size-5 text-blue-500" />
+                            <Target className="size-5 text-blue-500" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{UI_TEXT.examsSetsEl.labelCode}</span>
-                            <span className="mt-1 text-[13px] font-extrabold text-slate-800">{selectedSet.id}</span>
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{UI_TEXT.examsSetsEl.passThresholdLabel}</span>
+                            <span className="mt-1 text-[13px] font-extrabold text-slate-800">
+                                {/* eslint-disable-next-line @typescript-eslint/no-magic-numbers */}
+                                {rawQuiz?.passThreshold ?? selectedSet.passThreshold ?? 70}
+                                {"%"}
+                            </span>
                         </div>
                     </div>
 
@@ -279,15 +282,14 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                         {/* Section Header */}
                         <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                             <h3 className="text-[14.5px] font-bold text-slate-800">{UI_TEXT.examsSetsEl.questionsHeader}</h3>
-                            <Button
-                                color="primary"
-                                size="md"
+                            <button
+                                type="button"
                                 onClick={handleCreateQuestion}
-                                className="gap-2 border-none bg-wine px-5 font-bold text-white shadow-md shadow-wine/20 hover:bg-wine-deep"
-                                iconLeading={<Plus className="size-4 shrink-0" />}
+                                className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
                             >
-                                {UI_TEXT.examsSetsEl.btnCreateQuestion}
-                            </Button>
+                                <Plus className="size-4.5" />
+                                <span>{UI_TEXT.examsSetsEl.btnCreateQuestion}</span>
+                            </button>
                         </div>
 
                         {/* Questions list */}
@@ -299,68 +301,98 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                                 </div>
                             ) : (
                                 questions.map((q, index) => (
-                                    <div key={q.id} className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-5 shadow-xs">
+                                    <div key={q.id} className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
                                         {/* Question header row */}
-                                        <div className="flex items-start justify-between gap-4">
-                                            <h4 className="text-[14.5px] leading-snug font-bold text-slate-900">
-                                                {index + 1}
-                                                {UI_TEXT.examsSetsEl.dotSeparator}
-                                                {q.text}
-                                            </h4>
-                                            <div className="flex shrink-0 items-center gap-2">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex flex-1 items-center gap-3">
+                                                <span className="inline-flex shrink-0 items-center justify-center rounded-full bg-slate-900 px-3.5 py-1 text-xs font-extrabold text-white shadow-xs">
+                                                    {UI_TEXT.examsSetsEl.questionPrefix}
+                                                    {index + 1}
+                                                </span>
+                                                <h4 className="text-[14.5px] leading-snug font-bold text-slate-900">{q.text}</h4>
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditQuestion(q)}
-                                                    className="inline-flex items-center justify-center rounded-lg border border-sky-100 bg-white p-2 text-sky-500 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50 hover:text-sky-600"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
                                                     title={UI_TEXT.examsSetsEl.editSet}
                                                 >
-                                                    <Edit className="size-3.5" />
+                                                    <Pencil className="size-4" />
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeleteQuestion(q.id)}
-                                                    className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-white p-2 text-rose-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
                                                     title={UI_TEXT.examsSetsEl.deleteSet}
                                                 >
-                                                    <Trash2 className="size-3.5" />
+                                                    <Trash2 className="size-4" />
                                                 </button>
-                                                <span className="rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 py-1 text-xs font-bold text-slate-700">
-                                                    {q.points}
-                                                    {UI_TEXT.examsSetsEl.pointsSuffix}
+                                                <span className="inline-flex shrink-0 items-center justify-center rounded-xl bg-amber-500 px-3.5 py-1 text-xs font-extrabold text-white shadow-xs">
+                                                    {q.points} {UI_TEXT.examsSetsEl.pointsSuffix?.trim() || "điểm"}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        {/* Explanation box */}
-                                        <div className="rounded-lg border border-slate-100 bg-slate-50/40 p-4 text-[13px] leading-relaxed font-medium text-slate-500">
-                                            {q.explanation}
+                                        {/* Section Divider & Options Title */}
+                                        <div className="flex flex-col gap-3 border-t border-slate-100 pt-2">
+                                            <span className="text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">
+                                                {UI_TEXT.examsSetsEl.optionsHeader}
+                                            </span>
+                                            <div className="flex flex-col gap-2.5">
+                                                {(() => {
+                                                    const isMultiQuestion = q.options.filter((o) => o.isCorrect).length > 1;
+                                                    return q.options.map((opt) => (
+                                                        <div
+                                                            key={opt.id}
+                                                            className={cx(
+                                                                "flex items-center justify-between rounded-2xl border px-4 py-3 text-xs transition duration-150",
+                                                                opt.isCorrect
+                                                                    ? "border-emerald-300 bg-emerald-50/40 font-semibold text-slate-900"
+                                                                    : "border-slate-200/80 bg-white font-medium text-slate-700",
+                                                            )}
+                                                        >
+                                                            <div className="flex flex-1 items-center gap-3">
+                                                                <div
+                                                                    className={cx(
+                                                                        "flex size-5 shrink-0 items-center justify-center border-2",
+                                                                        isMultiQuestion ? "rounded-md" : "rounded-full",
+                                                                        opt.isCorrect
+                                                                            ? "border-indigo-600 bg-indigo-600 text-white"
+                                                                            : "border-slate-300 bg-white",
+                                                                    )}
+                                                                >
+                                                                    {opt.isCorrect &&
+                                                                        (isMultiQuestion ? (
+                                                                            <Check className="size-3.5 stroke-[3] text-white" />
+                                                                        ) : (
+                                                                            <div className="size-1.5 rounded-full bg-white" />
+                                                                        ))}
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-900">
+                                                                    {opt.label}
+                                                                    {". "}
+                                                                    {opt.text}
+                                                                </span>
+                                                            </div>
+                                                            {opt.isCorrect && (
+                                                                <span className="inline-flex shrink-0 items-center justify-center rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-xs">
+                                                                    {UI_TEXT.examsSetsEl.correctAnswer}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
                                         </div>
 
-                                        {/* Choices */}
-                                        <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
-                                            {q.options.map((opt) => (
-                                                <div
-                                                    key={opt.id}
-                                                    className={cx(
-                                                        "flex items-center gap-2.5 rounded-xl p-3.5 text-xs transition duration-150",
-                                                        opt.isCorrect
-                                                            ? "border border-emerald-200 bg-emerald-50/30 font-semibold text-emerald-800"
-                                                            : "border border-slate-200 bg-white font-medium text-slate-600",
-                                                    )}
-                                                >
-                                                    {opt.isCorrect ? (
-                                                        <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
-                                                    ) : (
-                                                        <Circle className="size-4 shrink-0 text-slate-400" />
-                                                    )}
-                                                    <span>
-                                                        {opt.label}
-                                                        {UI_TEXT.examsSetsEl.dotSeparator}
-                                                        {opt.text}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {/* Explanation box (Only if distinct) */}
+                                        {q.explanation && q.explanation !== q.text && (
+                                            <div className="mt-1 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 text-[12.5px] leading-relaxed font-medium text-slate-500">
+                                                <strong className="font-bold text-slate-700">{UI_TEXT.examsSetsEl.explanationLabel} </strong>
+                                                {q.explanation}
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             )}
@@ -372,15 +404,14 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                         {/* Section Header */}
                         <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                             <h3 className="text-[14.5px] font-bold text-slate-800">{UI_TEXT.examsSetsEl.labelEssayQuestionsList}</h3>
-                            <Button
-                                color="primary"
-                                size="md"
+                            <button
+                                type="button"
                                 onClick={handleCreateEssayQuestion}
-                                className="gap-2 border-none bg-wine px-5 font-bold text-white shadow-md shadow-wine/20 hover:bg-wine-deep"
-                                iconLeading={<Plus className="size-4 shrink-0" />}
+                                className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
                             >
-                                {UI_TEXT.examsSetsEl.btnCreateEssayQuestion}
-                            </Button>
+                                <Plus className="size-4.5" />
+                                <span>{UI_TEXT.examsSetsEl.btnCreateEssayQuestion}</span>
+                            </button>
                         </div>
 
                         {/* Essay Questions list */}
@@ -410,22 +441,22 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex shrink-0 items-center gap-2">
+                                            <div className="flex shrink-0 items-center gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditEssayQuestion(q)}
-                                                    className="inline-flex items-center justify-center rounded-lg border border-sky-100 bg-white p-2 text-sky-500 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50 hover:text-sky-600"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
                                                     title={UI_TEXT.examsSetsEl.tooltipEditQuestion}
                                                 >
-                                                    <Edit className="size-3.5" />
+                                                    <Pencil className="size-4" />
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDeleteEssayQuestion(q.id)}
-                                                    className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-white p-2 text-rose-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
                                                     title={UI_TEXT.examsSetsEl.tooltipDeleteQuestion}
                                                 >
-                                                    <Trash2 className="size-3.5" />
+                                                    <Trash2 className="size-4" />
                                                 </button>
                                                 <span className="rounded-lg border border-slate-200 bg-slate-50/50 px-2.5 py-1 text-xs font-bold text-slate-700">
                                                     {q.points}

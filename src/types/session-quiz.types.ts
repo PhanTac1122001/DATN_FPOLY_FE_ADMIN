@@ -2,6 +2,18 @@ export type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TEXT";
 export type QuestionCategory = "BAI_CU" | "BAI_MOI" | "NONE";
 export type QuestionDifficulty = "EASY" | "MEDIUM" | "HARD";
 
+export enum QuizSessionStatusEnum {
+    IDLE = "IDLE",
+    ACTIVE = "ACTIVE",
+    CLOSED = "CLOSED",
+}
+
+export enum StudentQuizStatusEnum {
+    SUBMITTED = "SUBMITTED",
+    DOING = "DOING",
+    NOT_STARTED = "NOT_STARTED",
+}
+
 export interface SessionQuizOption {
     _id?: string;
     content: string;
@@ -44,7 +56,7 @@ export interface CreateSessionQuizPayload {
     questions: SessionQuizQuestion[];
 }
 
-export interface UpdateSessionQuizPayload extends Partial<CreateSessionQuizPayload> {}
+export type UpdateSessionQuizPayload = Partial<CreateSessionQuizPayload>;
 
 export interface QuerySessionQuizParams {
     educationProgramId?: string;
@@ -62,8 +74,115 @@ export interface SessionQuizListResponse {
     limit: number;
 }
 
+export enum QuestionTypeEnum {
+    SINGLE_CHOICE = "SINGLE_CHOICE",
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
+    TEXT = "TEXT",
+}
+
+export enum QuestionCategoryEnum {
+    NONE = "NONE",
+    BAI_CU = "BAI_CU",
+    BAI_MOI = "BAI_MOI",
+}
+
+export enum QuestionDifficultyEnum {
+    EASY = "EASY",
+    MEDIUM = "MEDIUM",
+    HARD = "HARD",
+}
+
+export interface SessionInfo {
+    id: string;
+    title: string;
+    description?: string;
+    position?: number;
+}
+
+export interface CreateQuizziSetModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSuccess: (item: SessionQuizItem) => void;
+    editQuiz?: SessionQuizItem | null;
+}
+
 export interface ImportExcelResponse {
     success: boolean;
     totalImported: number;
     questions: SessionQuizQuestion[];
+}
+
+export interface StartQuizSessionPayload {
+    classId: string;
+    educationProgramId: string;
+    subjectId: string;
+    sessionId: string;
+    quizId: string;
+}
+
+export interface StopQuizSessionPayload {
+    classId: string;
+    quizSessionId: string;
+}
+
+export interface ActiveQuizSessionParams {
+    classId: string;
+    subjectId?: string;
+    sessionId?: string;
+    quizId?: string;
+}
+
+export interface StudentQuizResultItem {
+    id?: string;
+    _id?: string;
+    quizSessionId: string;
+    classId: string;
+    quizId: string;
+    studentId: string;
+    studentCode: string;
+    studentName: string;
+    dateOfBirth?: string;
+    score: number;
+    correctAnswersCount: number;
+    totalQuestionsCount: number;
+    status: "DOING" | "SUBMITTED";
+    submittedAt?: string;
+}
+
+export interface ActiveQuizSessionResponse {
+    session: {
+        id?: string;
+        _id?: string;
+        classId: string;
+        educationProgramId: string;
+        subjectId: string;
+        sessionId: string;
+        quizId: string;
+        status: QuizSessionStatusEnum;
+        startedAt?: string;
+        stoppedAt?: string;
+    } | null;
+    results: StudentQuizResultItem[];
+}
+
+export interface QuizDashboardModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    results: StudentQuizResultItem[];
+    activeQuiz?: SessionQuizItem | null;
+    isClosed?: boolean;
+}
+
+export interface QuizReviewModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    quizzes: SessionQuizItem[];
+    selectedQuizId?: string;
+    onSelectQuiz?: (quizId: string) => void;
+}
+
+export interface QuizziSetDetailModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    quizziSet: SessionQuizItem | null;
 }

@@ -32,6 +32,9 @@ export interface EssayQuestionMock {
 export interface ExamSetMock {
     id: string;
     name: string;
+    description?: string;
+    passThreshold?: number;
+    courseId?: string;
     questionCount: number;
     createdAt: string;
     questions: QuestionMock[];

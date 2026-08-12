@@ -45,7 +45,7 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
             }
 
             if (initials) {
-                return <span className={cx("text-quaternary", AVATAR_STYLES[size].initials)}>{initials}</span>;
+                return <span className={cx("text-inherit", AVATAR_STYLES[size].initials)}>{initials}</span>;
             }
 
             if (PlaceholderIcon) {
@@ -77,7 +77,7 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
                 ref={ref}
                 data-avatar
                 className={cx(
-                    "relative inline-flex shrink-0 items-center justify-center rounded-full bg-avatar-bg outline-transparent",
+                    "relative inline-flex shrink-0 items-center justify-center rounded-full bg-avatar-bg text-fg-quaternary outline-transparent",
                     // Focus styles
                     focusable && "group-outline-focus-ring group-focus-visible:outline-2 group-focus-visible:outline-offset-2",
                     contrastBorder && "outline outline-avatar-contrast-border",

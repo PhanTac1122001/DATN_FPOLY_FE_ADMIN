@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Eye, Folder, Plus, Trash2 } from "lucide-react";
+import { Calendar, Eye, Folder, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { CreateQuizModal } from "@/components/application/modals/create-quiz-modal";
 import { TablePagination } from "@/components/application/pagination/table-pagination";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
-import { Button } from "@/components/base/buttons/button";
 import { EXAM_SETS_MOCK } from "@/constants/exam-set-mock.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteQuiz, getQuizzes } from "@/services/quiz.service";
@@ -24,6 +23,7 @@ export function ExamSetListView() {
     const [examSets, setExamSets] = useState<ExamSetMock[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [selectedQuizForEdit, setSelectedQuizForEdit] = useState<ExamSetMock | null>(null);
 
     const fetchQuizzes = async () => {
         try {
@@ -64,9 +64,25 @@ export function ExamSetListView() {
         }
     };
 
-    const handleCreateSuccess = (newQuiz: QuizBackendEntity) => {
-        const mapped = mapBackendQuizToExamSet(newQuiz);
-        setExamSets((prev) => [mapped, ...prev]);
+    const handleCreateClick = () => {
+        setSelectedQuizForEdit(null);
+        setIsCreateModalOpen(true);
+    };
+
+    const handleEditQuiz = (item: ExamSetMock) => {
+        setSelectedQuizForEdit(item);
+        setIsCreateModalOpen(true);
+    };
+
+    const handleModalSuccess = (quiz: QuizBackendEntity) => {
+        const mapped = mapBackendQuizToExamSet(quiz);
+        setExamSets((prev) => {
+            const exists = prev.some((q) => q.id === mapped.id);
+            if (exists) {
+                return prev.map((q) => (q.id === mapped.id ? { ...q, name: mapped.name } : q));
+            }
+            return [mapped, ...prev];
+        });
     };
 
     // Client-side search logic
@@ -94,15 +110,14 @@ export function ExamSetListView() {
                     <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                         <SearchFilters search={search} onSearchChange={handleSearchChange} searchPlaceholder={UI_TEXT.examsSetsEl.searchPlaceholder} />
                     </div>
-                    <Button
-                        color="primary"
-                        size="md"
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="gap-2 border-none bg-wine px-5 font-bold text-white shadow-md shadow-wine/20 hover:bg-wine-deep"
-                        iconLeading={<Plus className="size-4 shrink-0" />}
+                    <button
+                        type="button"
+                        onClick={handleCreateClick}
+                        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
                     >
-                        {UI_TEXT.examsSetsEl.btnCreateQuiz}
-                    </Button>
+                        <Plus className="size-4.5" />
+                        <span>{UI_TEXT.examsSetsEl.btnCreateQuiz}</span>
+                    </button>
                 </div>
 
                 {/* Table list */}
@@ -155,18 +170,26 @@ export function ExamSetListView() {
                                                 </div>
                                             </td>
                                             <td className="border-b border-slate-100 px-6 py-5">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div className="flex items-center justify-center gap-1.5">
                                                     <Link
                                                         href={`/exams-sets-el/${item.id}` as Route}
-                                                        className="inline-flex items-center justify-center rounded-lg border border-emerald-100 bg-white p-2 text-emerald-500 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/50 hover:text-emerald-600"
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-200 hover:scale-105 hover:bg-indigo-600 hover:text-white"
                                                         title={UI_TEXT.examsSetsEl.viewDetails}
                                                     >
                                                         <Eye className="size-4" />
                                                     </Link>
                                                     <button
                                                         type="button"
+                                                        onClick={() => handleEditQuiz(item)}
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
+                                                        title={UI_TEXT.examsSetsEl.editSet}
+                                                    >
+                                                        <Pencil className="size-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         onClick={() => handleDeleteQuiz(item)}
-                                                        className="inline-flex items-center justify-center rounded-lg border border-rose-100 bg-white p-2 text-rose-500 shadow-sm transition hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600"
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
                                                         title={UI_TEXT.examsSetsEl.deleteSet}
                                                     >
                                                         <Trash2 className="size-4" />
@@ -198,7 +221,15 @@ export function ExamSetListView() {
                 )}
             </div>
 
-            <CreateQuizModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSuccess={handleCreateSuccess} />
+            <CreateQuizModal
+                isOpen={isCreateModalOpen}
+                onClose={() => {
+                    setIsCreateModalOpen(false);
+                    setSelectedQuizForEdit(null);
+                }}
+                onSuccess={handleModalSuccess}
+                initialData={selectedQuizForEdit}
+            />
         </div>
     );
 }

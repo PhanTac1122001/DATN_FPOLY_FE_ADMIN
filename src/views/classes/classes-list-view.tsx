@@ -150,7 +150,7 @@ export function ClassesListView() {
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenDetail(cls)}
-                                                className="cursor-pointer rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 transition duration-150 hover:bg-wine-soft hover:text-wine"
+                                                className="inline-flex cursor-pointer items-center rounded-lg border border-wine/10 bg-wine/5 px-2.5 py-1 font-mono text-xs font-bold whitespace-nowrap text-wine transition duration-150 hover:scale-105 hover:bg-wine/10"
                                             >
                                                 {cls.classCode}
                                             </button>

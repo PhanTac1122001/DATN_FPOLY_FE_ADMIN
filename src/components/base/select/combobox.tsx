@@ -17,6 +17,7 @@ import { useResizeObserver } from "@/hooks/use-resize-observer";
 import type { ComboBoxProps, ComboBoxValueProps } from "@/types/base-components.types";
 import { cx } from "@/utils/cx";
 import { SelectContext } from "./select-context";
+import { SelectItem } from "./select-item";
 
 // Re-export types from centralized location
 export type { ComboBoxProps, ComboBoxValueProps } from "@/types/base-components.types";
@@ -115,7 +116,7 @@ const ComboBoxValue = ({ size, shortcut, placeholder, shortcutClassName, isClear
     );
 };
 
-export const ComboBox = ({
+const ComboBox = ({
     placeholder = "Search",
     shortcut = true,
     size = "sm",
@@ -341,3 +342,10 @@ export const ComboBox = ({
         </SelectContext.Provider>
     );
 };
+
+const _ComboBox = ComboBox as typeof ComboBox & {
+    Item: typeof SelectItem;
+};
+_ComboBox.Item = SelectItem;
+
+export { _ComboBox as ComboBox };

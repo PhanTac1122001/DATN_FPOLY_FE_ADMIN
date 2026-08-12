@@ -1,33 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, HelpCircle, Plus, Trash2, Upload, X } from "lucide-react";
+import { Download, Plus, Trash2, Upload, X } from "lucide-react";
 import { Heading } from "react-aria-components";
+import { Button } from "@/components/base/buttons/button";
 import { TiptapEditor } from "@/components/base/editor";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
+import { TextArea } from "@/components/base/textarea/textarea";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
-import { getCoursesList } from "@/services/course.service";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { httpClient } from "@/lib/http-client";
+import { getCoursesBySystem } from "@/services/material.service";
 import { createSessionQuiz, downloadExcelTemplate, importExcelQuestions, updateSessionQuiz } from "@/services/session-quiz.service";
 import { getSystemsList } from "@/services/system.service";
 import { toast } from "@/services/toast.service";
-import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
 import type { CourseItem } from "@/types/course.types";
-import type { QuestionCategory, QuestionDifficulty, QuestionType, SessionQuizItem, SessionQuizOption, SessionQuizQuestion } from "@/types/session-quiz.types";
+import type { Course } from "@/types/material.types";
+import {
+    type CreateQuizziSetModalProps,
+    QuestionCategoryEnum,
+    QuestionDifficultyEnum,
+    QuestionTypeEnum,
+    type SessionInfo,
+    type SessionQuizItem,
+    type SessionQuizOption,
+    type SessionQuizQuestion,
+} from "@/types/session-quiz.types";
 import type { System } from "@/types/system.types";
-
-interface SessionInfo {
-    id: string;
-    title: string;
-    description?: string;
-    position?: number;
-}
-
-interface CreateQuizziSetModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSuccess: (item: SessionQuizItem) => void;
-    editQuiz?: SessionQuizItem | null;
-}
 
 export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: CreateQuizziSetModalProps) {
     // Session selection state
@@ -48,13 +49,48 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
     const [isImporting, setIsImporting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Load initial dropdowns
+    // Load systems on open
     useEffect(() => {
         if (isOpen) {
             void getSystemsList().then(setSystems);
-            void getCoursesList().then(setCourses);
         }
     }, [isOpen]);
+
+    // Fetch courses when system selected
+    useEffect(() => {
+        if (!selectedSystemId) {
+            setCourses([]);
+            setSelectedCourseId("");
+            return;
+        }
+
+        const fetchCourses = async () => {
+            try {
+                const list = await getCoursesBySystem(selectedSystemId);
+                const mapped: CourseItem[] = (list || []).map((c: Course) => {
+                    const raw = c as unknown as Record<string, unknown>;
+                    return {
+                        id: String(c.id || raw._id || ""),
+                        code: String(c.courseCode || raw.code || ""),
+                        title: String(c.name || raw.title || ""),
+                        category: typeof c.category === "string" ? c.category : "",
+                        rPointConfig: { enabled: false, rPointValue: 0, minCompletionRate: 0 },
+                        gradingFormula: { attendanceWeight: 0, quizWeight: 0, examWeight: 0, passScore: 0 },
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    };
+                });
+                setCourses(mapped);
+                setSelectedCourseId((prev) => (mapped.some((item) => item.id === prev) ? prev : ""));
+            } catch (error) {
+                console.error("Error fetching courses for system:", error);
+                setCourses([]);
+                setSelectedCourseId("");
+            }
+        };
+
+        void fetchCourses();
+    }, [selectedSystemId]);
 
     // Populate data when editing
     useEffect(() => {
@@ -87,12 +123,12 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
         const fetchSessions = async () => {
             try {
                 setIsLoadingSessions(true);
-                const res = await httpClient<any>(`/staff/sessions/course/${selectedCourseId}`, { method: HttpMethod.GET });
-                const list = Array.isArray(res) ? res : res?.data || [];
-                const mapped: SessionInfo[] = list.map((s: any) => ({
+                const res = await httpClient<unknown>(`/staff/sessions/course/${selectedCourseId}`, { method: HttpMethod.GET });
+                const rawList = Array.isArray(res) ? res : (res as { data?: unknown[] })?.data || [];
+                const mapped: SessionInfo[] = (rawList as Record<string, unknown>[]).map((s) => ({
                     id: String(s.id || s._id),
-                    title: s.title || s.name || `Session ${s.position || ""}`,
-                    position: s.position,
+                    title: String(s.title || s.name || `Session ${s.position || ""}`),
+                    position: typeof s.position === "number" ? s.position : undefined,
                 }));
                 setSessions(mapped);
             } catch (error) {
@@ -107,19 +143,26 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
     }, [selectedCourseId]);
 
     const handleToggleSession = (sessionId: string) => {
-        setSelectedSessionIds((prev) =>
-            prev.includes(sessionId) ? prev.filter((id) => id !== sessionId) : [...prev, sessionId]
-        );
+        setSelectedSessionIds((prev) => (prev.includes(sessionId) ? prev.filter((id) => id !== sessionId) : [...prev, sessionId]));
+    };
+
+    const handleToggleSelectAllSessions = () => {
+        const isAllSelected = sessions.length > 0 && sessions.every((s) => selectedSessionIds.includes(s.id));
+        if (isAllSelected) {
+            setSelectedSessionIds([]);
+        } else {
+            setSelectedSessionIds(sessions.map((s) => s.id));
+        }
     };
 
     // Question operations
     const handleAddQuestion = () => {
         const newQuestion: SessionQuizQuestion = {
             content: "",
-            type: "SINGLE_CHOICE",
+            type: QuestionTypeEnum.SINGLE_CHOICE,
             points: 1,
-            category: "NONE",
-            difficulty: "EASY",
+            category: QuestionCategoryEnum.NONE,
+            difficulty: QuestionDifficultyEnum.EASY,
             options: [
                 { content: "", isCorrect: true, explanation: "" },
                 { content: "", isCorrect: false, explanation: "" },
@@ -132,7 +175,7 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
         setQuestions((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const handleQuestionChange = (index: number, field: keyof SessionQuizQuestion, value: any) => {
+    const handleQuestionChange = <K extends keyof SessionQuizQuestion>(index: number, field: K, value: SessionQuizQuestion[K]) => {
         setQuestions((prev) => {
             const next = [...prev];
             next[index] = { ...next[index], [field]: value };
@@ -163,7 +206,7 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
         });
     };
 
-    const handleOptionChange = (qIndex: number, oIndex: number, field: keyof SessionQuizOption, value: any) => {
+    const handleOptionChange = <K extends keyof SessionQuizOption>(qIndex: number, oIndex: number, field: K, value: SessionQuizOption[K]) => {
         setQuestions((prev) => {
             const next = [...prev];
             const q = { ...next[qIndex] };
@@ -179,7 +222,7 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
         setQuestions((prev) => {
             const next = [...prev];
             const q = { ...next[qIndex] };
-            const isSingle = q.type === "SINGLE_CHOICE";
+            const isSingle = q.type === QuestionTypeEnum.SINGLE_CHOICE;
             const opts = (q.options || []).map((o, idx) => {
                 if (idx === oIndex) {
                     return { ...o, isCorrect: isSingle ? true : !o.isCorrect };
@@ -196,9 +239,9 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
     const handleDownloadTemplate = async () => {
         try {
             await downloadExcelTemplate();
-            toast.success("Tải template", "Đã tải file Excel mẫu thành công");
-        } catch (error) {
-            toast.error("Tải template", "Không thể tải file mẫu Excel");
+            toast.success(UI_TEXT.createQuizziSetModal.toastDownloadTitle, UI_TEXT.createQuizziSetModal.toastDownloadSuccess);
+        } catch {
+            toast.error(UI_TEXT.createQuizziSetModal.toastDownloadTitle, UI_TEXT.createQuizziSetModal.toastDownloadError);
         }
     };
 
@@ -211,13 +254,17 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
             const res = await importExcelQuestions(file);
             if (res.questions && res.questions.length > 0) {
                 setQuestions((prev) => [...prev, ...res.questions]);
-                toast.success("Import Excel", `Đã import thành công ${res.totalImported} câu hỏi`);
+                toast.success(
+                    UI_TEXT.createQuizziSetModal.toastImportTitle,
+                    `${UI_TEXT.createQuizziSetModal.toastImportSuccessPrefix}${res.totalImported}${UI_TEXT.createQuizziSetModal.toastImportSuccessSuffix}`,
+                );
             } else {
-                toast.error("Import Excel", "Không tìm thấy câu hỏi hợp lệ trong file Excel");
+                toast.error(UI_TEXT.createQuizziSetModal.toastImportTitle, UI_TEXT.createQuizziSetModal.toastImportEmpty);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Import error:", error);
-            toast.error("Import Excel", error?.message || "Lỗi khi import file Excel");
+            const errObj = error as { message?: string };
+            toast.error(UI_TEXT.createQuizziSetModal.toastImportTitle, errObj?.message || UI_TEXT.createQuizziSetModal.toastImportErrorDefault);
         } finally {
             setIsImporting(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -227,8 +274,13 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
     // Form Submit
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!selectedSessionIds || selectedSessionIds.length === 0) {
+            toast.error(UI_TEXT.createQuizziSetModal.toastSubmitTitle, UI_TEXT.createQuizziSetModal.toastSubmitSessionError);
+            return;
+        }
+
         if (!title.trim()) {
-            toast.error("Quizzi Set", "Vui lòng nhập tiêu đề Quiz");
+            toast.error(UI_TEXT.createQuizziSetModal.toastSubmitTitle, UI_TEXT.createQuizziSetModal.toastSubmitTitleError);
             return;
         }
 
@@ -247,17 +299,23 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
             let result: SessionQuizItem;
             if (editQuiz) {
                 result = await updateSessionQuiz(editQuiz.id, payload);
-                toast.success("Quizzi Set", `Đã cập nhật bộ đề "${result.title}"`);
+                toast.success(
+                    UI_TEXT.createQuizziSetModal.toastSubmitTitle,
+                    `${UI_TEXT.createQuizziSetModal.toastSubmitUpdateSuccessPrefix}${result.title}${UI_TEXT.createQuizziSetModal.toastSubmitUpdateSuccessSuffix}`,
+                );
             } else {
                 result = await createSessionQuiz(payload);
-                toast.success("Quizzi Set", `Đã tạo bộ đề "${result.title}" thành công`);
+                toast.success(
+                    UI_TEXT.createQuizziSetModal.toastSubmitTitle,
+                    `${UI_TEXT.createQuizziSetModal.toastSubmitCreateSuccessPrefix}${result.title}${UI_TEXT.createQuizziSetModal.toastSubmitCreateSuccessSuffix}`,
+                );
             }
 
             onSuccess(result);
             onClose();
         } catch (error) {
             console.error("Save quizzi set error:", error);
-            toast.error("Quizzi Set", "Đã có lỗi xảy ra khi lưu bộ đề");
+            toast.error(UI_TEXT.createQuizziSetModal.toastSubmitTitle, UI_TEXT.createQuizziSetModal.toastSubmitErrorDefault);
         } finally {
             setIsSubmitting(false);
         }
@@ -265,342 +323,371 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <CustomModal.Content className="max-w-4xl !rounded-[24px] max-h-[90vh] overflow-y-auto">
-                <Dialog className="flex flex-col rounded-[24px] bg-white shadow-2xl outline-none">
+            <CustomModal.Content className="w-full max-w-4xl !rounded-[24px]">
+                <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
-                    <div className="relative flex shrink-0 items-center justify-between border-b border-slate-100 px-6 pt-6 pb-4">
+                    <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-full border border-purple-100 bg-purple-50">
-                                <HelpCircle className="size-5 text-purple-600" />
-                            </div>
-                            <Heading slot="title" className="text-lg font-extrabold text-slate-800">
-                                {editQuiz ? "Chỉnh Sửa Quizzi Set" : "Tạo Quiz Mới"}
+                            <Heading slot="title" className="text-xl font-bold text-slate-900">
+                                {editQuiz ? UI_TEXT.createQuizziSetModal.titleEdit : UI_TEXT.createQuizziSetModal.titleCreate}
                             </Heading>
                         </div>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            className="absolute top-5 right-5 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            aria-label="Close"
                         >
                             <X className="size-5" />
                         </button>
                     </div>
 
-                    {/* Form Body */}
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
-                        {/* Section 1: Session Selector */}
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
-                            <label className="mb-3 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                                Chọn Session <span className="text-rose-500">*</span>
-                            </label>
-
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-slate-600">Chọn Hệ đào tạo</label>
-                                    <select
-                                        value={selectedSystemId}
-                                        onChange={(e) => setSelectedSystemId(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-purple-500 focus:outline-none"
-                                    >
-                                        <option value="">-- Chọn Hệ đào tạo --</option>
-                                        {systems.map((sys) => (
-                                            <option key={sys.id} value={sys.id}>
-                                                {sys.systemCode ? `${sys.systemCode} - ` : ""}{sys.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-semibold text-slate-600">Chọn Môn học</label>
-                                    <select
-                                        value={selectedCourseId}
-                                        onChange={(e) => setSelectedCourseId(e.target.value)}
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-purple-500 focus:outline-none"
-                                    >
-                                        <option value="">-- Chọn Môn học --</option>
-                                        {courses.map((c) => (
-                                            <option key={c.id} value={c.id}>
-                                                {c.code ? `${c.code} - ` : ""}{c.title}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Sessions list */}
-                            <div className="mt-4 flex flex-col gap-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-600">Danh sách Sessions</span>
-                                    <span className="text-xs font-bold text-purple-600">
-                                        Sessions đã chọn: {selectedSessionIds.length}
-                                    </span>
-                                </div>
-
-                                {!selectedCourseId ? (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-center text-xs text-slate-400">
-                                        Vui lòng chọn Môn học để hiển thị danh sách Sessions
-                                    </div>
-                                ) : isLoadingSessions ? (
-                                    <div className="p-3 text-center text-xs text-slate-500">Đang tải danh sách sessions...</div>
-                                ) : sessions.length === 0 ? (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-center text-xs text-slate-400">
-                                        Không có session nào thuộc môn học này
-                                    </div>
-                                ) : (
-                                    <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
-                                        {sessions.map((s) => {
-                                            const isChecked = selectedSessionIds.includes(s.id);
-                                            return (
-                                                <label
-                                                    key={s.id}
-                                                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition hover:bg-slate-50"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        onChange={() => handleToggleSession(s.id)}
-                                                        className="size-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
-                                                    />
-                                                    <span className="text-xs font-medium text-slate-700">{s.title}</span>
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Section 2: General Info */}
-                        <div className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">
-                                    Tiêu đề Quiz <span className="text-rose-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
+                    {/* Scrollable Form Body */}
+                    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                        <div className="custom-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto p-6">
+                            {/* Section 1: General Info (Tiêu đề & Mô tả lên đầu) */}
+                            <div className="flex flex-col gap-4">
+                                <Input
+                                    label={
+                                        <span>
+                                            {UI_TEXT.createQuizziSetModal.quizTitleLabel} <span className="font-bold text-red-500">{"*"}</span>
+                                        </span>
+                                    }
+                                    placeholder={UI_TEXT.createQuizziSetModal.quizTitlePlaceholder}
                                     value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    placeholder="Nhập tiêu đề quiz"
-                                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-purple-500 focus:outline-none"
-                                    required
+                                    onChange={(val) => setTitle(val)}
+                                    size="sm"
                                 />
                             </div>
 
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">Mô tả</label>
-                                <textarea
-                                    rows={2}
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Nhập mô tả quiz"
-                                    className="w-full resize-none rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-purple-500 focus:outline-none"
-                                />
-                            </div>
+                            {/* Section 2: Session Selector */}
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+                                <label className="mb-3 block text-xs font-bold tracking-wider text-slate-700 uppercase">
+                                    {UI_TEXT.createQuizziSetModal.selectSessionTitle} <span className="text-rose-500">{"*"}</span>
+                                </label>
 
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-700">Thời gian làm bài (phút)</label>
-                                <input
-                                    type="number"
-                                    min={0}
-                                    value={durationMinutes}
-                                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                                    placeholder="Ví dụ: 5 (5 phút)"
-                                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-800 focus:border-purple-500 focus:outline-none sm:w-1/2"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Section 3: Questions List */}
-                        <div className="flex flex-col gap-4 border-t border-slate-100 pt-4">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <h3 className="text-sm font-bold text-slate-800">Danh sách câu hỏi ({questions.length})</h3>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={handleDownloadTemplate}
-                                        className="flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-100"
-                                    >
-                                        <Download className="size-3.5" />
-                                        Tải file excel mẫu
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleAddQuestion}
-                                        className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-700"
-                                    >
-                                        <Plus className="size-3.5" />
-                                        Thêm câu hỏi
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Excel Import Box */}
-                            <div className="rounded-2xl border border-dashed border-purple-200 bg-purple-50/30 p-4">
-                                <span className="text-xs font-bold text-purple-900">📥 Import câu hỏi từ Excel</span>
-                                <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".xlsx, .xls"
-                                        onChange={handleImportExcel}
-                                        className="text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-purple-100 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-purple-700 hover:file:bg-purple-200"
-                                    />
-                                    {isImporting && <span className="text-xs font-semibold text-purple-600">Đang import...</span>}
-                                </div>
-                                <p className="mt-2 text-[11px] text-slate-500">
-                                    File Excel có thể có các cột: <code>question_content</code>, <code>answer_1</code>, <code>answer_2</code>, <code>answer_3</code>, <code>answer_4</code>, <code>isCorrect</code>, <code>difficulty</code>, <code>category</code>.
-                                </p>
-                            </div>
-
-                            {/* Question Cards */}
-                            {questions.map((q, qIndex) => (
-                                <div key={qIndex} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
-                                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                        <span className="text-xs font-extrabold text-slate-800">Câu hỏi {qIndex + 1}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveQuestion(qIndex)}
-                                            className="text-rose-500 hover:text-rose-700"
-                                            title="Xóa câu hỏi này"
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs font-semibold text-slate-600">{UI_TEXT.createQuizziSetModal.selectSystemLabel}</label>
+                                        <Select
+                                            aria-label={UI_TEXT.createQuizziSetModal.selectSystemLabel}
+                                            selectedKey={selectedSystemId || null}
+                                            onSelectionChange={(key) => setSelectedSystemId((key as string) || "")}
+                                            items={systems.map((sys) => ({
+                                                id: sys.id,
+                                                label: sys.systemCode ? `${sys.systemCode} - ${sys.name}` : sys.name,
+                                            }))}
+                                            size="sm"
+                                            placeholder={UI_TEXT.createQuizziSetModal.selectSystemDefault}
+                                            isClearable={false}
                                         >
-                                            <Trash2 className="size-4" />
-                                        </button>
+                                            {(item) => <Select.Item id={item.id} label={item.label} />}
+                                        </Select>
                                     </div>
 
-                                    {/* Question Content Editor */}
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-bold text-slate-700">
-                                            Nội dung câu hỏi <span className="text-rose-500">*</span>
-                                        </label>
-                                        <TiptapEditor
-                                            value={q.content}
-                                            onChange={(val) => handleQuestionChange(qIndex, "content", val)}
-                                            placeholder="Nhập nội dung văn bản..."
-                                        />
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-xs font-semibold text-slate-600">{UI_TEXT.createQuizziSetModal.selectCourseLabel}</label>
+                                        <Select
+                                            aria-label={UI_TEXT.createQuizziSetModal.selectCourseLabel}
+                                            selectedKey={selectedCourseId || null}
+                                            onSelectionChange={(key) => setSelectedCourseId((key as string) || "")}
+                                            items={courses.map((c) => ({
+                                                id: c.id,
+                                                label: c.code ? `${c.code} - ${c.title}` : c.title,
+                                            }))}
+                                            size="sm"
+                                            placeholder={selectedSystemId ? UI_TEXT.createQuizziSetModal.selectCourseDefault : "Vui lòng chọn Hệ đào tạo trước"}
+                                            isDisabled={!selectedSystemId}
+                                            isClearable={false}
+                                        >
+                                            {(item) => <Select.Item id={item.id} label={item.label} />}
+                                        </Select>
                                     </div>
+                                </div>
 
-                                    {/* Question Config Grid */}
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[11px] font-bold text-slate-600">Loại câu hỏi</label>
-                                            <select
-                                                value={q.type}
-                                                onChange={(e) => handleQuestionChange(qIndex, "type", e.target.value as QuestionType)}
-                                                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
-                                            >
-                                                <option value="SINGLE_CHOICE">Một đáp án đúng</option>
-                                                <option value="MULTIPLE_CHOICE">Nhiều đáp án đúng</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[11px] font-bold text-slate-600">Điểm</label>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                value={q.points ?? 1}
-                                                onChange={(e) => handleQuestionChange(qIndex, "points", Number(e.target.value))}
-                                                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
-                                            />
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[11px] font-bold text-slate-600">Phân loại (Pre-quiz)</label>
-                                            <select
-                                                value={q.category ?? "NONE"}
-                                                onChange={(e) => handleQuestionChange(qIndex, "category", e.target.value as QuestionCategory)}
-                                                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
-                                            >
-                                                <option value="NONE">Không phân loại</option>
-                                                <option value="BAI_CU">BÀI CỦ</option>
-                                                <option value="BAI_MOI">BÀI MỚI</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-[11px] font-bold text-slate-600">Độ khó</label>
-                                            <select
-                                                value={q.difficulty ?? "EASY"}
-                                                onChange={(e) => handleQuestionChange(qIndex, "difficulty", e.target.value as QuestionDifficulty)}
-                                                className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800"
-                                            >
-                                                <option value="EASY">⭐ Dễ (EASY)</option>
-                                                <option value="MEDIUM">⭐ Trung bình (MEDIUM)</option>
-                                                <option value="HARD">⭐ Khó (HARD)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    {/* Options List */}
-                                    <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-700">Đáp án</span>
+                                {/* Sessions list */}
+                                <div className="mt-4 flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-slate-600">{UI_TEXT.createQuizziSetModal.sessionsListHeader}</span>
+                                        {sessions.length > 0 && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleAddOption(qIndex)}
-                                                className="text-xs font-bold text-purple-600 hover:underline"
+                                                onClick={handleToggleSelectAllSessions}
+                                                className="text-xs font-bold text-purple-600 hover:text-purple-700 hover:underline"
                                             >
-                                                + Thêm đáp án
+                                                {sessions.every((s) => selectedSessionIds.includes(s.id))
+                                                    ? UI_TEXT.createQuizziSetModal.deselectAll
+                                                    : UI_TEXT.createQuizziSetModal.selectAll}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {!selectedCourseId ? (
+                                        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-center text-xs text-slate-400">
+                                            {UI_TEXT.createQuizziSetModal.selectCoursePrompt}
+                                        </div>
+                                    ) : isLoadingSessions ? (
+                                        <div className="p-3 text-center text-xs text-slate-500">{UI_TEXT.createQuizziSetModal.loadingSessions}</div>
+                                    ) : sessions.length === 0 ? (
+                                        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-3 text-center text-xs text-slate-400">
+                                            {UI_TEXT.createQuizziSetModal.noSessionsFound}
+                                        </div>
+                                    ) : (
+                                        <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+                                            {sessions.map((s) => {
+                                                const isChecked = selectedSessionIds.includes(s.id);
+                                                return (
+                                                    <label
+                                                        key={s.id}
+                                                        className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition hover:bg-slate-50"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => handleToggleSession(s.id)}
+                                                            className="size-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                                                        />
+                                                        <span className="text-xs font-medium text-slate-700">{s.title}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <TextArea
+                                label={UI_TEXT.createQuizziSetModal.descriptionLabel}
+                                placeholder={UI_TEXT.createQuizziSetModal.descriptionPlaceholder}
+                                value={description}
+                                onChange={(val) => setDescription(val)}
+                                rows={2}
+                            />
+                            {/* Section 3: Duration */}
+                            <div className="w-full sm:w-1/2">
+                                <Input
+                                    label={UI_TEXT.createQuizziSetModal.durationLabel}
+                                    placeholder={UI_TEXT.createQuizziSetModal.durationPlaceholder}
+                                    type="number"
+                                    min={0}
+                                    value={durationMinutes ? String(durationMinutes) : "0"}
+                                    onChange={(val) => setDurationMinutes(Number(val) || 0)}
+                                    size="sm"
+                                />
+                            </div>
+
+                            {/* Section 3: Questions List */}
+                            <div className="flex flex-col gap-4 border-t border-slate-100 pt-4">
+                                {/* Hidden File Input for Excel Import */}
+                                <input ref={fileInputRef} type="file" accept=".xlsx, .xls" onChange={handleImportExcel} className="hidden" />
+
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <h3 className="text-sm font-bold text-slate-800">
+                                        {UI_TEXT.createQuizziSetModal.questionsListHeader}
+                                        {questions.length}
+                                        {UI_TEXT.createQuizziSetModal.questionsListHeaderClose}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleDownloadTemplate}
+                                            className="flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-100"
+                                        >
+                                            <Download className="size-3.5" />
+                                            {UI_TEXT.createQuizziSetModal.downloadTemplateBtn}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isImporting}
+                                            className="flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-100 disabled:opacity-50"
+                                        >
+                                            <Upload className="size-3.5" />
+                                            {isImporting ? UI_TEXT.createQuizziSetModal.importingText : UI_TEXT.createQuizziSetModal.importExcelHeader}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleAddQuestion}
+                                            className="flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-700"
+                                        >
+                                            <Plus className="size-3.5" />
+                                            {UI_TEXT.createQuizziSetModal.addQuestionBtn}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Question Cards */}
+                                {questions.map((q, qIndex) => (
+                                    <div key={qIndex} className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/30 p-4">
+                                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                                            <span className="text-xs font-extrabold text-slate-800">
+                                                {UI_TEXT.createQuizziSetModal.questionTitlePrefix}
+                                                {qIndex + 1}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveQuestion(qIndex)}
+                                                className="text-rose-500 hover:text-rose-700"
+                                                title={UI_TEXT.createQuizziSetModal.questionRemoveTooltip}
+                                            >
+                                                <Trash2 className="size-4" />
                                             </button>
                                         </div>
 
-                                        {(q.options || []).map((o, oIndex) => (
-                                            <div key={oIndex} className="flex items-start gap-2 rounded-xl border border-slate-100 bg-white p-2.5">
-                                                <input
-                                                    type={q.type === "SINGLE_CHOICE" ? "radio" : "checkbox"}
-                                                    name={`q-${qIndex}-correct`}
-                                                    checked={o.isCorrect}
-                                                    onChange={() => handleOptionCorrectToggle(qIndex, oIndex)}
-                                                    className="mt-2.5 size-4 cursor-pointer text-purple-600"
+                                        {/* Question Content Editor */}
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="text-xs font-bold text-slate-700">
+                                                {UI_TEXT.createQuizziSetModal.questionContentLabel} <span className="text-rose-500">{"*"}</span>
+                                            </label>
+                                            <TiptapEditor
+                                                value={q.content}
+                                                onChange={(val) => handleQuestionChange(qIndex, "content", val)}
+                                                placeholder={UI_TEXT.createQuizziSetModal.questionContentPlaceholder}
+                                            />
+                                        </div>
+
+                                        {/* Question Config Grid */}
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.questionTypeLabel}</label>
+                                                <Select
+                                                    aria-label={UI_TEXT.createQuizziSetModal.questionTypeLabel}
+                                                    selectedKey={q.type}
+                                                    onSelectionChange={(key) => handleQuestionChange(qIndex, "type", key as QuestionTypeEnum)}
+                                                    items={[
+                                                        { id: QuestionTypeEnum.SINGLE_CHOICE, label: UI_TEXT.createQuizziSetModal.typeSingleChoice },
+                                                        { id: QuestionTypeEnum.MULTIPLE_CHOICE, label: UI_TEXT.createQuizziSetModal.typeMultipleChoice },
+                                                    ]}
+                                                    size="sm"
+                                                    isClearable={false}
+                                                >
+                                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                                </Select>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.pointsLabel}</label>
+                                                <Input
+                                                    type="number"
+                                                    min={1}
+                                                    value={String(q.points ?? 1)}
+                                                    onChange={(val) => handleQuestionChange(qIndex, "points", Number(val) || 1)}
+                                                    size="sm"
                                                 />
-                                                <div className="flex flex-1 flex-col gap-1.5">
-                                                    <input
-                                                        type="text"
-                                                        value={o.content}
-                                                        onChange={(e) => handleOptionChange(qIndex, oIndex, "content", e.target.value)}
-                                                        placeholder={`Đáp án ${oIndex + 1}`}
-                                                        className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-purple-500 focus:outline-none"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={o.explanation || ""}
-                                                        onChange={(e) => handleOptionChange(qIndex, oIndex, "explanation", e.target.value)}
-                                                        placeholder="Giải thích (tuỳ chọn)"
-                                                        className="w-full rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-600 focus:border-purple-500 focus:outline-none"
-                                                    />
-                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.categoryLabel}</label>
+                                                <Select
+                                                    aria-label={UI_TEXT.createQuizziSetModal.categoryLabel}
+                                                    selectedKey={q.category ?? QuestionCategoryEnum.NONE}
+                                                    onSelectionChange={(key) => handleQuestionChange(qIndex, "category", key as QuestionCategoryEnum)}
+                                                    items={[
+                                                        { id: QuestionCategoryEnum.NONE, label: UI_TEXT.createQuizziSetModal.categoryNone },
+                                                        { id: QuestionCategoryEnum.BAI_CU, label: UI_TEXT.createQuizziSetModal.categoryOld },
+                                                        { id: QuestionCategoryEnum.BAI_MOI, label: UI_TEXT.createQuizziSetModal.categoryNew },
+                                                    ]}
+                                                    size="sm"
+                                                    isClearable={false}
+                                                >
+                                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                                </Select>
+                                            </div>
+
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.difficultyLabel}</label>
+                                                <Select
+                                                    aria-label={UI_TEXT.createQuizziSetModal.difficultyLabel}
+                                                    selectedKey={q.difficulty ?? QuestionDifficultyEnum.EASY}
+                                                    onSelectionChange={(key) => handleQuestionChange(qIndex, "difficulty", key as QuestionDifficultyEnum)}
+                                                    items={[
+                                                        { id: QuestionDifficultyEnum.EASY, label: UI_TEXT.createQuizziSetModal.difficultyEasy },
+                                                        { id: QuestionDifficultyEnum.MEDIUM, label: UI_TEXT.createQuizziSetModal.difficultyMedium },
+                                                        { id: QuestionDifficultyEnum.HARD, label: UI_TEXT.createQuizziSetModal.difficultyHard },
+                                                    ]}
+                                                    size="sm"
+                                                    isClearable={false}
+                                                >
+                                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                                </Select>
+                                            </div>
+                                        </div>
+
+                                        {/* Options List */}
+                                        <div className="flex flex-col gap-2 border-t border-slate-100 pt-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-slate-700">{UI_TEXT.createQuizziSetModal.answersLabel}</span>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleRemoveOption(qIndex, oIndex)}
-                                                    className="mt-2 text-slate-400 hover:text-rose-500"
+                                                    onClick={() => handleAddOption(qIndex)}
+                                                    className="text-xs font-bold text-purple-600 hover:underline"
                                                 >
-                                                    <X className="size-4" />
+                                                    {UI_TEXT.createQuizziSetModal.addAnswerBtn}
                                                 </button>
                                             </div>
-                                        ))}
+
+                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                {(q.options || []).map((o, oIndex) => (
+                                                    <div key={oIndex} className="flex items-start gap-2 rounded-xl border border-slate-100 bg-white p-2.5">
+                                                        <input
+                                                            type={q.type === QuestionTypeEnum.SINGLE_CHOICE ? "radio" : "checkbox"}
+                                                            name={`q-${qIndex}-correct`}
+                                                            checked={o.isCorrect}
+                                                            onChange={() => handleOptionCorrectToggle(qIndex, oIndex)}
+                                                            className="mt-2.5 size-4 cursor-pointer text-purple-600 accent-purple-600"
+                                                        />
+                                                        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                                                            <Input
+                                                                value={o.content}
+                                                                onChange={(val) => handleOptionChange(qIndex, oIndex, "content", val)}
+                                                                placeholder={`${UI_TEXT.createQuizziSetModal.answerPlaceholderPrefix}${oIndex + 1}`}
+                                                                size="sm"
+                                                            />
+                                                            <Input
+                                                                value={o.explanation || ""}
+                                                                onChange={(val) => handleOptionChange(qIndex, oIndex, "explanation", val)}
+                                                                placeholder={UI_TEXT.createQuizziSetModal.explanationPlaceholder}
+                                                                size="sm"
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveOption(qIndex, oIndex)}
+                                                            className="mt-2 text-slate-400 hover:text-rose-500"
+                                                        >
+                                                            <X className="size-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Footer Controls */}
-                        <div className="mt-4 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-                            <button
+                        {/* Footer */}
+                        <div className="grid grid-cols-3 gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
+                            <Button
                                 type="button"
+                                color="secondary-gray"
+                                size="md"
                                 onClick={onClose}
-                                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                                isDisabled={isSubmitting}
+                                className="col-span-1 justify-center"
                             >
-                                Hủy
-                            </button>
-                            <button
+                                {UI_TEXT.createQuizziSetModal.btnCancel}
+                            </Button>
+                            <Button
+                                color="primary"
+                                size="md"
                                 type="submit"
-                                disabled={isSubmitting}
-                                className="rounded-xl bg-purple-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-purple-600/10 hover:bg-purple-700 disabled:opacity-50"
+                                isLoading={isSubmitting}
+                                className="col-span-2 justify-center border-none bg-purple-600 font-bold text-white hover:bg-purple-700"
                             >
-                                {isSubmitting ? "Đang xử lý..." : editQuiz ? "Lưu thay đổi" : "Tạo mới"}
-                            </button>
+                                {editQuiz ? UI_TEXT.createQuizziSetModal.btnSubmitEdit : UI_TEXT.createQuizziSetModal.btnSubmitCreate}
+                            </Button>
                         </div>
                     </form>
                 </Dialog>

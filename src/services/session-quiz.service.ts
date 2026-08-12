@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api-endpoints.constants";
+import { DEFAULT_OPTIONS_LIMIT, DEFAULT_PAGE_SIZE } from "@/constants/options.constants";
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
 import type {
@@ -29,7 +30,7 @@ export async function getSessionQuizzes(params: QuerySessionQuizParams = {}): Pr
             items: result.items,
             total: result.total ?? result.items.length,
             page: result.page ?? (params.page || 1),
-            limit: result.limit ?? (params.limit || 10),
+            limit: result.limit ?? (params.limit || DEFAULT_PAGE_SIZE),
         };
     }
     const items = Array.isArray(result) ? result : [];
@@ -37,7 +38,7 @@ export async function getSessionQuizzes(params: QuerySessionQuizParams = {}): Pr
         items,
         total: items.length,
         page: params.page || 1,
-        limit: params.limit || 20,
+        limit: params.limit || DEFAULT_OPTIONS_LIMIT,
     };
 }
 

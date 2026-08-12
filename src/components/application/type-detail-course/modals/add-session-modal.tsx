@@ -156,9 +156,9 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                                                         className="flex items-center gap-2 rounded-xl border border-blue-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-2xs"
                                                     >
                                                         <span>{b.title}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">({b.type})</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{`(${b.type})`}</span>
                                                         {b.isRequired ? (
-                                                            <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">
+                                                            <span className="rounded-md border border-red-100 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600">
                                                                 {UI_TEXT.sessionNode.requiredTag}
                                                             </span>
                                                         ) : (
