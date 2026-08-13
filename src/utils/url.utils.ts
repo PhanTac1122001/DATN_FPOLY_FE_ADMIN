@@ -15,7 +15,7 @@ export function formatApiPath(path: string): string {
     if (!path || path.startsWith("http://") || path.startsWith("https://")) {
         return path;
     }
-    if (path.startsWith(API_PREFIX) || path.startsWith(AUTH_PREFIX) || path.startsWith("/api") || path.startsWith("/v1")) {
+    if (path.startsWith(API_PREFIX) || path.startsWith(AUTH_PREFIX) || path.startsWith("/api") || path.startsWith("/v1") || path.startsWith("/chatbot-api")) {
         return path;
     }
     const cleanPath = path.startsWith("/") ? path : `/${path}`;

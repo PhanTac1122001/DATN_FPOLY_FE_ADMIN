@@ -1,5 +1,7 @@
 export const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX || "/api";
 export const AUTH_PREFIX = process.env.NEXT_PUBLIC_AUTH_PREFIX || "/v1";
+// Chatbot quy trình là microservice riêng: proxy qua /chatbot-api (xem next.config.ts).
+export const CHATBOT_PREFIX = process.env.NEXT_PUBLIC_CHATBOT_PREFIX || "/chatbot-api";
 
 export { formatApiPath } from "@/utils/url.utils";
 
@@ -35,5 +37,13 @@ export const API_ENDPOINTS = {
         BY_ID: (id: string) => `${API_PREFIX}/staff/session-quizzes/${id}`,
         IMPORT_EXCEL: `${API_PREFIX}/staff/session-quizzes/import-excel`,
         EXCEL_TEMPLATE: `${API_PREFIX}/staff/session-quizzes/excel-template`,
+    },
+    CHATBOT: {
+        PROCESS_DOCUMENTS: `${CHATBOT_PREFIX}/admin/process-documents`,
+        PROCESS_DOCUMENTS_EXTRACT: `${CHATBOT_PREFIX}/admin/process-documents/extract`,
+        PROCESS_DOCUMENT_BY_ID: (id: string) => `${CHATBOT_PREFIX}/admin/process-documents/${id}`,
+        CONTACTS: `${CHATBOT_PREFIX}/admin/contacts`,
+        CONTACT_BY_ID: (id: string) => `${CHATBOT_PREFIX}/admin/contacts/${id}`,
+        BOT_SETTINGS: `${CHATBOT_PREFIX}/admin/bot-settings`,
     },
 } as const;
