@@ -41,6 +41,7 @@ export const API_ENDPOINTS = {
     CHATBOT: {
         PROCESS_DOCUMENTS: `${CHATBOT_PREFIX}/admin/process-documents`,
         PROCESS_DOCUMENTS_EXTRACT: `${CHATBOT_PREFIX}/admin/process-documents/extract`,
+        PROCESS_DOCUMENT_INGEST: (id: string) => `${CHATBOT_PREFIX}/admin/process-documents/${id}/ingest`,
         PROCESS_DOCUMENT_BY_ID: (id: string) => `${CHATBOT_PREFIX}/admin/process-documents/${id}`,
         CONTACTS: `${CHATBOT_PREFIX}/admin/contacts`,
         CONTACT_BY_ID: (id: string) => `${CHATBOT_PREFIX}/admin/contacts/${id}`,

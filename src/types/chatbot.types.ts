@@ -84,6 +84,11 @@ export interface ProcessDocumentExtractResult {
     title: string;
 }
 
+export interface ProcessDocumentIngestResult {
+    content: string;
+    chunks: number;
+}
+
 export interface ChatbotListParams {
     search?: string;
     page?: number;

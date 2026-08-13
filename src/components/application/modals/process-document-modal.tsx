@@ -5,7 +5,7 @@ import { FileText, FileUp, Loader2, Plus, Save, X } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { CHATBOT_UPLOAD_ACCEPT, CHATBOT_UPLOAD_EXTENSIONS, CHATBOT_UPLOAD_MAX_BYTES } from "@/constants/chatbot.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { createProcessDocument, extractProcessDocument, updateProcessDocument } from "@/services/chatbot.service";
+import { createProcessDocument, ingestProcessDocument, updateProcessDocument } from "@/services/chatbot.service";
 import { toast } from "@/services/toast.service";
 import type { ProcessDocumentModalProps } from "@/types/chatbot.types";
 
@@ -33,12 +33,17 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
     const [submitting, setSubmitting] = useState(false);
     const [extracting, setExtracting] = useState(false);
     const [error, setError] = useState("");
+    // Quy trình vừa được auto-tạo khi upload file lúc tạo mới (để các thao tác sau update thay vì tạo lại).
+    const [savedDocId, setSavedDocId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const isPersisted = isEdit || !!savedDocId;
 
     useEffect(() => {
         if (!isOpen) return;
         setError("");
         setKeywordInput("");
+        setSavedDocId(null);
         if (editingDocument) {
             setCode(editingDocument.code || "");
             setTitle(editingDocument.title || "");
@@ -100,12 +105,34 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
             resetFileInput();
             return;
         }
+        // Chunk phải gắn với 1 quy trình -> tạo mới thì cần Mã + Tiêu đề để tạo doc trước.
+        let targetId = editingDocument?._id ?? savedDocId;
+        if (!targetId && (!code.trim() || !title.trim())) {
+            setError(t.uploadNeedCodeTitle);
+            resetFileInput();
+            return;
+        }
         try {
             setExtracting(true);
-            const result = await extractProcessDocument(file);
+            if (!targetId) {
+                const created = await createProcessDocument({
+                    code: code.trim().toUpperCase(),
+                    title: title.trim(),
+                    summary: summary.trim() || undefined,
+                    keywords,
+                    content: "",
+                    department: department.trim() || undefined,
+                    contactInfo: contactInfo.trim() || undefined,
+                    answerGuidance: answerGuidance.trim() || undefined,
+                    isActive,
+                });
+                targetId = created._id;
+                setSavedDocId(created._id);
+            }
+            const result = await ingestProcessDocument(targetId, file);
             setContent(result.content);
-            if (!title.trim() && result.title) setTitle(result.title);
-            toast.success(UI_TEXT.common.successTitle, t.toastExtractSuccess);
+            toast.success(UI_TEXT.common.successTitle, `${t.toastIngestSuccess} (${result.chunks} ${t.chunksUnit})`);
+            onSuccess();
         } catch (err: unknown) {
             const errMsg = err instanceof Error ? err.message : UI_TEXT.common.genericError;
             setError(errMsg);
@@ -119,7 +146,7 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        if ((!isEdit && !code.trim()) || !title.trim() || !content.trim()) {
+        if ((!isPersisted && !code.trim()) || !title.trim() || !content.trim()) {
             setError(t.requiredError);
             return;
         }
@@ -137,8 +164,9 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
                 isActive,
             };
 
-            if (isEdit && editingDocument) {
-                await updateProcessDocument(editingDocument._id, payload);
+            const effectiveId = editingDocument?._id ?? savedDocId;
+            if (effectiveId) {
+                await updateProcessDocument(effectiveId, payload);
                 toast.success(UI_TEXT.common.successTitle, t.toastUpdateDocSuccess);
             } else {
                 await createProcessDocument({ ...payload, code: code.trim().toUpperCase() });
@@ -188,11 +216,11 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-xs font-extrabold text-slate-700">
-                                        {t.fieldCode} {!isEdit && <span className="text-rose-500">{t.asterisk}</span>}
+                                        {t.fieldCode} {!isPersisted && <span className="text-rose-500">{t.asterisk}</span>}
                                     </label>
                                     <input
                                         type="text"
-                                        disabled={isEdit}
+                                        disabled={isPersisted}
                                         value={code}
                                         onChange={(e) => setCode(e.target.value)}
                                         placeholder={t.placeholderCode}
@@ -329,12 +357,12 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
                             >
                                 {submitting ? (
                                     <Loader2 className="size-3.5 animate-spin" />
-                                ) : isEdit ? (
+                                ) : isPersisted ? (
                                     <Save className="size-3.5" />
                                 ) : (
                                     <Plus className="size-3.5" />
                                 )}
-                                <span>{isEdit ? UI_TEXT.common.save : t.addDocument}</span>
+                                <span>{isPersisted ? UI_TEXT.common.save : t.addDocument}</span>
                             </button>
                         </div>
                     </form>

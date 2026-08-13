@@ -10,6 +10,7 @@ import type {
     CreateProcessDocumentInput,
     ProcessDocument,
     ProcessDocumentExtractResult,
+    ProcessDocumentIngestResult,
     ProcessDocumentListResponse,
     UpdateContactInput,
     UpdateProcessDocumentInput,
@@ -53,11 +54,22 @@ export async function deleteProcessDocument(id: string): Promise<void> {
     await httpClient<void>(API_ENDPOINTS.CHATBOT.PROCESS_DOCUMENT_BY_ID(id), { method: HttpMethod.DELETE });
 }
 
-// Tải file Word/PDF -> BE trích text (không lưu file), trả { content, title } để đổ vào form.
+// Tải file -> BE trích text (không lưu file), trả { content, title } để đổ vào form.
 export async function extractProcessDocument(file: File): Promise<ProcessDocumentExtractResult> {
     const form = new FormData();
     form.append("file", file);
     return httpClient<ProcessDocumentExtractResult>(API_ENDPOINTS.CHATBOT.PROCESS_DOCUMENTS_EXTRACT, {
+        method: HttpMethod.POST,
+        body: form,
+    });
+}
+
+// Tải file cho 1 quy trình -> BE trích text + lưu content + chunk (LangChain) + ghi pgvector.
+// Trả { content, chunks } (content vẫn hiển thị lại để xem/sửa).
+export async function ingestProcessDocument(id: string, file: File): Promise<ProcessDocumentIngestResult> {
+    const form = new FormData();
+    form.append("file", file);
+    return httpClient<ProcessDocumentIngestResult>(API_ENDPOINTS.CHATBOT.PROCESS_DOCUMENT_INGEST(id), {
         method: HttpMethod.POST,
         body: form,
     });
