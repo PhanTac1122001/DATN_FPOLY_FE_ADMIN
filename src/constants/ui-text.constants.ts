@@ -3309,6 +3309,7 @@ export const UI_TEXT = {
         loading: "Đang tải danh sách môn học...",
         emptyBoard: "Chưa có môn học nào. Hãy tạo môn học trước khi xếp roadmap.",
         toastAssignSuccessNeutral: "Đã cập nhật nhóm môn học",
+        confirmHideCategory: "Ẩn nhóm môn này khỏi roadmap? Các môn trong nhóm sẽ chuyển về Chưa phân nhóm.",
         toastHideSuccessTitle: "Thành công",
         toastHideSuccessDesc: "Đã ẩn nhóm môn khỏi bảng roadmap",
         toastHideErrorTitle: "Lỗi",

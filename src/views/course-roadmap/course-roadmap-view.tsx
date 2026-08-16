@@ -112,6 +112,11 @@ export function CourseRoadmapView() {
         setTagsCourse(course);
     };
 
+    const handleHideCategory = (categoryId: string) => {
+        if (!confirm(t.confirmHideCategory)) return;
+        hideMutation.mutate(categoryId);
+    };
+
     return (
         <div className="flex w-full flex-1 flex-col gap-4 overflow-hidden">
             {/* Toolbar */}
@@ -173,7 +178,7 @@ export function CourseRoadmapView() {
                             onMove={handleMoveSingle}
                             onEditTags={handleEditTags}
                             onEditCategory={() => setIsCategoryModalOpen(true)}
-                            onHideCategory={(categoryId) => hideMutation.mutate(categoryId)}
+                            onHideCategory={handleHideCategory}
                         />
                     ))}
                 </div>
