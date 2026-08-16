@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Calculator, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { MultiComboBox } from "@/components/base/select/multi-combobox";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { DEFAULT_GRADING_WEIGHTS, DEFAULT_PASS_SCORE, FULL_WEIGHT_PERCENT } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { careerTagService } from "@/services/career-tag.service";
+import { courseCategoryService } from "@/services/course-category.service";
 import { toast } from "@/services/toast.service";
 import { AccessModeEnum, type CourseFormModalProps, FinalExamTypeEnum } from "@/types/course.types";
 
 const defaultScoringMethod = "FULL_PROJECT";
+const noCategoryKey = "__none__";
 
 export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }: CourseFormModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,6 +29,21 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
     const [description, setDescription] = useState("");
     const [learningOutcomes, setLearningOutcomes] = useState("");
     const [accessMode, setAccessMode] = useState<AccessModeEnum>(AccessModeEnum.SEQUENTIAL);
+
+    // Roadmap fields — nhóm môn (single) + tags nghề nghiệp (multi)
+    const [categoryId, setCategoryId] = useState<string | null>(null);
+    const [careerTagIds, setCareerTagIds] = useState<string[]>([]);
+
+    const { data: courseCategories = [] } = useQuery({
+        queryKey: ["course-categories"],
+        queryFn: courseCategoryService.getAll,
+        enabled: isOpen,
+    });
+    const { data: careerTags = [] } = useQuery({
+        queryKey: ["career-tags"],
+        queryFn: careerTagService.getAll,
+        enabled: isOpen,
+    });
 
     // Custom Grading Formula (always on — preset scoringMethod is no longer configurable in UI)
     const [attendanceWeight, setAttendanceWeight] = useState<number>(DEFAULT_GRADING_WEIGHTS.ATTENDANCE);
@@ -51,6 +72,8 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             setDescription(initialData.description || "");
             setLearningOutcomes(initialData.learningOutcomes || "");
             setAccessMode(initialData.accessMode ? (initialData.accessMode as AccessModeEnum) : AccessModeEnum.SEQUENTIAL);
+            setCategoryId(initialData.categoryId ?? null);
+            setCareerTagIds(initialData.careerTagIds ?? []);
 
             setAttendanceWeight(initialData.gradingFormula.attendanceWeight ?? DEFAULT_GRADING_WEIGHTS.ATTENDANCE);
             setQuizWeight(initialData.gradingFormula.quizWeight ?? DEFAULT_GRADING_WEIGHTS.QUIZ);
@@ -73,6 +96,8 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             setDescription("");
             setLearningOutcomes("");
             setAccessMode(AccessModeEnum.SEQUENTIAL);
+            setCategoryId(null);
+            setCareerTagIds([]);
 
             setAttendanceWeight(DEFAULT_GRADING_WEIGHTS.ATTENDANCE);
             setQuizWeight(DEFAULT_GRADING_WEIGHTS.QUIZ);
@@ -89,6 +114,27 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             setPassScore(DEFAULT_PASS_SCORE);
         }
     }, [initialData, isOpen]);
+
+    const activeCourseCategories = courseCategories.filter((courseCategory) => courseCategory.isActive);
+    const isCurrentCategoryStillActive = activeCourseCategories.some((courseCategory) => courseCategory.id === initialData?.categoryId);
+    const hiddenCurrentCategory =
+        !isCurrentCategoryStillActive && initialData?.categoryId
+            ? courseCategories.find((courseCategory) => courseCategory.id === initialData.categoryId)
+            : undefined;
+    const categoryItems = [
+        { id: noCategoryKey, label: UI_TEXT.courseFormModal.courseFormCategoryNone },
+        ...activeCourseCategories.map((courseCategory) => ({ id: courseCategory.id, label: courseCategory.name })),
+        ...(hiddenCurrentCategory ? [{ id: hiddenCurrentCategory.id, label: hiddenCurrentCategory.name }] : []),
+    ];
+    const careerTagItems = careerTags.map((careerTag) => ({ id: careerTag.id, label: careerTag.name }));
+
+    const handleCategoryChange = (key: string | number | null) => {
+        if (key === null || key === undefined) {
+            setCategoryId(null);
+            return;
+        }
+        setCategoryId(key === noCategoryKey ? null : String(key));
+    };
 
     const isInvalidWeight = (val: number) => isNaN(val) || val < 0 || val > FULL_WEIGHT_PERCENT;
 
@@ -157,6 +203,8 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                 code: code.trim(),
                 title: title.trim(),
                 category: initialData?.category || defaultScoringMethod,
+                categoryId,
+                careerTagIds,
                 description: description.trim(),
                 learningOutcomes: learningOutcomes.trim(),
                 accessMode,
@@ -240,6 +288,31 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                     isInvalid={submitted && !title.trim()}
                                     hint={submitted && !title.trim() ? UI_TEXT.courseFormModal.toastRequiredError : undefined}
                                 />
+                            </div>
+
+                            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4">
+                                <span className="text-xs font-extrabold tracking-wider text-slate-700 uppercase">
+                                    {UI_TEXT.courseFormModal.courseFormRoadmapSectionTitle}
+                                </span>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Select
+                                        label={UI_TEXT.courseFormModal.courseFormCategoryLabel}
+                                        placeholder={UI_TEXT.courseFormModal.courseFormCategoryPlaceholder}
+                                        items={categoryItems}
+                                        selectedKey={categoryId ?? noCategoryKey}
+                                        isClearable={false}
+                                        onSelectionChange={handleCategoryChange}
+                                    >
+                                        {(item) => <Select.Item id={item.id} label={item.label} />}
+                                    </Select>
+                                    <MultiComboBox
+                                        label={UI_TEXT.courseFormModal.courseFormTagsLabel}
+                                        placeholder={UI_TEXT.courseFormModal.courseFormTagsPlaceholder}
+                                        items={careerTagItems}
+                                        selectedKeys={careerTagIds}
+                                        onSelectionChange={setCareerTagIds}
+                                    />
+                                </div>
                             </div>
 
                             <div>

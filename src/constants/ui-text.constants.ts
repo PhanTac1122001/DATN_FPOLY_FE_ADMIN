@@ -1556,6 +1556,12 @@ export const UI_TEXT = {
         hackathonSummaryText: "({quiz}% TN + {essay}% TL)",
         projectSummaryText: "(PROJECT: {product}% SP + {knowledge}% KT + {interview}% PV)",
         essaySummaryText: "(ESSAY: {essay}% TL + {quiz}% TN)",
+        courseFormRoadmapSectionTitle: "Nhóm môn & tags nghề nghiệp (Roadmap)",
+        courseFormCategoryLabel: "Nhóm môn (roadmap)",
+        courseFormCategoryPlaceholder: "Chọn nhóm môn...",
+        courseFormCategoryNone: "Không phân nhóm",
+        courseFormTagsLabel: "Tags nghề nghiệp",
+        courseFormTagsPlaceholder: "Tìm và chọn tags nghề nghiệp...",
     },
     courseRpointModal: {
         title: "Cấu hình R-point (Điểm rèn luyện)",
