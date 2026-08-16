@@ -10,3 +10,8 @@ export interface CreateCareerTagPayload {
 }
 
 export type UpdateCareerTagPayload = { name: string };
+
+export interface CareerTagManagerModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+}
