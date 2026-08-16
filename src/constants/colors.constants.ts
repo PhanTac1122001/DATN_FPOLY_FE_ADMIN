@@ -46,6 +46,14 @@ export const SOCIAL_COLORS = {
     FACEBOOK_BLUE: "#1877F2",
 } as const;
 
+/**
+ * Preset swatches offered when picking a course category color, plus the
+ * neutral fallback used when a category has no color set.
+ */
+export const COURSE_CATEGORY_COLOR_PRESETS = ["#4F46E5", "#0EA5E9", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#64748B"] as const;
+
+export const COURSE_CATEGORY_NEUTRAL_COLOR = "#CBD5E1";
+
 export const APP_STORE_GRADIENT_COLORS = {
     GOOGLE_PLAY_CYAN_0: "#00A0FF",
     GOOGLE_PLAY_CYAN_1: "#00A1FF",

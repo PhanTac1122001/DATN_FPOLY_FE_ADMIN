@@ -19,3 +19,8 @@ export interface CreateCourseCategoryPayload {
 }
 
 export type UpdateCourseCategoryPayload = Partial<CreateCourseCategoryPayload>;
+
+export interface CourseCategoryManagerModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+}
