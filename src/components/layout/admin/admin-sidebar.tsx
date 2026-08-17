@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Book, ChevronDown, Layers, LogOut, Notebook, PieChart } from "lucide-react";
+import { Book, Bot, ChevronDown, Layers, LogOut, Notebook, PieChart } from "lucide-react";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,6 +43,7 @@ export function AdminSidebar() {
     const isDtActive = isGroupActive(pathname, dtItems);
     const isElearningActive = isGroupActive(pathname, elearningItems) || pathname.startsWith("/elearning");
     const isDiemActive = isGroupActive(pathname, diemItems);
+    const isChatbotActive = pathname.startsWith("/chatbot");
 
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         dt: isDtActive,
@@ -186,6 +187,20 @@ export function AdminSidebar() {
                         ))}
                     </div>
                 </div>
+
+                {/* Top-level: Chatbot quy trình (mục riêng, ngang các nhóm) */}
+                <Link
+                    href={"/chatbot" as Route}
+                    className={cx(
+                        "menu-item mt-1 flex w-full items-center justify-center gap-3 rounded-xl px-3.5 py-3 text-[13.5px] font-bold transition duration-150 lg:justify-start",
+                        isChatbotActive
+                            ? "bg-white text-brand-500 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.4)] hover:bg-white"
+                            : "text-nav-300 hover:bg-white/10 hover:text-white",
+                    )}
+                >
+                    <Bot className="size-[18px] shrink-0" />
+                    <span className="hidden lg:inline">{UI_TEXT.layout.adminSidebar.chatbotManagementLabel}</span>
+                </Link>
             </div>
 
             {/* Logout Section */}

@@ -32,6 +32,10 @@ function mapBackendToCourseItem(raw: CourseBackendEntity): CourseItem {
         gradingFormula: mapBackendFormulaToUiGrading(raw.scoringFormula),
         createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        categoryId: raw.categoryId ?? null,
+        careerTagIds: raw.careerTagIds ?? [],
+        categoryName: raw.category?.name,
+        careerTags: raw.careerTags ?? [],
     };
 }
 
@@ -48,6 +52,8 @@ function mapPayloadToCreateDto(payload: CreateCoursePayload) {
         position: payload.position,
         hour: payload.hour,
         totalSessions: payload.totalSessions,
+        categoryId: payload.categoryId ?? null,
+        careerTagIds: payload.careerTagIds ?? [],
     };
 }
 
@@ -186,6 +192,8 @@ export async function updateCourse(id: string, payload: UpdateCoursePayload): Pr
     if (payload.position !== undefined) dto.position = payload.position;
     if (payload.hour !== undefined) dto.hour = payload.hour;
     if (payload.totalSessions !== undefined) dto.totalSessions = payload.totalSessions;
+    if (payload.categoryId !== undefined) dto.categoryId = payload.categoryId;
+    if (payload.careerTagIds !== undefined) dto.careerTagIds = payload.careerTagIds;
 
     const response = await httpClient<any>(`/staff/courses/${id}`, {
         method: HttpMethod.PUT,
@@ -205,4 +213,12 @@ export async function deleteCourse(id: string): Promise<boolean> {
         method: HttpMethod.DELETE,
     });
     return unwrapData(response) || true;
+}
+
+export async function assignCourseCategory(courseIds: string[], categoryId: string | null): Promise<{ updated: number }> {
+    const response = await httpClient<any>("/staff/courses/assign-category", {
+        method: HttpMethod.POST,
+        body: JSON.stringify({ courseIds, categoryId }),
+    });
+    return unwrapData<{ updated: number }>(response) ?? { updated: 0 };
 }

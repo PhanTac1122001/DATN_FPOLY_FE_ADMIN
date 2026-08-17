@@ -67,6 +67,10 @@ export interface CourseBackendEntity {
     rpointFormula?: CourseRPointConfig | null;
     learningOutcomes?: string;
     createdAt?: string;
+    categoryId?: string | null;
+    careerTagIds?: string[];
+    category?: { id: string; name: string; color?: string; icon?: string } | null;
+    careerTags?: { id: string; name: string }[];
 }
 
 export interface CourseItem {
@@ -85,6 +89,10 @@ export interface CourseItem {
     gradingFormula: CourseGradingFormula;
     createdAt: string;
     updatedAt: string;
+    categoryId?: string | null;
+    careerTagIds?: string[];
+    categoryName?: string;
+    careerTags?: { id: string; name: string }[];
 }
 
 export type CreateCoursePayload = Omit<CourseItem, "id" | "createdAt" | "updatedAt">;

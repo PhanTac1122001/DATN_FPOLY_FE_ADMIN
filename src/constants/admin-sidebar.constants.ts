@@ -18,12 +18,14 @@ import {
     User,
     UserCheck,
     Users,
+    Waypoints,
     Zap,
 } from "lucide-react";
 
 export const dtItems = [
     { label: "Hệ đào tạo", icon: PieChart, path: "/systems" },
     { label: "Môn học", icon: BookOpen, path: "/courses" },
+    { label: "Roadmap môn học", icon: Waypoints, path: "/course-roadmap" },
     { label: "Lớp", icon: Users, path: "/classes" },
     { label: "Quản lý nhóm mẫu", icon: Network, path: "/groupwork" },
     { label: "Nhân viên", icon: UserCheck, path: "/staff" },

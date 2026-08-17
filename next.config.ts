@@ -71,16 +71,24 @@ const nextConfig: NextConfig = {
     async rewrites() {
         const authUrl = process.env.AUTH_URL || process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:65432";
         const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:6789";
+        const chatbotUrl = process.env.CHATBOT_URL || process.env.NEXT_PUBLIC_CHATBOT_URL || "http://localhost:8090";
         let authDest = authUrl;
         let apiDest = apiUrl;
+        let chatbotDest = chatbotUrl;
 
         // Route dynamically to the correct ports if using the staging IP
         if (apiUrl.includes("103.118.29.137")) {
             authDest = "http://103.118.29.137:65432";
             apiDest = "http://103.118.29.137:6789";
+            chatbotDest = "http://103.118.29.137:8090";
         }
 
         return [
+            // Chatbot quy trình là microservice riêng (cổng 8090) -> proxy riêng.
+            {
+                source: "/chatbot-api/:path*",
+                destination: `${chatbotDest}/v1/:path*`,
+            },
             {
                 source: "/api/:path*",
                 destination: `${apiDest}/v1/:path*`,
