@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Calendar, CheckCircle2, Eye, History, Save, Users, X } from "lucide-react";
 import { Heading } from "react-aria-components";
@@ -9,9 +9,10 @@ import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { AttendanceStatusEnum, SessionModeEnum } from "@/constants/class.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { getAttendanceRoster, getAttendanceSessions, markAttendance } from "@/services/attendance.service";
+import { getSessionsByCourse } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import type { AttendanceHistoryModalProps, AttendanceSession } from "@/types/class.types";
-import { extractStudentMongoId, getSessionId, getShiftLabel } from "@/utils/class.utils";
+import { extractStudentMongoId, getSessionId, getShiftLabel, isValidMongoId } from "@/utils/class.utils";
 import { cx } from "@/utils/cx";
 
 const localeVi = "vi-VN";
@@ -25,6 +26,7 @@ export function AttendanceHistoryModal({
     courses,
     students = [],
     currentAttendanceMap,
+    selectedCourseId: initialSelectedCourseId,
     onSelectSession,
 }: AttendanceHistoryModalProps) {
     const queryClient = useQueryClient();
@@ -34,11 +36,56 @@ export function AttendanceHistoryModal({
     const [isLoadingRoster, setIsLoadingRoster] = useState(false);
     const [rosterMap, setRosterMap] = useState<Record<string, { status: string; note: string }>>({});
 
+    const [filterCourseId, setFilterCourseId] = useState<string>(initialSelectedCourseId || "");
+
+    useEffect(() => {
+        if (isOpen) {
+            setFilterCourseId(initialSelectedCourseId || "");
+        }
+    }, [isOpen, initialSelectedCourseId]);
+
     const { data: sessions = [], isLoading: isLoadingSessions } = useQuery({
-        queryKey: ["attendance-sessions", classId],
-        queryFn: () => getAttendanceSessions({ classId }),
+        queryKey: ["attendance-sessions", classId, filterCourseId],
+        queryFn: () => getAttendanceSessions({ classId, courseId: filterCourseId || undefined }),
         enabled: isOpen && !!classId,
     });
+
+    const displaySessions = sessions.filter((s) => {
+        if (!filterCourseId) return true;
+        const cId =
+            typeof s.courseId === "object"
+                ? (s.courseId as unknown as Record<string, unknown>)?._id || (s.courseId as unknown as Record<string, unknown>)?.id
+                : s.courseId;
+        return String(cId) === filterCourseId;
+    });
+
+    const { data: allCourseSessions = [] } = useQuery({
+        queryKey: ["all-course-sessions-history", filterCourseId],
+        queryFn: () => getSessionsByCourse(filterCourseId),
+        enabled: isOpen && !!filterCourseId && isValidMongoId(filterCourseId),
+    });
+
+    const sessionMap = new Map(
+        (Array.isArray(allCourseSessions) ? allCourseSessions : []).map((s, idx) => {
+            const sId = String(s.id || (s as unknown as Record<string, unknown>)._id || "");
+            const label = s.name ? `Buổi ${s.position || idx + 1}: ${s.name}` : `Buổi ${idx + 1}`;
+            return [sId, label];
+        }),
+    );
+
+    const getSessionLabel = (sess: AttendanceSession) => {
+        if (typeof sess.sessionId === "object" && sess.sessionId) {
+            const obj = sess.sessionId as Record<string, unknown>;
+            const name = String(obj.name || obj.title || obj.topic || "");
+            const pos = obj.position ? `Buổi ${obj.position}: ` : "";
+            if (name) return `${pos}${name}`;
+        }
+        if (typeof sess.sessionId === "string" && sessionMap.has(sess.sessionId)) {
+            return sessionMap.get(sess.sessionId) || "Buổi học";
+        }
+        if (sess.topic) return sess.topic;
+        return "—";
+    };
 
     const getCourseName = (courseId: string) => {
         const found = courses.find((c) => {
@@ -185,10 +232,10 @@ export function AttendanceHistoryModal({
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={(open) => !open && handleCloseModal()}>
-            <CustomModal.Content className="max-w-4xl !rounded-[24px]">
-                <Dialog className="flex flex-col rounded-[24px] bg-white shadow-2xl outline-none">
+            <CustomModal.Content className="flex h-[90vh] max-h-[90vh] max-w-6xl flex-col overflow-hidden !rounded-[24px]">
+                <Dialog className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+                    <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
                         <div className="flex items-center gap-3">
                             <div className="flex size-10 items-center justify-center rounded-xl bg-wine-soft font-bold text-wine">
                                 <History className="size-5" />
@@ -199,7 +246,7 @@ export function AttendanceHistoryModal({
                                 </Heading>
                                 <p className="text-xs text-slate-500">
                                     {selectedSession
-                                        ? `${UI_TEXT.classes.datePrefix}${new Date(selectedSession.date).toLocaleDateString(localeVi)} - ${getShiftLabel(selectedSession.period || 1)}`
+                                        ? `${UI_TEXT.classes.datePrefix}${new Date(selectedSession.date).toLocaleDateString(localeVi)} - ${getShiftLabel(selectedSession.period || 1)}${getSessionLabel(selectedSession) && getSessionLabel(selectedSession) !== "—" ? ` (${getSessionLabel(selectedSession)})` : ""}`
                                         : UI_TEXT.classes.noHistoryData}
                                 </p>
                             </div>
@@ -215,11 +262,11 @@ export function AttendanceHistoryModal({
                     </div>
 
                     {/* Content */}
-                    <div className="p-6">
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-6">
                         {selectedSession ? (
                             /* SESSION DETAIL & EDIT ROSTER VIEW */
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center justify-between">
+                            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+                                <div className="flex shrink-0 items-center justify-between">
                                     <button
                                         type="button"
                                         onClick={() => setSelectedSession(null)}
@@ -230,9 +277,15 @@ export function AttendanceHistoryModal({
                                     </button>
 
                                     <div className="flex items-center gap-2">
-                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                                        <span className="rounded-full border border-wine/20 bg-wine-soft px-3 py-1 text-xs font-semibold text-wine">
                                             {UI_TEXT.classes.subjectLabel} <strong>{getCourseName(selectedSession.courseId)}</strong>
                                         </span>
+                                        {getSessionLabel(selectedSession) && getSessionLabel(selectedSession) !== "—" && (
+                                            <span className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">
+                                                {UI_TEXT.classes.sessionPrefix}
+                                                <strong>{getSessionLabel(selectedSession)}</strong>
+                                            </span>
+                                        )}
                                         <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
                                             {selectedSession.mode === SessionModeEnum.ONLINE ? onlineLabel : offlineLabel}
                                         </span>
@@ -250,7 +303,7 @@ export function AttendanceHistoryModal({
                                         <p className="text-sm font-bold text-slate-700">{UI_TEXT.classes.noRosterData}</p>
                                     </div>
                                 ) : (
-                                    <div className="custom-scrollbar max-h-[380px] overflow-x-auto rounded-2xl border border-line bg-white shadow-xs">
+                                    <div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-2xl border border-line bg-white shadow-xs">
                                         <table className="w-full table-auto border-collapse text-left text-sm text-ink">
                                             <thead>
                                                 <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
@@ -358,14 +411,14 @@ export function AttendanceHistoryModal({
                                 <div className="size-6 animate-spin rounded-full border-2 border-slate-200 border-t-wine" />
                                 <span className="text-sm font-semibold">{UI_TEXT.classes.loadingHistory}</span>
                             </div>
-                        ) : sessions.length === 0 ? (
+                        ) : displaySessions.length === 0 ? (
                             <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-6 text-center text-slate-400">
                                 <Calendar className="size-8 text-slate-300" />
                                 <p className="text-sm font-bold text-slate-700">{UI_TEXT.classes.noHistoryData}</p>
                                 <p className="text-xs text-slate-400">{UI_TEXT.classes.firstSessionHint}</p>
                             </div>
                         ) : (
-                            <div className="custom-scrollbar max-h-[380px] overflow-x-auto rounded-2xl border border-line bg-white shadow-xs">
+                            <div className="custom-scrollbar flex-1 overflow-auto rounded-2xl border border-line bg-white shadow-xs">
                                 <table className="w-full table-auto border-collapse text-left text-sm text-ink">
                                     <thead>
                                         <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
@@ -373,12 +426,13 @@ export function AttendanceHistoryModal({
                                             <th className="px-4 py-3">{UI_TEXT.classes.thDate}</th>
                                             <th className="px-4 py-3">{UI_TEXT.classes.thShift}</th>
                                             <th className="px-4 py-3">{UI_TEXT.classes.thSubject}</th>
+                                            <th className="px-4 py-3">{UI_TEXT.classes.thSession}</th>
                                             <th className="px-4 py-3 text-center">{UI_TEXT.classes.thMode}</th>
                                             <th className="px-4 py-3 text-center">{UI_TEXT.classes.thViewDetail}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {sessions.map((sess, idx) => {
+                                        {displaySessions.map((sess, idx) => {
                                             const formattedDate = sess.date ? new Date(sess.date).toLocaleDateString(localeVi) : "—";
 
                                             return (
@@ -390,6 +444,9 @@ export function AttendanceHistoryModal({
                                                     </td>
                                                     <td className="border-b border-line px-4 py-3 text-xs font-semibold text-slate-900">
                                                         {getCourseName(sess.courseId)}
+                                                    </td>
+                                                    <td className="border-b border-line px-4 py-3 text-xs font-medium text-slate-700">
+                                                        {getSessionLabel(sess)}
                                                     </td>
                                                     <td className="border-b border-line px-4 py-3 text-center">
                                                         <span
@@ -422,48 +479,40 @@ export function AttendanceHistoryModal({
                         )}
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
-                        {selectedSession ? (
-                            <>
+                    {/* Footer - only shown when editing a session detail */}
+                    {selectedSession && (
+                        <div className="flex shrink-0 items-center justify-between border-t border-slate-100 px-6 py-4">
+                            <Button
+                                type="button"
+                                color="secondary"
+                                size="md"
+                                onClick={() => {
+                                    if (onSelectSession) onSelectSession(selectedSession);
+                                    handleCloseModal();
+                                }}
+                                className="gap-2 rounded-full border-slate-200 font-bold text-slate-700"
+                                iconLeading={<CheckCircle2 className="size-4 text-emerald-600" />}
+                            >
+                                {UI_TEXT.classes.loadToMainScreen}
+                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button type="button" color="secondary" size="md" onClick={() => setSelectedSession(null)} className="rounded-full">
+                                    {UI_TEXT.classes.cancelBtn}
+                                </Button>
                                 <Button
                                     type="button"
-                                    color="secondary"
+                                    color="primary"
                                     size="md"
-                                    onClick={() => {
-                                        if (onSelectSession) onSelectSession(selectedSession);
-                                        handleCloseModal();
-                                    }}
-                                    className="gap-2 rounded-full border-slate-200 font-bold text-slate-700"
-                                    iconLeading={<CheckCircle2 className="size-4 text-emerald-600" />}
+                                    onClick={() => saveSessionMutation.mutate()}
+                                    isLoading={saveSessionMutation.isPending}
+                                    className="gap-2 rounded-full border-none bg-wine font-bold text-white"
+                                    iconLeading={<Save className="size-4" />}
                                 >
-                                    {UI_TEXT.classes.loadToMainScreen}
-                                </Button>
-                                <div className="flex items-center gap-2">
-                                    <Button type="button" color="secondary" size="md" onClick={() => setSelectedSession(null)} className="rounded-full">
-                                        {UI_TEXT.classes.cancelBtn}
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        color="primary"
-                                        size="md"
-                                        onClick={() => saveSessionMutation.mutate()}
-                                        isLoading={saveSessionMutation.isPending}
-                                        className="gap-2 rounded-full border-none bg-wine font-bold text-white"
-                                        iconLeading={<Save className="size-4" />}
-                                    >
-                                        {UI_TEXT.classes.saveAttendanceChanges}
-                                    </Button>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="ml-auto">
-                                <Button type="button" color="secondary" size="md" onClick={handleCloseModal} className="rounded-full">
-                                    {UI_TEXT.classes.closeBtn}
+                                    {UI_TEXT.classes.saveAttendanceChanges}
                                 </Button>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </Dialog>
             </CustomModal.Content>
         </CustomModal.Root>

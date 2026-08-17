@@ -4,12 +4,20 @@ import { HttpMethod } from "@/types/api-types";
 import type {
     ActiveQuizSessionParams,
     ActiveQuizSessionResponse,
+    ClassQuizSessionHistoryItem,
     StartQuizSessionPayload,
     StopQuizSessionPayload,
     StudentQuizResultItem,
 } from "@/types/session-quiz.types";
 
-export type { ActiveQuizSessionParams, ActiveQuizSessionResponse, StartQuizSessionPayload, StopQuizSessionPayload, StudentQuizResultItem };
+export type {
+    ActiveQuizSessionParams,
+    ActiveQuizSessionResponse,
+    ClassQuizSessionHistoryItem,
+    StartQuizSessionPayload,
+    StopQuizSessionPayload,
+    StudentQuizResultItem,
+};
 
 export async function startQuizSession(payload: StartQuizSessionPayload) {
     const res = await httpClient<any>(`${API_PREFIX}/staff/class-quiz-sessions/start`, {
@@ -33,6 +41,7 @@ export async function getActiveQuizSession(params: ActiveQuizSessionParams): Pro
     if (params.subjectId) searchParams.set("subjectId", params.subjectId);
     if (params.sessionId) searchParams.set("sessionId", params.sessionId);
     if (params.quizId) searchParams.set("quizId", params.quizId);
+    if (params.quizSessionId) searchParams.set("quizSessionId", params.quizSessionId);
 
     const res = await httpClient<any>(`${API_PREFIX}/staff/class-quiz-sessions/active?${searchParams.toString()}`, {
         method: HttpMethod.GET,
@@ -40,6 +49,26 @@ export async function getActiveQuizSession(params: ActiveQuizSessionParams): Pro
     const data = res?.data || res || {};
     return {
         session: data.session || null,
+        quiz: data.quiz || null,
         results: data.results || [],
+        serverTime: data.serverTime,
     };
+}
+
+export async function getQuizSessionHistory(params: {
+    classId: string;
+    subjectId?: string;
+    sessionId?: string;
+    quizId?: string;
+}): Promise<ClassQuizSessionHistoryItem[]> {
+    const searchParams = new URLSearchParams();
+    searchParams.set("classId", params.classId);
+    if (params.subjectId) searchParams.set("subjectId", params.subjectId);
+    if (params.sessionId) searchParams.set("sessionId", params.sessionId);
+    if (params.quizId) searchParams.set("quizId", params.quizId);
+
+    const res = await httpClient<any>(`${API_PREFIX}/staff/class-quiz-sessions/history?${searchParams.toString()}`, {
+        method: HttpMethod.GET,
+    });
+    return res?.data || res || [];
 }

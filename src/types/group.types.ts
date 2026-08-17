@@ -30,10 +30,7 @@ export const getDifficultyRank = (level?: string | HomeworkDifficultyLevel): num
     return HOMEWORK_DIFFICULTY_RANK[key] ?? HOMEWORK_DIFFICULTY_RANK[HomeworkDifficultyEnum.MEDIUM];
 };
 
-export const isHigherDifficulty = (
-    a?: string | HomeworkDifficultyLevel,
-    b?: string | HomeworkDifficultyLevel
-): boolean => {
+export const isHigherDifficulty = (a?: string | HomeworkDifficultyLevel, b?: string | HomeworkDifficultyLevel): boolean => {
     return getDifficultyRank(a) > getDifficultyRank(b);
 };
 
@@ -48,6 +45,8 @@ export interface GroupStudent {
     fullName: string;
     studentCode?: string;
     email?: string;
+    avatarUrl?: string;
+    dateOfBirth?: string;
 }
 
 export interface Group {
@@ -165,4 +164,12 @@ export interface ClassGroupsTabProps {
     classId: string;
     initialGroups?: Group[];
     availableSubjects?: GroupSubject[];
+}
+
+export interface SelectGroupStudentModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    students: GroupStudent[];
+    initialSelectedIds: string[];
+    onConfirm: (selectedIds: string[]) => void;
 }

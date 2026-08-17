@@ -154,10 +154,14 @@ export function CourseClassModal({ isOpen, onClose, classId, courseClassData }: 
                 <Dialog className="flex flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-                        <Heading slot="title" className="text-lg font-bold text-slate-900">
+                        <Heading slot="title" className="text-xl font-bold text-slate-900">
                             {isEditMode ? UI_TEXT.courseClassModal.editTitle : UI_TEXT.courseClassModal.createTitle}
                         </Heading>
-                        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        >
                             <X className="size-5" />
                         </button>
                     </div>
@@ -221,9 +225,16 @@ export function CourseClassModal({ isOpen, onClose, classId, courseClassData }: 
                             />
                         </div>
 
-                        {/* Footer buttons */}
-                        <div className="mt-4 grid grid-cols-3 gap-3 border-t border-slate-100 pt-4">
-                            <Button type="button" color="secondary" size="md" onClick={onClose} className="col-span-1 w-full justify-center">
+                        {/* Footer buttons - Full Width (Cancel 1/3, Confirm 2/3) */}
+                        <div className="mt-4 flex w-full items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                            <Button
+                                type="button"
+                                color="secondary"
+                                size="md"
+                                onClick={onClose}
+                                disabled={isPending}
+                                className="w-1/3 justify-center rounded-full border-slate-200 py-2.5 text-xs font-bold"
+                            >
                                 {UI_TEXT.courseClassModal.cancelBtn}
                             </Button>
                             <Button
@@ -231,7 +242,7 @@ export function CourseClassModal({ isOpen, onClose, classId, courseClassData }: 
                                 color="primary"
                                 size="md"
                                 isLoading={isPending}
-                                className="col-span-2 w-full justify-center border-none bg-wine text-white"
+                                className="w-2/3 justify-center rounded-full border-none bg-wine py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-wine-deep"
                             >
                                 {isEditMode ? UI_TEXT.courseClassModal.saveBtn : UI_TEXT.courseClassModal.assignBtn}
                             </Button>

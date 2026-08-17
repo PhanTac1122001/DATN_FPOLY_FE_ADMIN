@@ -71,6 +71,16 @@ export async function deleteCourseClass(id: string): Promise<void> {
     return response?.data || response;
 }
 
+export async function getCourseClassesByClassId(classId: string): Promise<any[]> {
+    const response = await httpClient<any>(`/staff/course-classes/class/${classId}`, { method: HttpMethod.GET });
+    return response?.data || response || [];
+}
+
+export async function getCourseClassStatistics(courseClassId: string): Promise<any> {
+    const response = await httpClient<any>(`/staff/course-classes/${courseClassId}/statistics`, { method: HttpMethod.GET });
+    return response?.data || response;
+}
+
 /* ==================== STUDENT-CLASS (ROSTER) MANAGEMENT ==================== */
 
 export async function enrollStudentInClass(data: CreateStudentClassRequest): Promise<any> {

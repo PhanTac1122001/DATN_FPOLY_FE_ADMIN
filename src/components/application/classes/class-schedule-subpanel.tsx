@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Calendar, History, Plus, Save, UserPlus, UserX, Users } from "lucide-react";
+import { BookOpen, Calendar, CheckCircle2, Clock, History, Plus, Save, UserPlus, UserX, Users } from "lucide-react";
 import { DatePicker } from "@/components/application/date-picker/date-picker";
 import { AttendanceHistoryModal } from "@/components/application/modals/attendance-history-modal";
 import { CourseClassModal } from "@/components/application/modals/course-class-modal";
@@ -12,13 +12,13 @@ import { Select } from "@/components/base/select/select";
 import { AttendanceStatusEnum, SessionModeEnum } from "@/constants/class.constants";
 import { SHIFT_OPTIONS_LIST } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { createAttendanceSession, getAttendanceRoster, getAttendanceSessions, markAttendance } from "@/services/attendance.service";
+import { createAttendanceSession, getAttendanceRoster, getAttendanceSessions, markAttendance, updateAttendanceSession } from "@/services/attendance.service";
+import { getSessionsByCourse } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import type { AttendanceSession, AttendanceStatus, ClassScheduleSubpanelProps } from "@/types/class.types";
-import { extractCourseMongoId, extractStudentMongoId, isValidMongoId } from "@/utils/class.utils";
+import { extractCourseMongoId, extractStudentMongoId, getCurrentShiftNumber, isValidMongoId } from "@/utils/class.utils";
 import { cx } from "@/utils/cx";
 
-const defaultShift = 3;
 const localeVi = "vi-VN";
 
 export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: ClassScheduleSubpanelProps) {
@@ -38,20 +38,65 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
         })
         .filter((opt) => isValidMongoId(opt.id));
 
-    const [selectedCourseId, setSelectedCourseId] = useState<string>(() => courseOptions[0]?.id || "");
+    const [selectedCourseId, setSelectedCourseId] = useState<string>("");
+    const [selectedSessionId, setSelectedSessionId] = useState<string>("");
 
-    // Auto fill/select course when courseOptions updates (e.g. after adding a course)
+    // Reset selectedCourseId if current selection is no longer in courseOptions
     useEffect(() => {
-        if (courseOptions.length > 0) {
-            if (!selectedCourseId || !courseOptions.some((opt) => opt.id === selectedCourseId)) {
-                setSelectedCourseId(courseOptions[0].id);
-            }
-        } else {
+        if (selectedCourseId && courseOptions.length > 0 && !courseOptions.some((opt) => opt.id === selectedCourseId)) {
             setSelectedCourseId("");
         }
     }, [courseOptions, selectedCourseId]);
+
+    // Query all existing attendance sessions for the current class & course to mark sessions already attended
+    const { data: allAttendanceSessions = [] } = useQuery({
+        queryKey: ["all-attendance-sessions-class", classId, selectedCourseId],
+        queryFn: () => getAttendanceSessions({ classId, courseId: selectedCourseId || undefined }),
+        enabled: !!classId && !!selectedCourseId && isValidMongoId(selectedCourseId),
+    });
+
+    const attendedSessionIds = new Set(
+        (Array.isArray(allAttendanceSessions) ? allAttendanceSessions : [])
+            .map((as: AttendanceSession) => {
+                const rawAs = as as unknown as Record<string, unknown>;
+                const sId =
+                    typeof rawAs.sessionId === "object"
+                        ? (rawAs.sessionId as Record<string, unknown>)?._id || (rawAs.sessionId as Record<string, unknown>)?.id
+                        : rawAs.sessionId;
+                return String(sId || "");
+            })
+            .filter(Boolean),
+    );
+
+    // Query syllabus sessions of current course
+    const { data: courseSessions = [], isLoading: isLoadingCourseSessions } = useQuery({
+        queryKey: ["course-sessions", selectedCourseId],
+        queryFn: () => getSessionsByCourse(selectedCourseId),
+        enabled: !!selectedCourseId && isValidMongoId(selectedCourseId),
+    });
+
+    const sessionOptions = courseSessions
+        .map((s, idx) => {
+            const sId = String(s.id || (s as unknown as Record<string, unknown>)._id || "");
+            const isAttended = attendedSessionIds.has(sId);
+            const baseLabel = s.name ? `Buổi ${s.position || idx + 1}: ${s.name}` : `Buổi ${idx + 1}`;
+            return {
+                id: sId,
+                label: baseLabel,
+                isAttended,
+            };
+        })
+        .filter((opt) => isValidMongoId(opt.id));
+
+    // Reset selectedSessionId if courseSessions finished loading and current selection is no longer in sessionOptions
+    useEffect(() => {
+        if (!isLoadingCourseSessions && selectedSessionId && sessionOptions.length > 0 && !sessionOptions.some((opt) => opt.id === selectedSessionId)) {
+            setSelectedSessionId("");
+        }
+    }, [sessionOptions, selectedSessionId, isLoadingCourseSessions]);
+
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0]);
-    const [selectedShift, setSelectedShift] = useState<number>(defaultShift);
+    const [selectedShift, setSelectedShift] = useState<number>(() => getCurrentShiftNumber());
     const [mode, setMode] = useState<"OFFLINE" | "ONLINE">(SessionModeEnum.OFFLINE);
 
     // Attendance State mapping studentId -> status & note
@@ -66,11 +111,12 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
         return initial;
     });
 
-    // Query existing session and roster for current course, date, and shift
+    // Query existing session and roster for current course, date, shift and selectedSessionId
     const { data: currentRosterData } = useQuery({
-        queryKey: ["current-attendance-session", classId, selectedCourseId, selectedDate, selectedShift],
+        queryKey: ["current-attendance-session", classId, selectedCourseId, selectedDate, selectedShift, selectedSessionId],
         queryFn: async () => {
             if (!selectedCourseId || !isValidMongoId(selectedCourseId)) return null;
+            if (!selectedSessionId || !isValidMongoId(selectedSessionId)) return null;
             const sessions = await getAttendanceSessions({
                 classId,
                 courseId: selectedCourseId,
@@ -79,7 +125,14 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
             });
             const rawSessions = (sessions as unknown as Record<string, unknown>)?.data ?? sessions;
             const sessionList: Record<string, unknown>[] = Array.isArray(rawSessions) ? rawSessions : [];
-            const found = sessionList.find((s) => Number(s.period) === Number(selectedShift));
+            const found = sessionList.find((s) => {
+                const matchShift = Number(s.period) === Number(selectedShift);
+                const sSessId =
+                    typeof s.sessionId === "object"
+                        ? (s.sessionId as Record<string, unknown>)?._id || (s.sessionId as Record<string, unknown>)?.id
+                        : s.sessionId;
+                return matchShift && String(sSessId) === String(selectedSessionId);
+            });
             if (!found) return null;
             const sId = (found as Record<string, unknown>).id || (found as Record<string, unknown>)._id;
             if (!sId) return null;
@@ -92,45 +145,44 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                   : [];
             return { session: found, roster: rosterList };
         },
-        enabled: !!classId && !!selectedCourseId && isValidMongoId(selectedCourseId) && !!selectedDate,
+        enabled:
+            !!classId && !!selectedCourseId && isValidMongoId(selectedCourseId) && !!selectedDate && !!selectedSessionId && isValidMongoId(selectedSessionId),
     });
+
+    const isAlreadyAttended = !!selectedSessionId && !!currentRosterData?.session;
 
     // Update local attendanceMap when backend roster or students list changes
     useEffect(() => {
         if (currentRosterData?.roster && currentRosterData.roster.length > 0) {
             const rosterMap = new Map(currentRosterData.roster.map((r) => [r.studentId, r]));
-            setAttendanceMap((prev) => {
-                const next = { ...prev };
-                students.forEach((s) => {
-                    const sId = extractStudentMongoId(s);
-                    if (sId) {
-                        const r = rosterMap.get(sId) as Record<string, unknown> | undefined;
-                        if (r && r.status) {
-                            next[sId] = {
-                                status: r.status as AttendanceStatus,
-                                note: String(r.note || ""),
-                            };
-                        } else if (!next[sId]) {
-                            next[sId] = { status: AttendanceStatusEnum.PRESENT, note: "" };
-                        }
+            const next: Record<string, { status: AttendanceStatus; note: string }> = {};
+            students.forEach((s) => {
+                const sId = extractStudentMongoId(s);
+                if (sId) {
+                    const r = rosterMap.get(sId) as Record<string, unknown> | undefined;
+                    if (r && r.status) {
+                        next[sId] = {
+                            status: r.status as AttendanceStatus,
+                            note: String(r.note || ""),
+                        };
+                    } else {
+                        next[sId] = { status: AttendanceStatusEnum.PRESENT, note: "" };
                     }
-                });
-                return next;
+                }
             });
+            setAttendanceMap(next);
             if (currentRosterData.session?.mode) {
                 setMode(currentRosterData.session.mode as "OFFLINE" | "ONLINE");
             }
         } else {
-            setAttendanceMap((prev) => {
-                const next = { ...prev };
-                students.forEach((s) => {
-                    const sId = extractStudentMongoId(s);
-                    if (sId && !next[sId]) {
-                        next[sId] = { status: AttendanceStatusEnum.PRESENT, note: "" };
-                    }
-                });
-                return next;
+            const next: Record<string, { status: AttendanceStatus; note: string }> = {};
+            students.forEach((s) => {
+                const sId = extractStudentMongoId(s);
+                if (sId) {
+                    next[sId] = { status: AttendanceStatusEnum.PRESENT, note: "" };
+                }
             });
+            setAttendanceMap(next);
         }
     }, [currentRosterData, students]);
 
@@ -182,35 +234,79 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                 throw new Error(UI_TEXT.classes.toastNoCourseSelected);
             }
 
-            // Step 1: Create or find session
-            const session = await createAttendanceSession({
-                classId,
-                courseId: selectedCourseId,
-                date: selectedDate,
-                period: selectedShift,
-                mode,
-            });
+            if (!selectedSessionId || !isValidMongoId(selectedSessionId)) {
+                throw new Error("Vui lòng chọn buổi học (session) trước khi lưu điểm danh!");
+            }
 
-            const sessionId = session?.id || (session as unknown as Record<string, unknown>)?._id;
-            if (!sessionId) {
+            let targetSessionId = currentRosterData?.session
+                ? currentRosterData.session.id || (currentRosterData.session as unknown as Record<string, unknown>)._id
+                : null;
+
+            if (!targetSessionId) {
+                const existingSessions = await getAttendanceSessions({
+                    classId,
+                    courseId: selectedCourseId,
+                    from: selectedDate,
+                    to: selectedDate,
+                });
+                const rawSessions = (existingSessions as unknown as Record<string, unknown>)?.data ?? existingSessions;
+                const sessionList: Record<string, unknown>[] = Array.isArray(rawSessions) ? rawSessions : [];
+
+                const found = sessionList.find((s) => {
+                    const matchShift = Number(s.period) === Number(selectedShift);
+                    if (!selectedSessionId) return matchShift;
+                    const sSessId =
+                        typeof s.sessionId === "object"
+                            ? (s.sessionId as Record<string, unknown>)?._id || (s.sessionId as Record<string, unknown>)?.id
+                            : s.sessionId;
+                    return matchShift && String(sSessId) === String(selectedSessionId);
+                });
+
+                if (found) {
+                    targetSessionId = (found as Record<string, unknown>).id || (found as Record<string, unknown>)._id;
+                }
+            }
+
+            // Only create a new session document if none exists yet
+            if (!targetSessionId) {
+                const session = await createAttendanceSession({
+                    classId,
+                    courseId: selectedCourseId,
+                    date: selectedDate,
+                    period: selectedShift,
+                    mode,
+                    sessionId: selectedSessionId,
+                });
+                targetSessionId = session?.id || (session as unknown as Record<string, unknown>)?._id;
+            } else {
+                try {
+                    await updateAttendanceSession(String(targetSessionId), { mode, period: selectedShift, date: selectedDate });
+                } catch (e) {
+                    console.warn("Failed to update attendance session details:", e);
+                }
+            }
+
+            if (!targetSessionId) {
                 throw new Error(UI_TEXT.classes.toastSaveError);
             }
 
-            // Step 2: Mark attendance roster
+            // Step 2: Mark attendance roster on the target session
             const entries = Object.entries(attendanceMap).map(([studentId, data]) => ({
                 studentId,
                 status: data.status,
                 note: data.note,
             }));
 
-            await markAttendance(String(sessionId), { entries });
+            await markAttendance(String(targetSessionId), { entries });
         },
         onSuccess: () => {
-            toast.success(UI_TEXT.classes.toastSuccess, UI_TEXT.classes.toastSaveSuccess);
+            const successMsg = isAlreadyAttended ? "Cập nhật thông tin điểm danh thành công" : UI_TEXT.classes.toastSaveSuccess;
+            toast.success(UI_TEXT.classes.toastSuccess, successMsg);
             queryClient.invalidateQueries({ queryKey: ["class-detail", classId] });
             queryClient.invalidateQueries({ queryKey: ["attendance-sessions", classId] });
+            queryClient.invalidateQueries({ queryKey: ["all-attendance-sessions-class", classId, selectedCourseId] });
             queryClient.invalidateQueries({
-                queryKey: ["current-attendance-session", classId, selectedCourseId, selectedDate, selectedShift],
+                queryKey: ["current-attendance-session", classId, selectedCourseId, selectedDate, selectedShift, selectedSessionId],
             });
         },
         onError: (err: Error) => {
@@ -223,19 +319,60 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
     });
 
     const handleSelectHistorySession = async (sess: AttendanceSession) => {
-        const sId = sess.id || (sess as unknown as Record<string, unknown>)._id;
-        if (sess.courseId) setSelectedCourseId(sess.courseId);
-        if (sess.date) setSelectedDate(new Date(sess.date).toISOString().split("T")[0]);
-        if (sess.period) setSelectedShift(sess.period);
-        if (sess.mode) setMode(sess.mode as "OFFLINE" | "ONLINE");
+        if (!sess) return;
 
-        if (!sId) {
-            toast.info(UI_TEXT.classes.toastSessionSelected, `${UI_TEXT.classes.toastSessionSelected} ${new Date(sess.date).toLocaleDateString(localeVi)}`);
+        // Extract courseId string
+        let rawCourseId = "";
+        if (typeof sess.courseId === "object" && sess.courseId) {
+            const obj = sess.courseId as Record<string, unknown>;
+            rawCourseId = String(obj._id || obj.id || "");
+        } else if (typeof sess.courseId === "string") {
+            rawCourseId = sess.courseId;
+        }
+        if (rawCourseId && isValidMongoId(rawCourseId)) {
+            setSelectedCourseId(rawCourseId);
+        }
+
+        // Extract date string YYYY-MM-DD
+        if (sess.date) {
+            const formattedDate = typeof sess.date === "string" ? sess.date.split("T")[0] : new Date(sess.date).toISOString().split("T")[0];
+            setSelectedDate(formattedDate);
+        }
+
+        // Extract shift/period
+        if (sess.period) {
+            setSelectedShift(Number(sess.period));
+        }
+
+        // Extract mode
+        if (sess.mode) {
+            setMode(sess.mode === SessionModeEnum.ONLINE ? SessionModeEnum.ONLINE : SessionModeEnum.OFFLINE);
+        }
+
+        // Extract sessionId string (Buổi học)
+        let rawSessId = "";
+        if (typeof sess.sessionId === "object" && sess.sessionId) {
+            const obj = sess.sessionId as Record<string, unknown>;
+            rawSessId = String(obj._id || obj.id || "");
+        } else if (typeof sess.sessionId === "string") {
+            rawSessId = sess.sessionId;
+        }
+
+        if (rawSessId && isValidMongoId(rawSessId)) {
+            setSelectedSessionId(rawSessId);
+        }
+
+        const attendanceSessionId = sess.id || (sess as unknown as Record<string, unknown>)._id;
+        if (!attendanceSessionId) {
+            toast.info(
+                UI_TEXT.classes.toastSessionSelected,
+                `${UI_TEXT.classes.toastSessionSelected} ${sess.date ? new Date(sess.date).toLocaleDateString(localeVi) : ""}`,
+            );
             return;
         }
 
         try {
-            const roster = await getAttendanceRoster(String(sId));
+            const roster = await getAttendanceRoster(String(attendanceSessionId));
             const rawData = (roster as unknown as Record<string, unknown>)?.data ?? roster;
             const rosterList: Record<string, unknown>[] = Array.isArray(rawData)
                 ? rawData
@@ -293,13 +430,13 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                         className="gap-2 rounded-full border-none bg-wine font-bold text-white shadow-md hover:bg-wine-deep"
                         iconLeading={<Save className="size-4" />}
                     >
-                        {UI_TEXT.classes.saveAttendanceBtn}
+                        {isAlreadyAttended ? UI_TEXT.classSchedule.updateAttendanceBtn : UI_TEXT.classes.saveAttendanceBtn}
                     </Button>
                 </div>
             </div>
 
-            {/* Selection Bar: Môn học, Ngày, Ca học, Hình thức (Synchronized rounded-full Selects) */}
-            <div className="grid grid-cols-1 items-end gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Selection Bar: Môn học, Buổi học, Ngày, Ca học, Hình thức */}
+            <div className="grid grid-cols-1 items-end gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 {/* Selector 1: Môn học */}
                 <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">{UI_TEXT.classes.thSubjectModule}</label>
@@ -308,7 +445,10 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                         placeholder={UI_TEXT.classes.placeholderSelectSubject}
                         items={courseOptions}
                         selectedKey={selectedCourseId}
-                        onSelectionChange={(key) => setSelectedCourseId(String(key))}
+                        onSelectionChange={(key) => {
+                            setSelectedCourseId(String(key));
+                            setSelectedSessionId("");
+                        }}
                         isClearable={false}
                         triggerClassName="!rounded-full border-slate-200 bg-white"
                     >
@@ -320,7 +460,28 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                     </Select>
                 </div>
 
-                {/* Selector 2: Ngày điểm danh */}
+                {/* Selector 2: Buổi học (Session) */}
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">{UI_TEXT.classSchedule.labelSessionUpper}</label>
+                    <Select
+                        aria-label="Chọn buổi học"
+                        placeholder={isLoadingCourseSessions ? "Đang tải buổi học..." : sessionOptions.length === 0 ? "Chưa có buổi học" : "Chọn buổi học"}
+                        items={sessionOptions}
+                        selectedKey={selectedSessionId}
+                        onSelectionChange={(key) => setSelectedSessionId(String(key))}
+                        isClearable={false}
+                        isDisabled={!selectedCourseId || sessionOptions.length === 0}
+                        triggerClassName="!rounded-full border-slate-200 bg-white"
+                    >
+                        {(item) => (
+                            <Select.Item key={item.id} id={item.id}>
+                                {item.label}
+                            </Select.Item>
+                        )}
+                    </Select>
+                </div>
+
+                {/* Selector 3: Ngày điểm danh */}
                 <DatePicker
                     label={UI_TEXT.classes.thDateLabelUpper}
                     value={selectedDate}
@@ -336,7 +497,7 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                         placeholder={UI_TEXT.classes.placeholderSelectShift}
                         items={SHIFT_OPTIONS_LIST}
                         selectedKey={String(selectedShift)}
-                        onSelectionChange={(key) => setSelectedShift(Number(key) || defaultShift)}
+                        onSelectionChange={(key) => setSelectedShift(Number(key) || getCurrentShiftNumber())}
                         isClearable={false}
                         triggerClassName="!rounded-full border-slate-200 bg-white"
                     >
@@ -383,11 +544,36 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                         <Users className="size-5" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-slate-900">{UI_TEXT.classes.rosterTitle}</h4>
+                        <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-slate-900">{UI_TEXT.classes.rosterTitle}</h4>
+                            {selectedSessionId ? (
+                                isAlreadyAttended ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                        <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                        {UI_TEXT.classSchedule.statusAttended}
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700">
+                                        <Clock className="size-3.5 text-amber-600" />
+                                        {UI_TEXT.classSchedule.statusNotAttended}
+                                    </span>
+                                )
+                            ) : null}
+                        </div>
                         <p className="text-xs text-slate-500">
-                            {UI_TEXT.classes.classSizeLabel} <strong className="text-slate-800">{totalStudents}</strong> {UI_TEXT.classes.presentLabel}{" "}
-                            <strong className="text-emerald-600">{presentCount}</strong> {UI_TEXT.classes.absentLabel}{" "}
-                            <strong className="text-rose-600">{absentCount}</strong>
+                            {selectedSessionId ? (
+                                <>
+                                    {UI_TEXT.classes.classSizeLabel} <strong className="text-slate-800">{totalStudents}</strong>
+                                    {" | "}
+                                    {UI_TEXT.classes.presentLabel} <strong className="text-emerald-600">{presentCount}</strong>
+                                    {" | "}
+                                    {UI_TEXT.classes.absentLabel} <strong className="text-rose-600">{absentCount}</strong>
+                                </>
+                            ) : (
+                                <>
+                                    {UI_TEXT.classes.classSizeLabel} <strong className="text-slate-800">{totalStudents}</strong>
+                                </>
+                            )}
                         </p>
                     </div>
                 </div>
@@ -440,6 +626,16 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                     <div className="max-w-md">
                         <h4 className="text-base font-bold text-slate-900">{UI_TEXT.classSchedule.pleaseSelectCourseTitle}</h4>
                         <p className="mt-1 text-xs text-slate-500">{UI_TEXT.classSchedule.pleaseSelectCourseDesc}</p>
+                    </div>
+                </div>
+            ) : !selectedSessionId ? (
+                <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 rounded-2xl border border-line bg-slate-50/60 p-12 text-center text-slate-600">
+                    <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-100 font-bold text-slate-500">
+                        <BookOpen className="size-6 text-slate-500" />
+                    </div>
+                    <div className="max-w-md">
+                        <h4 className="text-base font-bold text-slate-900">{UI_TEXT.classSchedule.pleaseSelectSessionTitle}</h4>
+                        <p className="mt-1 text-xs text-slate-500">{UI_TEXT.classSchedule.pleaseSelectSessionDesc}</p>
                     </div>
                 </div>
             ) : students.length === 0 ? (
@@ -566,6 +762,7 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                 courses={courses}
                 students={students}
                 currentAttendanceMap={attendanceMap}
+                selectedCourseId={selectedCourseId}
                 onSelectSession={handleSelectHistorySession}
             />
 

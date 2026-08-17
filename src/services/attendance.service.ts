@@ -11,8 +11,14 @@ export async function createAttendanceSession(data: CreateSessionRequest): Promi
 }
 
 export async function getAttendanceSessions(params: { classId: string; courseId?: string; from?: string; to?: string }): Promise<AttendanceSession[]> {
-    const query = new URLSearchParams(params as Record<string, string>).toString();
-    const response = await httpClient<any>(`/staff/attendance/sessions?${query}`, {
+    const cleanParams: Record<string, string> = {};
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+            cleanParams[key] = String(value);
+        }
+    });
+    const query = new URLSearchParams(cleanParams).toString();
+    const response = await httpClient<any>(`/staff/attendance/sessions${query ? `?${query}` : ""}`, {
         method: HttpMethod.GET,
     });
     return response?.data || response || [];
@@ -39,4 +45,20 @@ export async function updateAttendanceMark(attendanceId: string, status: string,
         body: JSON.stringify({ status, note }),
     });
     return response?.data || response;
+}
+
+export async function updateAttendanceSession(sessionId: string, data: Partial<CreateSessionRequest>): Promise<AttendanceSession> {
+    try {
+        const response = await httpClient<any>(`/staff/attendance/sessions/${sessionId}`, {
+            method: HttpMethod.PATCH,
+            body: JSON.stringify(data),
+        });
+        return response?.data || response;
+    } catch {
+        const response = await httpClient<any>(`/staff/attendance/sessions/${sessionId}`, {
+            method: HttpMethod.PUT,
+            body: JSON.stringify(data),
+        });
+        return response?.data || response;
+    }
 }

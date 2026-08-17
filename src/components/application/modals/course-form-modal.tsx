@@ -26,6 +26,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
     // Form fields
     const [code, setCode] = useState("");
     const [title, setTitle] = useState("");
+    const [totalSessions, setTotalSessions] = useState<number | string>("");
     const [description, setDescription] = useState("");
     const [learningOutcomes, setLearningOutcomes] = useState("");
     const [accessMode, setAccessMode] = useState<AccessModeEnum>(AccessModeEnum.SEQUENTIAL);
@@ -69,6 +70,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
         if (initialData) {
             setCode(initialData.code);
             setTitle(initialData.title);
+            setTotalSessions(initialData.totalSessions ?? "");
             setDescription(initialData.description || "");
             setLearningOutcomes(initialData.learningOutcomes || "");
             setAccessMode(initialData.accessMode ? (initialData.accessMode as AccessModeEnum) : AccessModeEnum.SEQUENTIAL);
@@ -93,6 +95,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
         } else {
             setCode("");
             setTitle("");
+            setTotalSessions("");
             setDescription("");
             setLearningOutcomes("");
             setAccessMode(AccessModeEnum.SEQUENTIAL);
@@ -147,7 +150,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
         e.preventDefault();
         setSubmitted(true);
 
-        if (!title.trim() || !code.trim()) {
+        if (!title.trim() || !code.trim() || totalSessions === "" || Number(totalSessions) <= 0) {
             toast.error(UI_TEXT.common.errorTitle, UI_TEXT.courseFormModal.toastRequiredError);
             return;
         }
@@ -202,6 +205,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             await onSubmit({
                 code: code.trim(),
                 title: title.trim(),
+                totalSessions: totalSessions === "" ? undefined : Number(totalSessions),
                 category: initialData?.category || defaultScoringMethod,
                 categoryId,
                 careerTagIds,
@@ -263,7 +267,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                     <form onSubmit={handleSubmit} noValidate className="flex flex-col">
                         <div className="flex max-h-[75vh] flex-col gap-5 overflow-y-auto p-6">
                             {/* General info */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 <Input
                                     label={
                                         <span>
@@ -287,6 +291,23 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                     onChange={(val) => setTitle(val)}
                                     isInvalid={submitted && !title.trim()}
                                     hint={submitted && !title.trim() ? UI_TEXT.courseFormModal.toastRequiredError : undefined}
+                                />
+                                <Input
+                                    type="number"
+                                    label={
+                                        <span>
+                                            {UI_TEXT.courseFormModal.totalSessionsLabel} <span className="font-bold text-red-500">{"*"}</span>
+                                        </span>
+                                    }
+                                    placeholder={UI_TEXT.courseFormModal.totalSessionsPlaceholder}
+                                    value={totalSessions === "" ? "" : String(totalSessions)}
+                                    onChange={(val) => setTotalSessions(val === "" ? "" : Math.max(0, Number(val)))}
+                                    isInvalid={submitted && (totalSessions === "" || Number(totalSessions) <= 0)}
+                                    hint={
+                                        submitted && (totalSessions === "" || Number(totalSessions) <= 0)
+                                            ? UI_TEXT.courseFormModal.toastRequiredError
+                                            : undefined
+                                    }
                                 />
                             </div>
 
@@ -370,11 +391,6 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                             </div>
 
                             <div className="flex flex-col gap-5">
-                                <div className="rounded-2xl border border-wine/15 bg-gradient-to-r from-wine/5 via-slate-50 to-indigo-50/30 p-4.5 shadow-xs">
-                                    <h3 className="text-sm font-bold text-slate-900">{UI_TEXT.courseFormModal.gradingSectionTitle}</h3>
-                                    <p className="mt-0.5 text-xs text-slate-500">{UI_TEXT.courseFormModal.useCustomFormulaLabel}</p>
-                                </div>
-
                                 {/* Card 1: Hình thức thi cuối kỳ */}
                                 <div className="flex flex-col gap-2 rounded-2xl bg-white shadow-xs">
                                     <h4 className="text-sm font-bold text-slate-800">{UI_TEXT.courseFormModal.finalExamTypeLabel}</h4>
@@ -638,283 +654,296 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                         </span>
                                     </div>
 
-                                    {/* Visual breakdown progress bar */}
-                                    <div className="flex flex-col gap-2 rounded-xl border border-wine/10 bg-white/80 p-3 shadow-2xs">
-                                        <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 shadow-inner">
-                                            <div
-                                                style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, attendanceWeight))}%` }}
-                                                className="h-full rounded-l-full bg-blue-500 transition-all duration-300"
-                                                title={`Chuyên cần: ${attendanceWeight}%`}
-                                            />
-                                            <div
-                                                style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, quizWeight))}%` }}
-                                                className="h-full bg-amber-500 transition-all duration-300"
-                                                title={`Kiểm tra đầu giờ: ${quizWeight}%`}
-                                            />
-                                            <div
-                                                style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, hackathonWeight))}%` }}
-                                                className="h-full bg-emerald-500 transition-all duration-300"
-                                                title={`Hackathon: ${hackathonWeight}% (${hackathonQuizWeight}% TN + ${hackathonEssayWeight}% TL)`}
-                                            />
-                                            <div
-                                                style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, examWeight))}%` }}
-                                                className="h-full rounded-r-full bg-wine transition-all duration-300"
-                                                title={`Thi cuối kỳ: ${examWeight}% (${finalExamType}: ${finalExamType === FinalExamTypeEnum.PROJECT ? `${projectProductWeight}% SP + ${projectKnowledgeWeight}% KT + ${projectInterviewWeight}% PV` : `${essayEssayWeight}% TL + ${essayQuizWeight}% TN`})`}
-                                            />
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] font-medium text-slate-600">
-                                            <span className="flex items-center gap-1.5">
-                                                <span className="size-2.5 shrink-0 rounded-full bg-blue-500 shadow-2xs" />{" "}
-                                                {UI_TEXT.courseFormModal.attendanceWeightLabel}
-                                                {":"}{" "}
-                                                <strong className="font-bold text-slate-900">
-                                                    {attendanceWeight}
-                                                    {"%"}
-                                                </strong>
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <span className="size-2.5 shrink-0 rounded-full bg-amber-500 shadow-2xs" />{" "}
-                                                {UI_TEXT.courseFormModal.quizWeightLabel}
-                                                {":"}{" "}
-                                                <strong className="font-bold text-slate-900">
-                                                    {quizWeight}
-                                                    {"%"}
-                                                </strong>
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <span className="size-2.5 shrink-0 rounded-full bg-emerald-500 shadow-2xs" />{" "}
-                                                {UI_TEXT.courseFormModal.hackathonWeightLabel}
-                                                {":"}{" "}
-                                                <strong className="font-bold text-slate-900">
-                                                    {hackathonWeight}
-                                                    {"%"}
-                                                </strong>
-                                                <span className="text-slate-500">
-                                                    {UI_TEXT.courseFormModal.hackathonSummaryText
-                                                        .replace("{quiz}", String(hackathonQuizWeight))
-                                                        .replace("{essay}", String(hackathonEssayWeight))}
-                                                </span>
-                                            </span>
-                                            <span className="flex items-center gap-1.5">
-                                                <span className="size-2.5 shrink-0 rounded-full bg-wine shadow-2xs" /> {UI_TEXT.courseFormModal.examWeightLabel}
-                                                {":"}{" "}
-                                                <strong className="font-bold text-slate-900">
-                                                    {examWeight}
-                                                    {"%"}
-                                                </strong>
-                                                <span className="text-slate-500">
-                                                    {finalExamType === FinalExamTypeEnum.PROJECT
-                                                        ? UI_TEXT.courseFormModal.projectSummaryText
-                                                              .replace("{product}", String(projectProductWeight))
-                                                              .replace("{knowledge}", String(projectKnowledgeWeight))
-                                                              .replace("{interview}", String(projectInterviewWeight))
-                                                        : UI_TEXT.courseFormModal.essaySummaryText
-                                                              .replace("{essay}", String(essayEssayWeight))
-                                                              .replace("{quiz}", String(essayQuizWeight))}
-                                                </span>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
-                                        <div className="flex flex-col gap-1">
-                                            <div
-                                                className={`flex items-center justify-between rounded-xl border p-3 shadow-xs transition-all ${
-                                                    isInvalidWeight(attendanceWeight)
-                                                        ? "border-rose-400 bg-rose-50/30"
-                                                        : "border-slate-200/80 bg-white hover:border-wine/30"
-                                                }`}
-                                            >
-                                                <span className="text-xs font-bold text-slate-800">{UI_TEXT.courseFormModal.attendanceWeightLabel}</span>
-                                                <div className="flex items-center gap-1.5">
-                                                    <input
-                                                        type="number"
-                                                        value={attendanceWeight}
-                                                        onChange={(e) => setAttendanceWeight(Number(e.target.value))}
-                                                        className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
-                                                            isInvalidWeight(attendanceWeight)
-                                                                ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
-                                                                : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white focus:ring-2 focus:ring-wine/20"
-                                                        }`}
-                                                    />
-                                                    <span className="text-xs font-bold text-slate-400">{"%"}</span>
-                                                </div>
+                                    <div className="flex flex-col gap-4 p-4 sm:p-5">
+                                        {/* Visual breakdown progress bar */}
+                                        <div className="flex flex-col gap-2 rounded-xl p-3.5">
+                                            <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100 p-0.5 shadow-inner">
+                                                <div
+                                                    style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, attendanceWeight))}%` }}
+                                                    className="h-full rounded-l-full bg-blue-500 transition-all duration-300"
+                                                    title={`Chuyên cần: ${attendanceWeight}%`}
+                                                />
+                                                <div
+                                                    style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, quizWeight))}%` }}
+                                                    className="h-full bg-amber-500 transition-all duration-300"
+                                                    title={`Kiểm tra đầu giờ: ${quizWeight}%`}
+                                                />
+                                                <div
+                                                    style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, hackathonWeight))}%` }}
+                                                    className="h-full bg-emerald-500 transition-all duration-300"
+                                                    title={`Hackathon: ${hackathonWeight}% (${hackathonQuizWeight}% TN + ${hackathonEssayWeight}% TL)`}
+                                                />
+                                                <div
+                                                    style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, examWeight))}%` }}
+                                                    className="h-full rounded-r-full bg-wine transition-all duration-300"
+                                                    title={`Thi cuối kỳ: ${examWeight}% (${finalExamType}: ${finalExamType === FinalExamTypeEnum.PROJECT ? `${projectProductWeight}% SP + ${projectKnowledgeWeight}% KT + ${projectInterviewWeight}% PV` : `${essayEssayWeight}% TL + ${essayQuizWeight}% TN`})`}
+                                                />
                                             </div>
-                                            {isInvalidWeight(attendanceWeight) && (
-                                                <span className="pl-1 text-[11px] font-medium text-rose-500">{UI_TEXT.courseFormModal.weightRangeError}</span>
-                                            )}
-                                        </div>
-
-                                        <div className="flex flex-col gap-1">
-                                            <div
-                                                className={`flex items-center justify-between rounded-xl border p-3 shadow-xs transition-all ${
-                                                    isInvalidWeight(quizWeight)
-                                                        ? "border-rose-400 bg-rose-50/30"
-                                                        : "border-slate-200/80 bg-white hover:border-wine/30"
-                                                }`}
-                                            >
-                                                <span className="text-xs font-bold text-slate-800">{UI_TEXT.courseFormModal.quizWeightLabel}</span>
-                                                <div className="flex items-center gap-1.5">
-                                                    <input
-                                                        type="number"
-                                                        value={quizWeight}
-                                                        onChange={(e) => setQuizWeight(Number(e.target.value))}
-                                                        className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
-                                                            isInvalidWeight(quizWeight)
-                                                                ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
-                                                                : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white focus:ring-2 focus:ring-wine/20"
-                                                        }`}
-                                                    />
-                                                    <span className="text-xs font-bold text-slate-400">{"%"}</span>
-                                                </div>
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] font-medium text-slate-600">
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="size-2.5 shrink-0 rounded-full bg-blue-500 shadow-2xs" />{" "}
+                                                    {UI_TEXT.courseFormModal.attendanceWeightLabel}
+                                                    {":"}{" "}
+                                                    <strong className="font-bold text-slate-900">
+                                                        {attendanceWeight}
+                                                        {"%"}
+                                                    </strong>
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="size-2.5 shrink-0 rounded-full bg-amber-500 shadow-2xs" />{" "}
+                                                    {UI_TEXT.courseFormModal.quizWeightLabel}
+                                                    {":"}{" "}
+                                                    <strong className="font-bold text-slate-900">
+                                                        {quizWeight}
+                                                        {"%"}
+                                                    </strong>
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="size-2.5 shrink-0 rounded-full bg-emerald-500 shadow-2xs" />{" "}
+                                                    {UI_TEXT.courseFormModal.hackathonWeightLabel}
+                                                    {":"}{" "}
+                                                    <strong className="font-bold text-slate-900">
+                                                        {hackathonWeight}
+                                                        {"%"}
+                                                    </strong>
+                                                    <span className="text-slate-500">
+                                                        {UI_TEXT.courseFormModal.hackathonSummaryText
+                                                            .replace("{quiz}", String(hackathonQuizWeight))
+                                                            .replace("{essay}", String(hackathonEssayWeight))}
+                                                    </span>
+                                                </span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="size-2.5 shrink-0 rounded-full bg-wine shadow-2xs" />{" "}
+                                                    {UI_TEXT.courseFormModal.examWeightLabel}
+                                                    {":"}{" "}
+                                                    <strong className="font-bold text-slate-900">
+                                                        {examWeight}
+                                                        {"%"}
+                                                    </strong>
+                                                    <span className="text-slate-500">
+                                                        {finalExamType === FinalExamTypeEnum.PROJECT
+                                                            ? UI_TEXT.courseFormModal.projectSummaryText
+                                                                  .replace("{product}", String(projectProductWeight))
+                                                                  .replace("{knowledge}", String(projectKnowledgeWeight))
+                                                                  .replace("{interview}", String(projectInterviewWeight))
+                                                            : UI_TEXT.courseFormModal.essaySummaryText
+                                                                  .replace("{essay}", String(essayEssayWeight))
+                                                                  .replace("{quiz}", String(essayQuizWeight))}
+                                                    </span>
+                                                </span>
                                             </div>
-                                            {isInvalidWeight(quizWeight) && (
-                                                <span className="pl-1 text-[11px] font-medium text-rose-500">{UI_TEXT.courseFormModal.weightRangeError}</span>
-                                            )}
                                         </div>
 
-                                        {/* Hackathon Box - WITH EMBEDDED HACKATHON DETAILS */}
-                                        <div className="col-span-1 flex flex-col gap-1 sm:col-span-2">
-                                            <div
-                                                className={`flex flex-col gap-2.5 rounded-xl border p-3.5 shadow-xs transition-all ${
-                                                    isInvalidWeight(hackathonWeight) ? "border-rose-400 bg-rose-50/30" : "border-slate-200/80 bg-white"
-                                                }`}
-                                            >
-                                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/60 pb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-bold text-slate-900">{UI_TEXT.courseFormModal.hackathonWeightLabel}</span>
-                                                    </div>
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <div className="flex flex-col gap-1">
+                                                <div
+                                                    className={`flex items-center justify-between rounded-xl border p-3 shadow-xs transition-all ${
+                                                        isInvalidWeight(attendanceWeight)
+                                                            ? "border-rose-400 bg-rose-50/30"
+                                                            : "border-slate-200/80 bg-white hover:border-wine/30"
+                                                    }`}
+                                                >
+                                                    <span className="text-xs font-bold text-slate-800">{UI_TEXT.courseFormModal.attendanceWeightLabel}</span>
                                                     <div className="flex items-center gap-1.5">
                                                         <input
                                                             type="number"
-                                                            value={hackathonWeight}
-                                                            onChange={(e) => setHackathonWeight(Number(e.target.value))}
+                                                            value={attendanceWeight}
+                                                            onChange={(e) => setAttendanceWeight(Number(e.target.value))}
                                                             className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
-                                                                isInvalidWeight(hackathonWeight)
+                                                                isInvalidWeight(attendanceWeight)
                                                                     ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
-                                                                    : "border-slate-200 bg-white text-slate-900 focus:border-wine focus:ring-2 focus:ring-wine/20"
+                                                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white focus:ring-2 focus:ring-wine/20"
                                                             }`}
                                                         />
-                                                        <span className="text-xs font-bold text-slate-500">{"%"}</span>
+                                                        <span className="text-xs font-bold text-slate-400">{"%"}</span>
                                                     </div>
                                                 </div>
+                                                {isInvalidWeight(attendanceWeight) && (
+                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                                {/* Chi tiết tỷ trọng trong bài thi Hackathon */}
-                                                <div className="flex flex-col gap-1.5 pt-0.5">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-[11px] font-bold tracking-wider text-emerald-900 uppercase">
-                                                            {UI_TEXT.courseFormModal.hackathonConfigTitle}
-                                                        </span>
-                                                        <span
-                                                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold transition-colors ${
-                                                                hackathonTotal === FULL_WEIGHT_PERCENT
-                                                                    ? "border border-emerald-300 bg-emerald-100 text-emerald-800"
-                                                                    : "animate-pulse border border-rose-300 bg-rose-100 text-rose-800"
+                                            <div className="flex flex-col gap-1">
+                                                <div
+                                                    className={`flex items-center justify-between rounded-xl border p-3 shadow-xs transition-all ${
+                                                        isInvalidWeight(quizWeight)
+                                                            ? "border-rose-400 bg-rose-50/30"
+                                                            : "border-slate-200/80 bg-white hover:border-wine/30"
+                                                    }`}
+                                                >
+                                                    <span className="text-xs font-bold text-slate-800">{UI_TEXT.courseFormModal.quizWeightLabel}</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <input
+                                                            type="number"
+                                                            value={quizWeight}
+                                                            onChange={(e) => setQuizWeight(Number(e.target.value))}
+                                                            className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
+                                                                isInvalidWeight(quizWeight)
+                                                                    ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
+                                                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white focus:ring-2 focus:ring-wine/20"
                                                             }`}
-                                                        >
-                                                            {UI_TEXT.courseFormModal.sumLabel} {hackathonTotal}
-                                                            {"%"}
-                                                        </span>
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                                    </div>
+                                                </div>
+                                                {isInvalidWeight(quizWeight) && (
+                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Hackathon Box - WITH EMBEDDED HACKATHON DETAILS */}
+                                            <div className="col-span-1 flex flex-col gap-1 sm:col-span-2">
+                                                <div
+                                                    className={`flex flex-col gap-2.5 rounded-xl border p-3.5 shadow-xs transition-all ${
+                                                        isInvalidWeight(hackathonWeight) ? "border-rose-400 bg-rose-50/30" : "border-slate-200/80 bg-white"
+                                                    }`}
+                                                >
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/60 pb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs font-bold text-slate-900">
+                                                                {UI_TEXT.courseFormModal.hackathonWeightLabel}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <input
+                                                                type="number"
+                                                                value={hackathonWeight}
+                                                                onChange={(e) => setHackathonWeight(Number(e.target.value))}
+                                                                className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
+                                                                    isInvalidWeight(hackathonWeight)
+                                                                        ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
+                                                                        : "border-slate-200 bg-white text-slate-900 focus:border-wine focus:ring-2 focus:ring-wine/20"
+                                                                }`}
+                                                            />
+                                                            <span className="text-xs font-bold text-slate-500">{"%"}</span>
+                                                        </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                                        <div className="flex flex-col gap-1">
-                                                            <div
-                                                                className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-2xs ${
-                                                                    isInvalidWeight(hackathonQuizWeight)
-                                                                        ? "border-rose-400 bg-rose-50/30"
-                                                                        : "border-emerald-200/60 bg-white"
+                                                    {/* Chi tiết tỷ trọng trong bài thi Hackathon */}
+                                                    <div className="flex flex-col gap-1.5 pt-0.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[11px] font-bold tracking-wider text-emerald-900 uppercase">
+                                                                {UI_TEXT.courseFormModal.hackathonConfigTitle}
+                                                            </span>
+                                                            <span
+                                                                className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold transition-colors ${
+                                                                    hackathonTotal === FULL_WEIGHT_PERCENT
+                                                                        ? "border border-emerald-300 bg-emerald-100 text-emerald-800"
+                                                                        : "animate-pulse border border-rose-300 bg-rose-100 text-rose-800"
                                                                 }`}
                                                             >
-                                                                <span className="text-xs font-semibold text-slate-700">
-                                                                    {UI_TEXT.courseFormModal.hackathonQuizWeightLabel}
-                                                                </span>
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <input
-                                                                        type="number"
-                                                                        value={hackathonQuizWeight}
-                                                                        onChange={(e) => setHackathonQuizWeight(Number(e.target.value))}
-                                                                        className={`w-16 rounded-md border px-2 py-0.5 text-center text-xs font-extrabold transition-all outline-none ${
-                                                                            isInvalidWeight(hackathonQuizWeight)
-                                                                                ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600"
-                                                                                : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white"
-                                                                        }`}
-                                                                    />
-                                                                    <span className="text-xs font-bold text-slate-400">{"%"}</span>
-                                                                </div>
-                                                            </div>
-                                                            {isInvalidWeight(hackathonQuizWeight) && (
-                                                                <span className="pl-1 text-[11px] font-medium text-rose-500">
-                                                                    {UI_TEXT.courseFormModal.weightRangeError}
-                                                                </span>
-                                                            )}
+                                                                {UI_TEXT.courseFormModal.sumLabel} {hackathonTotal}
+                                                                {"%"}
+                                                            </span>
                                                         </div>
 
-                                                        <div className="flex flex-col gap-1">
-                                                            <div
-                                                                className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-2xs ${
-                                                                    isInvalidWeight(hackathonEssayWeight)
-                                                                        ? "border-rose-400 bg-rose-50/30"
-                                                                        : "border-emerald-200/60 bg-white"
-                                                                }`}
-                                                            >
-                                                                <span className="text-xs font-semibold text-slate-700">
-                                                                    {UI_TEXT.courseFormModal.hackathonEssayWeightLabel}
-                                                                </span>
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <input
-                                                                        type="number"
-                                                                        value={hackathonEssayWeight}
-                                                                        onChange={(e) => setHackathonEssayWeight(Number(e.target.value))}
-                                                                        className={`w-16 rounded-md border px-2 py-0.5 text-center text-xs font-extrabold transition-all outline-none ${
-                                                                            isInvalidWeight(hackathonEssayWeight)
-                                                                                ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600"
-                                                                                : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white"
-                                                                        }`}
-                                                                    />
-                                                                    <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                                                            <div className="flex flex-col gap-1">
+                                                                <div
+                                                                    className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-2xs ${
+                                                                        isInvalidWeight(hackathonQuizWeight)
+                                                                            ? "border-rose-400 bg-rose-50/30"
+                                                                            : "border-emerald-200/60 bg-white"
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-xs font-semibold text-slate-700">
+                                                                        {UI_TEXT.courseFormModal.hackathonQuizWeightLabel}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={hackathonQuizWeight}
+                                                                            onChange={(e) => setHackathonQuizWeight(Number(e.target.value))}
+                                                                            className={`w-16 rounded-md border px-2 py-0.5 text-center text-xs font-extrabold transition-all outline-none ${
+                                                                                isInvalidWeight(hackathonQuizWeight)
+                                                                                    ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600"
+                                                                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white"
+                                                                            }`}
+                                                                        />
+                                                                        <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                                                    </div>
                                                                 </div>
+                                                                {isInvalidWeight(hackathonQuizWeight) && (
+                                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            {isInvalidWeight(hackathonEssayWeight) && (
-                                                                <span className="pl-1 text-[11px] font-medium text-rose-500">
-                                                                    {UI_TEXT.courseFormModal.weightRangeError}
-                                                                </span>
-                                                            )}
+
+                                                            <div className="flex flex-col gap-1">
+                                                                <div
+                                                                    className={`flex items-center justify-between rounded-lg border px-3 py-2 shadow-2xs ${
+                                                                        isInvalidWeight(hackathonEssayWeight)
+                                                                            ? "border-rose-400 bg-rose-50/30"
+                                                                            : "border-emerald-200/60 bg-white"
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-xs font-semibold text-slate-700">
+                                                                        {UI_TEXT.courseFormModal.hackathonEssayWeightLabel}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <input
+                                                                            type="number"
+                                                                            value={hackathonEssayWeight}
+                                                                            onChange={(e) => setHackathonEssayWeight(Number(e.target.value))}
+                                                                            className={`w-16 rounded-md border px-2 py-0.5 text-center text-xs font-extrabold transition-all outline-none ${
+                                                                                isInvalidWeight(hackathonEssayWeight)
+                                                                                    ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600"
+                                                                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white"
+                                                                            }`}
+                                                                        />
+                                                                        <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                                                    </div>
+                                                                </div>
+                                                                {isInvalidWeight(hackathonEssayWeight) && (
+                                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
+                                                {isInvalidWeight(hackathonWeight) && (
+                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {isInvalidWeight(hackathonWeight) && (
-                                                <span className="pl-1 text-[11px] font-medium text-rose-500">{UI_TEXT.courseFormModal.weightRangeError}</span>
-                                            )}
-                                        </div>
 
-                                        <div className="flex flex-col gap-1">
-                                            <div
-                                                className={`flex items-center justify-between rounded-xl border p-3 shadow-xs transition-all ${
-                                                    isInvalidWeight(examWeight)
-                                                        ? "border-rose-400 bg-rose-50/30"
-                                                        : "border-slate-200/80 bg-white hover:border-wine/30"
-                                                }`}
-                                            >
-                                                <span className="text-xs font-bold text-slate-800">{UI_TEXT.courseFormModal.examWeightLabel}</span>
-                                                <div className="flex items-center gap-1.5">
-                                                    <input
-                                                        type="number"
-                                                        value={examWeight}
-                                                        onChange={(e) => setExamWeight(Number(e.target.value))}
-                                                        className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
-                                                            isInvalidWeight(examWeight)
-                                                                ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
-                                                                : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white focus:ring-2 focus:ring-wine/20"
-                                                        }`}
-                                                    />
-                                                    <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                            <div className="flex flex-col gap-1">
+                                                <div
+                                                    className={`flex items-center justify-between rounded-xl border p-3 shadow-xs transition-all ${
+                                                        isInvalidWeight(examWeight)
+                                                            ? "border-rose-400 bg-rose-50/30"
+                                                            : "border-slate-200/80 bg-white hover:border-wine/30"
+                                                    }`}
+                                                >
+                                                    <span className="text-xs font-bold text-slate-800">{UI_TEXT.courseFormModal.examWeightLabel}</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <input
+                                                            type="number"
+                                                            value={examWeight}
+                                                            onChange={(e) => setExamWeight(Number(e.target.value))}
+                                                            className={`w-20 rounded-lg border px-2.5 py-1 text-center text-sm font-extrabold shadow-2xs transition-all outline-none ${
+                                                                isInvalidWeight(examWeight)
+                                                                    ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
+                                                                    : "border-slate-200 bg-slate-50 text-slate-900 focus:border-wine focus:bg-white focus:ring-2 focus:ring-wine/20"
+                                                            }`}
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                                    </div>
                                                 </div>
+                                                {isInvalidWeight(examWeight) && (
+                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {isInvalidWeight(examWeight) && (
-                                                <span className="pl-1 text-[11px] font-medium text-rose-500">{UI_TEXT.courseFormModal.weightRangeError}</span>
-                                            )}
                                         </div>
                                     </div>
                                 </div>

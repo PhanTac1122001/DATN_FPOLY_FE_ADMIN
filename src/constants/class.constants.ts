@@ -46,3 +46,18 @@ export const COMMON_VIOLATIONS = [
     UI_TEXT.classes.violationLateSchool,
     UI_TEXT.classes.violationDeviceUse,
 ];
+
+export const MINUTES_IN_HOUR = 60;
+export const SHIFT_1_END_MINUTES = 545;
+export const SHIFT_2_END_MINUTES = 700;
+export const SHIFT_3_END_MINUTES = 855;
+export const SHIFT_4_END_MINUTES = 985;
+export const SHIFT_5_END_MINUTES = 1115;
+export const SHIFT_NUMBERS = {
+    ONE: 1,
+    TWO: 2,
+    THREE: 3,
+    FOUR: 4,
+    FIVE: 5,
+    SIX: 6,
+};

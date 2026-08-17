@@ -1,26 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Cookies from "js-cookie";
 import { Clock, Play, Square, Target } from "lucide-react";
 import { Socket, io } from "socket.io-client";
 import { Breadcrumb } from "@/components/application/breadcrumb";
 import { QuizDashboardModal } from "@/components/application/modals/quiz-dashboard-modal";
 import { QuizReviewModal } from "@/components/application/modals/quiz-review-modal";
+import { StudentQuizDetailModal } from "@/components/application/modals/student-quiz-detail-modal";
 import { Button } from "@/components/base/buttons/button";
 import { Select } from "@/components/base/select/select";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { APP_CONFIG } from "@/constants/app.constants";
 import { DEFAULT_QUIZ_DURATION_MINUTES, MILLISECONDS_PER_SECOND, PAD_TWO_DIGITS, SECONDS_PER_MINUTE } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { StudentQuizResultItem, getActiveQuizSession, startQuizSession, stopQuizSession } from "@/services/class-quiz-session.service";
+import { StudentQuizResultItem, getActiveQuizSession, getQuizSessionHistory, startQuizSession, stopQuizSession } from "@/services/class-quiz-session.service";
 import { getClassDetail } from "@/services/class.service";
 import { getCourseById } from "@/services/course.service";
 import { getSessionsByCourse } from "@/services/material.service";
 import { getSessionQuizzes } from "@/services/session-quiz.service";
 import { toast } from "@/services/toast.service";
 import type { ClassEntity } from "@/types/class.types";
-import { type ActiveQuizSessionResponse, QuizSessionStatusEnum, type SessionQuizItem, StudentQuizStatusEnum } from "@/types/session-quiz.types";
+import {
+    type ActiveQuizSessionResponse,
+    ClassQuizSessionHistoryItem,
+    QuizSessionStatusEnum,
+    type SessionQuizItem,
+    StudentQuizStatusEnum,
+} from "@/types/session-quiz.types";
 
 export function ClassQuizResultView({ classId }: { classId: string }) {
     const [classData, setClassData] = useState<ClassEntity | null>(null);
@@ -33,15 +40,114 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
     const [selectedQuizId, setSelectedQuizId] = useState<string>("");
 
     const [activeSession, setActiveSession] = useState<ActiveQuizSessionResponse["session"]>(null);
+    const [history, setHistory] = useState<ClassQuizSessionHistoryItem[]>([]);
+    const [selectedHistorySessionId, setSelectedHistorySessionId] = useState<string>("");
     const [results, setResults] = useState<StudentQuizResultItem[]>([]);
+    const [serverClockOffset, setServerClockOffset] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+    const [sessionQuiz, setSessionQuiz] = useState<SessionQuizItem | null>(null);
+    const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
-    const selectedQuiz = quizList.find((q) => q.id === (activeSession?.quizId || selectedQuizId));
-    const durationMinutes = selectedQuiz?.durationMinutes || DEFAULT_QUIZ_DURATION_MINUTES;
+    const selectedStudentResult = results.find((r) => (r.id || r._id || r.studentId) === selectedStudentId) || null;
+
+    const hasAutoStoppedRef = useRef(false);
+
+    const activeSessionId = activeSession?.id || (activeSession as Record<string, unknown>)?._id;
+    const activeSessionStartedAt = activeSession?.startedAt;
+
+    useEffect(() => {
+        hasAutoStoppedRef.current = false;
+    }, [activeSessionId, activeSessionStartedAt]);
+
+    const activeQuizId = activeSession?.quizId
+        ? typeof activeSession.quizId === "object"
+            ? (activeSession.quizId as { id?: string; _id?: string }).id || (activeSession.quizId as { id?: string; _id?: string })._id
+            : String(activeSession.quizId)
+        : selectedQuizId;
+
+    const selectedQuiz = quizList.find((q) => q.id === activeQuizId || (q as unknown as { _id?: string })._id === activeQuizId);
+    const effectiveQuiz = selectedQuiz || sessionQuiz;
+
+    const durationMinutes =
+        effectiveQuiz?.durationMinutes && effectiveQuiz.durationMinutes > 0
+            ? effectiveQuiz.durationMinutes
+            : (activeSession as { durationMinutes?: number })?.durationMinutes && (activeSession as { durationMinutes?: number }).durationMinutes! > 0
+              ? (activeSession as { durationMinutes?: number }).durationMinutes!
+              : DEFAULT_QUIZ_DURATION_MINUTES;
+
+    const updateSessionState = (session: ActiveQuizSessionResponse["session"], serverTime?: string) => {
+        const clientNow = Date.now();
+        setActiveSession(session);
+        if (session?.startedAt) {
+            const serverNowMs = serverTime ? new Date(serverTime).getTime() : new Date(session.startedAt).getTime();
+            setServerClockOffset(serverNowMs - clientNow);
+        } else {
+            setServerClockOffset(0);
+        }
+    };
+
+    const extractId = (val: unknown): string => {
+        if (!val) return "";
+        if (typeof val === "object") {
+            return String((val as { id?: string; _id?: string }).id || (val as { id?: string; _id?: string })._id || "");
+        }
+        return String(val);
+    };
+
+    const fetchHistory = async () => {
+        if (!classId || !selectedQuizId) {
+            setHistory([]);
+            return;
+        }
+        try {
+            const items = await getQuizSessionHistory({
+                classId,
+                subjectId: selectedSubjectId || undefined,
+                sessionId: selectedSessionId || undefined,
+                quizId: selectedQuizId || undefined,
+            });
+            setHistory(items);
+        } catch (err) {
+            console.error("Error fetching session history:", err);
+        }
+    };
+
+    // Load active session state & student results
+    const fetchSessionState = async (targetSessionId?: string) => {
+        try {
+            const data = await getActiveQuizSession({
+                classId,
+                subjectId: selectedSubjectId || undefined,
+                sessionId: selectedSessionId || undefined,
+                quizId: selectedQuizId || undefined,
+                quizSessionId: targetSessionId,
+            });
+            updateSessionState(data.session, data.serverTime);
+            setResults(data.results || []);
+            if (data.quiz) {
+                setSessionQuiz(data.quiz as SessionQuizItem);
+            }
+
+            if (data.session) {
+                const actSubId = extractId(data.session.subjectId);
+                const actSessId = extractId(data.session.sessionId);
+                const actQuizId = extractId(data.session.quizId);
+
+                if (actSubId) setSelectedSubjectId((prev) => prev || actSubId);
+                if (actSessId) setSelectedSessionId((prev) => prev || actSessId);
+                if (actQuizId) setSelectedQuizId((prev) => prev || actQuizId);
+
+                const sid = data.session.id || (data.session as { _id?: string })._id || "";
+                if (sid) setSelectedHistorySessionId(sid);
+            }
+        } catch (err) {
+            console.error("Error fetching session state:", err);
+        }
+    };
 
     // Socket state
     useEffect(() => {
@@ -54,6 +160,14 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
 
         socket.on("connect", () => {
             socket.emit("join_class_room", { classId, isStaff: true });
+        });
+
+        socket.on("session_quiz:started", () => {
+            void fetchSessionState();
+        });
+
+        socket.on("session_quiz:stopped", () => {
+            void fetchSessionState();
         });
 
         socket.on("quiz_result:updated", (data: { studentResult: StudentQuizResultItem }) => {
@@ -75,6 +189,7 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
         return () => {
             socket.disconnect();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [classId]);
 
     // Fetch class details and assigned courses/subjects
@@ -133,9 +248,6 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                     }
                 }
                 setSubjects(loadedSubjects);
-                if (loadedSubjects.length > 0) {
-                    setSelectedSubjectId(loadedSubjects[0].id);
-                }
             } catch (err) {
                 console.error("Error loading class data:", err);
             } finally {
@@ -146,9 +258,13 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
         void loadClassData();
     }, [classId]);
 
-    // Load sessions & quizzes when subject changes
+    // Load sessions when subject changes (do not auto-select first session)
     useEffect(() => {
-        if (!selectedSubjectId) return;
+        if (!selectedSubjectId) {
+            setSessions([]);
+            setSelectedSessionId("");
+            return;
+        }
 
         async function loadSubjectDetails() {
             try {
@@ -159,65 +275,45 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                         title: s.title || s.name || `Session ${idx + 1}`,
                     })),
                 );
-                if (loadedSessions && loadedSessions.length > 0) {
-                    const firstSession = loadedSessions[0] as { id?: string; _id?: string };
-                    setSelectedSessionId(String(firstSession.id || firstSession._id));
-                } else {
-                    setSelectedSessionId("");
-                }
             } catch (err) {
                 console.error("Error loading subject sessions:", err);
                 setSessions([]);
-                setSelectedSessionId("");
             }
         }
 
         void loadSubjectDetails();
     }, [selectedSubjectId]);
 
-    // Load Quizzi sets when subject or session changes
+    // Load Quizzi sets when session changes (do not auto-select first quiz)
     useEffect(() => {
-        if (!selectedSubjectId) return;
+        if (!selectedSubjectId || !selectedSessionId) {
+            setQuizList([]);
+            setSelectedQuizId("");
+            return;
+        }
 
         async function loadQuizzes() {
             try {
                 const data = await getSessionQuizzes({
                     subjectId: selectedSubjectId,
-                    sessionId: selectedSessionId || undefined,
+                    sessionId: selectedSessionId,
                 });
                 setQuizList(data.items || []);
-                if (data.items && data.items.length > 0) {
-                    setSelectedQuizId(data.items[0].id);
-                } else {
-                    setSelectedQuizId("");
-                }
             } catch (err) {
                 console.error("Error loading quizzes:", err);
+                setQuizList([]);
             }
         }
 
         void loadQuizzes();
     }, [selectedSubjectId, selectedSessionId]);
 
-    // Load active session state & student results
-    const fetchSessionState = async () => {
-        try {
-            const data = await getActiveQuizSession({
-                classId,
-                subjectId: selectedSubjectId || undefined,
-                sessionId: selectedSessionId || undefined,
-                quizId: selectedQuizId || undefined,
-            });
-            setActiveSession(data.session);
-            setResults(data.results || []);
-        } catch (err) {
-            console.error("Error fetching session state:", err);
-        }
-    };
-
     useEffect(() => {
         if (classId) {
             void fetchSessionState();
+        }
+        if (classId && selectedQuizId) {
+            void fetchHistory();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [classId, selectedSubjectId, selectedSessionId, selectedQuizId]);
@@ -239,16 +335,21 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
 
         try {
             setIsActionLoading(true);
-            const session = await startQuizSession({
+            const sessionData = await startQuizSession({
                 classId,
                 educationProgramId: programId,
                 subjectId: selectedSubjectId,
                 sessionId: selectedSessionId,
                 quizId: selectedQuizId,
             });
-            setActiveSession(session);
+            const session = (sessionData?.session || sessionData) as ActiveQuizSessionResponse["session"];
+            const serverTime = sessionData?.serverTime || (sessionData as { serverTime?: string })?.serverTime;
+            const newSessionId = session?.id || (session as { _id?: string })?._id;
+            updateSessionState(session, serverTime);
+            if (newSessionId) setSelectedHistorySessionId(newSessionId);
             toast.success(UI_TEXT.classQuizResultPage.toastStartTitle, UI_TEXT.classQuizResultPage.toastStartSuccess);
-            void fetchSessionState();
+            void fetchHistory();
+            void fetchSessionState(newSessionId);
         } catch (error) {
             console.error("Start quiz error:", error);
             const errObj = error as { response?: { data?: { message?: string } }; message?: string };
@@ -272,9 +373,10 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 classId,
                 quizSessionId: sessionId,
             });
-            setActiveSession(session);
+            updateSessionState(session);
             toast.success(UI_TEXT.classQuizResultPage.toastStopTitle, UI_TEXT.classQuizResultPage.toastStopSuccess);
-            void fetchSessionState();
+            void fetchHistory();
+            void fetchSessionState(sessionId);
         } catch (error) {
             console.error("Stop quiz error:", error);
             toast.error(UI_TEXT.classQuizResultPage.toastStopTitle, UI_TEXT.classQuizResultPage.toastStopError);
@@ -292,20 +394,27 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
         }
 
         const startTime = new Date(activeSession.startedAt).getTime();
-        const durationMs = durationMinutes * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
-        const endTime = startTime + durationMs;
+        const totalDurationSec = durationMinutes * SECONDS_PER_MINUTE;
 
         const updateTimer = () => {
-            const now = Date.now();
-            const remainingSec = Math.max(0, Math.floor((endTime - now) / MILLISECONDS_PER_SECOND));
+            const clientNow = Date.now();
+            const currentServerTime = clientNow + serverClockOffset;
+            const elapsedSec = Math.max(0, Math.floor((currentServerTime - startTime) / MILLISECONDS_PER_SECOND));
+            const remainingSec = Math.max(0, totalDurationSec - elapsedSec);
             setTimeLeft(remainingSec);
+
+            if (remainingSec <= 0 && !hasAutoStoppedRef.current && !isActionLoading) {
+                hasAutoStoppedRef.current = true;
+                void handleStop();
+            }
         };
 
         updateTimer();
         const timerId = setInterval(updateTimer, MILLISECONDS_PER_SECOND);
 
         return () => clearInterval(timerId);
-    }, [isRunning, activeSession?.startedAt, durationMinutes]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isRunning, activeSession?.startedAt, durationMinutes, serverClockOffset, isActionLoading]);
 
     const formatTimeLeft = (seconds: number | null) => {
         if (seconds === null || seconds < 0) return "00:00";
@@ -356,7 +465,13 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                     placeholder={UI_TEXT.classQuizResultPage.selectSubjectLabel}
                                     isClearable={false}
                                     selectedKey={selectedSubjectId || undefined}
-                                    onSelectionChange={(key) => setSelectedSubjectId(String(key || ""))}
+                                    onSelectionChange={(key) => {
+                                        const val = String(key || "");
+                                        setSelectedSubjectId(val);
+                                        setSelectedSessionId("");
+                                        setSelectedQuizId("");
+                                        setQuizList([]);
+                                    }}
                                     items={subjects.map((sub) => ({ id: sub.id, label: `[${sub.code}] ${sub.title}` }))}
                                 >
                                     {(item) => <Select.Item id={item.id} label={item.label} />}
@@ -369,8 +484,13 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                     label={UI_TEXT.classQuizResultPage.selectSessionLabel}
                                     placeholder={UI_TEXT.classQuizResultPage.selectSessionLabel}
                                     isClearable={false}
+                                    isDisabled={!selectedSubjectId || sessions.length === 0}
                                     selectedKey={selectedSessionId || undefined}
-                                    onSelectionChange={(key) => setSelectedSessionId(String(key || ""))}
+                                    onSelectionChange={(key) => {
+                                        const val = String(key || "");
+                                        setSelectedSessionId(val);
+                                        setSelectedQuizId("");
+                                    }}
                                     items={sessions.map((sess) => ({ id: sess.id, label: sess.title }))}
                                 >
                                     {(item) => <Select.Item id={item.id} label={item.label} />}
@@ -383,6 +503,7 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                     label={UI_TEXT.classQuizResultPage.selectQuizLabel}
                                     placeholder={UI_TEXT.classQuizResultPage.selectQuizLabel}
                                     isClearable={false}
+                                    isDisabled={!selectedSessionId || quizList.length === 0}
                                     selectedKey={selectedQuizId || undefined}
                                     onSelectionChange={(key) => setSelectedQuizId(String(key || ""))}
                                     items={quizList.map((q) => ({
@@ -397,7 +518,7 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
 
                         {/* Top Actions */}
                         <div className="flex shrink-0 items-center gap-2">
-                            <Button color="primary" size="md" onClick={fetchSessionState} className="!bg-indigo-600 hover:!bg-indigo-700">
+                            <Button color="primary" size="md" onClick={() => void fetchSessionState()} className="!bg-indigo-600 hover:!bg-indigo-700">
                                 {UI_TEXT.classQuizResultPage.btnSearch}
                             </Button>
                             <Button color="secondary" size="md" onClick={() => setIsReviewOpen(true)} className="!bg-sky-500 !text-white hover:!bg-sky-600">
@@ -455,6 +576,27 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                     <div className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-800">
                                         <span>{UI_TEXT.classQuizResultPage.closedAtPrefix}</span>
                                         <strong className="font-mono font-bold text-rose-900">{formatDateTime(activeSession.stoppedAt)}</strong>
+                                    </div>
+                                )}
+
+                                {history.length > 0 && (
+                                    <div className="flex items-center gap-1.5 rounded-lg border border-purple-100 bg-purple-50/80 px-2.5 py-1 text-xs font-semibold text-purple-800">
+                                        <span>{UI_TEXT.classQuizResult.attemptSelectLabel}</span>
+                                        <select
+                                            value={selectedHistorySessionId || activeSession?.id || (activeSession as { _id?: string })?._id || ""}
+                                            onChange={(e) => {
+                                                const sid = e.target.value;
+                                                setSelectedHistorySessionId(sid);
+                                                void fetchSessionState(sid);
+                                            }}
+                                            className="cursor-pointer bg-transparent font-bold text-purple-900 outline-none"
+                                        >
+                                            {history.map((h) => (
+                                                <option key={h.id || h._id} value={h.id || h._id}>
+                                                    {`${UI_TEXT.classQuizResult.attemptPrefix} ${h.attempt || 1} (${h.status === QuizSessionStatusEnum.ACTIVE ? UI_TEXT.classQuizResult.statusActive : UI_TEXT.classQuizResult.statusClosed})`}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 )}
                             </div>
@@ -561,11 +703,14 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                             </td>
                                             <td className="px-5 py-4 text-slate-500">
                                                 {item.submittedAt ? new Date(item.submittedAt).toLocaleTimeString("vi-VN") : "---"}
-                                            </td>
+                                            </td>{" "}
                                             <td className="px-5 py-4 text-right">
-                                                <span className="cursor-pointer text-[11px] font-semibold text-purple-600 hover:underline">
+                                                <button
+                                                    onClick={() => setSelectedStudentId(item.id || item._id || item.studentId || null)}
+                                                    className="cursor-pointer text-[11px] font-semibold text-purple-600 hover:underline"
+                                                >
                                                     {UI_TEXT.classQuizResultPage.actionDetail}
-                                                </span>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
@@ -588,7 +733,26 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 isOpen={isDashboardOpen}
                 onClose={() => setIsDashboardOpen(false)}
                 results={results}
-                activeQuiz={selectedQuiz}
+                activeQuiz={effectiveQuiz}
+                isClosed={activeSession?.status === QuizSessionStatusEnum.CLOSED}
+                sessionInfo={{
+                    attempt: (activeSession as { attempt?: number })?.attempt,
+                    startedAt: activeSession?.startedAt,
+                    stoppedAt: activeSession?.stoppedAt,
+                }}
+                history={history}
+                selectedSessionId={selectedHistorySessionId || activeSession?.id || (activeSession as { _id?: string })?._id}
+                onSelectAttempt={(sid) => {
+                    setSelectedHistorySessionId(sid);
+                    void fetchSessionState(sid);
+                }}
+            />
+
+            <StudentQuizDetailModal
+                isOpen={!!selectedStudentId}
+                onClose={() => setSelectedStudentId(null)}
+                studentResult={selectedStudentResult}
+                activeQuiz={effectiveQuiz}
                 isClosed={activeSession?.status === QuizSessionStatusEnum.CLOSED}
             />
         </AdminLayout>

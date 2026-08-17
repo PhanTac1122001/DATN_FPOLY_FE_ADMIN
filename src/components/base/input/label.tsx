@@ -10,7 +10,18 @@ import { cx } from "@/utils/cx";
 // Re-export type from centralized location
 export type { LabelProps } from "@/types/base-components.types";
 
-export const Label = ({ isRequired, tooltip, tooltipDescription, className, ...props }: LabelProps) => {
+export const Label = ({ isRequired, tooltip, tooltipDescription, className, children, ...props }: LabelProps) => {
+    let labelContent = children;
+    let hasExplicitRequired = Boolean(isRequired);
+
+    if (typeof children === "string") {
+        const trimmed = children.trim();
+        if (trimmed.endsWith("*")) {
+            labelContent = trimmed.slice(0, -1).trim();
+            hasExplicitRequired = true;
+        }
+    }
+
     return (
         <AriaLabel
             // Used for conditionally hiding/showing the label element via CSS:
@@ -19,11 +30,15 @@ export const Label = ({ isRequired, tooltip, tooltipDescription, className, ...p
             // <Input label="Visible only on mobile" className="lg:label:hidden" />
             data-label="true"
             {...props}
-            className={cx("flex cursor-default items-center gap-0.5 text-sm font-medium text-secondary", className)}
+            className={cx("flex cursor-default items-center gap-0.5 text-sm font-semibold text-slate-700", className)}
         >
-            {props.children}
+            {labelContent}
 
-            <span className={cx("hidden text-brand-tertiary", isRequired && "block", typeof isRequired === "undefined" && "group-required:block")}>{"*"}</span>
+            {hasExplicitRequired || isRequired ? (
+                <span className="ml-0.5 font-bold text-red-500">{"*"}</span>
+            ) : (
+                <span className={cx("hidden font-bold text-red-500", typeof isRequired === "undefined" && "group-required:inline-block")}>{"*"}</span>
+            )}
 
             {tooltip && (
                 <Tooltip title={tooltip} description={tooltipDescription} placement="top">

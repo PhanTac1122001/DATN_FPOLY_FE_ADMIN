@@ -194,17 +194,14 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
             <CustomModal.Content className="max-w-3xl !overflow-visible !rounded-[24px]">
                 <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
-                    <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
                         <Heading slot="title" className="text-xl font-bold text-slate-900">
                             {UI_TEXT.assignGroupHomeworkModal.title}
                         </Heading>
-                        <p className="mt-1 text-xs text-slate-500">
-                            {UI_TEXT.assignGroupHomeworkModal.groupPrefix} <span className="font-semibold text-slate-700">{group.title}</span>
-                        </p>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="absolute top-5 right-5 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                            className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                             aria-label="Close"
                         >
                             <X className="size-5" />
@@ -215,31 +212,33 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
                     <div className="custom-scrollbar flex flex-1 flex-col gap-5 overflow-y-auto p-6">
                         {/* Chọn môn học & Buổi học */}
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-sm font-semibold text-slate-700">
-                                    {UI_TEXT.assignGroupHomeworkModal.labelSubject} <span className="font-bold text-red-500">{"*"}</span>
-                                </label>
-                                <Select
-                                    aria-label={UI_TEXT.assignGroupHomeworkModal.labelSubject}
-                                    selectedKey={subjectId || null}
-                                    onSelectionChange={(key) => {
-                                        if (key) {
-                                            setSubjectId(key as string);
-                                            setSessionId("");
-                                        }
-                                    }}
-                                    items={subjectOptions}
-                                    size="sm"
-                                    placeholder={
-                                        groupSubjects.length === 0
-                                            ? UI_TEXT.assignGroupHomeworkModal.noSubjectsForGroup
-                                            : UI_TEXT.assignGroupHomeworkModal.placeholderSelectSubject
+                            <Select
+                                label={UI_TEXT.assignGroupHomeworkModal.labelSubject}
+                                selectedKey={subjectId || null}
+                                onSelectionChange={(key) => {
+                                    if (key) {
+                                        setSubjectId(key as string);
+                                        setSessionId("");
+                                        setLevelCounts({
+                                            EASY: 0,
+                                            MEDIUM: 0,
+                                            FAIR: 0,
+                                            GOOD: 0,
+                                            EXCELLENT: 0,
+                                        });
                                     }
-                                    isDisabled={groupSubjects.length === 0}
-                                >
-                                    {(item) => <Select.Item id={item.id} label={item.label} />}
-                                </Select>
-                            </div>
+                                }}
+                                items={subjectOptions}
+                                size="sm"
+                                placeholder={
+                                    groupSubjects.length === 0
+                                        ? UI_TEXT.assignGroupHomeworkModal.noSubjectsForGroup
+                                        : UI_TEXT.assignGroupHomeworkModal.placeholderSelectSubject
+                                }
+                                isDisabled={groupSubjects.length === 0}
+                            >
+                                {(item) => <Select.Item id={item.id} label={item.label} />}
+                            </Select>
 
                             <div className="flex flex-col gap-1.5">
                                 <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
@@ -250,7 +249,14 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
                                     aria-label={UI_TEXT.assignGroupHomeworkModal.labelSession}
                                     selectedKey={sessionId || null}
                                     onSelectionChange={(key) => {
-                                        if (key) setSessionId(key as string);
+                                        setSessionId((key as string) || "");
+                                        setLevelCounts({
+                                            EASY: 0,
+                                            MEDIUM: 0,
+                                            FAIR: 0,
+                                            GOOD: 0,
+                                            EXCELLENT: 0,
+                                        });
                                     }}
                                     items={sessionOptions}
                                     size="sm"
@@ -347,9 +353,16 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
-                        <Button type="button" color="secondary-gray" size="md" onClick={onClose} isDisabled={mutation.isPending}>
+                    {/* Footer buttons - Full Width (Cancel 1/3, Confirm 2/3) */}
+                    <div className="flex w-full items-center justify-between gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
+                        <Button
+                            type="button"
+                            color="secondary"
+                            size="md"
+                            onClick={onClose}
+                            isDisabled={mutation.isPending}
+                            className="w-1/3 justify-center rounded-full border-slate-200 py-2.5 text-xs font-bold"
+                        >
                             {UI_TEXT.assignGroupHomeworkModal.btnCancel}
                         </Button>
                         <Button
@@ -359,7 +372,7 @@ export function AssignGroupHomeworkModal({ isOpen, onClose, group, availableSubj
                             onClick={() => mutation.mutate()}
                             isLoading={mutation.isPending}
                             isDisabled={!subjectId || totalRandomCount === 0}
-                            className="border-none bg-wine px-6 font-bold text-white hover:bg-wine-deep"
+                            className="w-2/3 justify-center rounded-full border-none bg-wine py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-wine-deep"
                         >
                             {totalRandomCount > 0
                                 ? `${UI_TEXT.assignGroupHomeworkModal.btnConfirmRandomPrefix}${totalRandomCount} ${UI_TEXT.assignGroupHomeworkModal.btnConfirmRandomSuffix}`

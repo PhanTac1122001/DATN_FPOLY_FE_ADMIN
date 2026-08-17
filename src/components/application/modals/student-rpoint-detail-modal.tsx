@@ -6,10 +6,14 @@ import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { getStudentRPointDetail } from "@/services/auto-rpoint.service";
+import { getCourseRpointFormula, getStudentRPointDetail } from "@/services/auto-rpoint.service";
 import type { StudentRpointDetailModalProps } from "@/types/rpoint.types";
+import { formatPercent, getRateColorClass } from "@/utils/class.utils";
+import { cx } from "@/utils/cx";
 
 const defaultMaxScore = 100;
+const defaultMaxCompliance = 40;
+const defaultCategoryMaxScore = 20;
 
 export function StudentRpointDetailModal({ isOpen, onClose, studentId, studentName, studentCode, courseId, classId }: StudentRpointDetailModalProps) {
     const { data: detail, isLoading } = useQuery({
@@ -18,7 +22,17 @@ export function StudentRpointDetailModal({ isOpen, onClose, studentId, studentNa
         enabled: isOpen && !!studentId && !!courseId,
     });
 
+    const { data: formulaData } = useQuery({
+        queryKey: ["course-rpoint-formula", courseId],
+        queryFn: () => getCourseRpointFormula(courseId),
+        enabled: isOpen && !!courseId,
+    });
+
     const info = detail?.detail || detail || {};
+    const formula = formulaData?.formula;
+    const maxCompliance = formula?.compliance?.max ?? defaultMaxCompliance;
+    const compScore = info.complianceScore != null ? Number(info.complianceScore) : maxCompliance;
+    const violationDeduction = info.violationDeduction != null ? Math.abs(Number(info.violationDeduction)) : Math.max(0, maxCompliance - compScore);
 
     if (!isOpen) return null;
 
@@ -72,8 +86,8 @@ export function StudentRpointDetailModal({ isOpen, onClose, studentId, studentNa
                                     </div>
                                     <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 text-center">
                                         <span className="text-[11px] font-bold text-slate-500">{UI_TEXT.studentRpointDetailModal.absenceRateLabel}</span>
-                                        <strong className="mt-1 block text-2xl font-black text-emerald-600">
-                                            {info.absenceRate != null ? `${info.absenceRate}%` : "0%"}
+                                        <strong className={cx("mt-1 block text-2xl font-black", getRateColorClass(info.absenceRate))}>
+                                            {formatPercent(info.absenceRate)}
                                         </strong>
                                     </div>
                                     <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 text-center">
@@ -95,19 +109,25 @@ export function StudentRpointDetailModal({ isOpen, onClose, studentId, studentNa
                                     </h4>
                                     <div className="flex items-center justify-between border-b border-slate-100 py-2 text-xs font-semibold">
                                         <span className="text-slate-600">{UI_TEXT.studentRpointDetailModal.attendanceScoreLabel}</span>
-                                        <span className="font-extrabold text-slate-900">{`${info.attendanceScore ?? defaultMaxScore}/${defaultMaxScore}`}</span>
+                                        <span className="font-extrabold text-slate-900">{`${info.attendanceScore ?? defaultCategoryMaxScore}/${formula?.attendance?.max ?? defaultCategoryMaxScore}`}</span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-slate-100 py-2 text-xs font-semibold">
                                         <span className="text-slate-600">{UI_TEXT.studentRpointDetailModal.homeworkScoreLabel}</span>
-                                        <span className="font-extrabold text-slate-900">{`${info.homeworkScore ?? defaultMaxScore}/${defaultMaxScore}`}</span>
+                                        <span className="font-extrabold text-slate-900">{`${info.homeworkScore ?? info.assignmentScore ?? defaultCategoryMaxScore}/${formula?.assignment?.max ?? defaultCategoryMaxScore}`}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-b border-slate-100 py-2 text-xs font-semibold">
+                                        <span className="text-slate-600">{UI_TEXT.studentRpointDetailModal.elearningLabel}</span>
+                                        <span className="font-extrabold text-slate-900">{`${info.preparationScore ?? defaultCategoryMaxScore}/${formula?.preparation?.max ?? defaultCategoryMaxScore}`}</span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-slate-100 py-2 text-xs font-semibold">
                                         <span className="text-slate-600">{UI_TEXT.studentRpointDetailModal.violationDeductionLabel}</span>
-                                        <span className="font-extrabold text-rose-600">{`-${info.violationDeduction ?? 0}`}</span>
+                                        <span className={cx("font-extrabold", violationDeduction > 0 ? "text-rose-600" : "text-slate-900")}>
+                                            {violationDeduction > 0 ? `-${violationDeduction}` : "0"}
+                                        </span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-slate-100 py-2 text-xs font-semibold">
                                         <span className="text-slate-600">{UI_TEXT.studentRpointDetailModal.bonusCombinedLabel}</span>
-                                        <span className="font-extrabold text-emerald-600">{`+${(info.learningBonus ?? 0) + (info.classOfficerBonus ?? 0)}`}</span>
+                                        <span className="font-extrabold text-emerald-600">{`+${(info.learningBonus ?? 0) + (info.classOfficerBonus ?? 0) + (info.manualBonus ?? 0)}`}</span>
                                     </div>
                                     <div className="flex items-center justify-between py-2 pt-2.5 text-xs">
                                         <span className="font-extrabold text-slate-800">{UI_TEXT.studentRpointDetailModal.lockStatusLabel}</span>

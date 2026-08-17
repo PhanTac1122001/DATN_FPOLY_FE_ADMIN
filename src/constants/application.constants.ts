@@ -11,6 +11,7 @@ import { CloseCircle, InfoCircle, TickCircle } from "@/components/icons";
 export const DEFAULT_MAX_CONDITIONS = 10;
 export const DROPDOWN_GAP = 4;
 export const VIEWPORT_GAP = 16;
+export const ALL_FILTER = "ALL";
 
 // ============================================================================
 // Calendar / Date Picker Constants

@@ -82,6 +82,13 @@ export interface ClassDetail {
     students: StudentClassEmbed[];
     groups?: Group[];
     summary: ClassDetailSummary;
+    name?: string;
+    coursesAssigned?: Array<{
+        courseId?: string;
+        courseName?: string;
+        _id?: string;
+        id?: string;
+    }>;
 }
 
 export interface CreateClassRequest {
@@ -186,6 +193,7 @@ export interface AttendanceHistoryModalProps {
     courses: CourseClassEmbed[];
     students?: StudentClassEmbed[];
     currentAttendanceMap?: Record<string, { status: string; note: string }>;
+    selectedCourseId?: string;
     onSelectSession?: (session: AttendanceSession) => void | Promise<void>;
 }
 

@@ -98,7 +98,8 @@ const DropdownMenu = <T extends object>(props: DropdownMenuProps<T>) => {
 const DropdownPopover = (props: DropdownPopoverProps) => {
     return (
         <AriaPopover
-            placement="bottom right"
+            placement="bottom end"
+            shouldFlip={true}
             {...props}
             className={(state) =>
                 cx(

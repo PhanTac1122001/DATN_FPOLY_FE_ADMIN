@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Star, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
@@ -13,6 +13,7 @@ import { toast } from "@/services/toast.service";
 import type { AddRpointBonusModalProps } from "@/types/rpoint.types";
 
 export function AddRpointBonusModal({ isOpen, onClose, studentId, studentName, studentCode, courseId, classId, onSuccess }: AddRpointBonusModalProps) {
+    const queryClient = useQueryClient();
     const [bonusPoints, setBonusPoints] = useState<number>(DEFAULT_BONUS_POINTS);
     const [reason, setReason] = useState<string>("");
 
@@ -37,6 +38,10 @@ export function AddRpointBonusModal({ isOpen, onClose, studentId, studentName, s
                     studentName +
                     UI_TEXT.rpointBonusModal.toastSuccessDescSuffix,
             );
+            queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
+            queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
             if (onSuccess) onSuccess();
             onClose();
             setReason("");

@@ -15,6 +15,7 @@ export enum StudentQuizStatusEnum {
 }
 
 export interface SessionQuizOption {
+    id?: string;
     _id?: string;
     content: string;
     isCorrect: boolean;
@@ -22,12 +23,14 @@ export interface SessionQuizOption {
 }
 
 export interface SessionQuizQuestion {
+    id?: string;
     _id?: string;
     content: string;
     type: QuestionType;
     points?: number;
     category?: QuestionCategory | string;
     difficulty?: QuestionDifficulty | string;
+    mediaUrl?: string;
     options?: SessionQuizOption[];
 }
 
@@ -130,6 +133,7 @@ export interface ActiveQuizSessionParams {
     subjectId?: string;
     sessionId?: string;
     quizId?: string;
+    quizSessionId?: string;
 }
 
 export interface StudentQuizResultItem {
@@ -145,6 +149,7 @@ export interface StudentQuizResultItem {
     score: number;
     correctAnswersCount: number;
     totalQuestionsCount: number;
+    answers?: { questionId: string; selectedOptionIds: string[] }[];
     status: "DOING" | "SUBMITTED";
     submittedAt?: string;
 }
@@ -158,11 +163,25 @@ export interface ActiveQuizSessionResponse {
         subjectId: string;
         sessionId: string;
         quizId: string;
+        attempt?: number;
         status: QuizSessionStatusEnum;
         startedAt?: string;
         stoppedAt?: string;
+        serverTime?: string;
     } | null;
+    quiz?: SessionQuizItem | null;
     results: StudentQuizResultItem[];
+    serverTime?: string;
+}
+
+export interface ClassQuizSessionHistoryItem {
+    id: string;
+    _id: string;
+    attempt: number;
+    startedAt?: string;
+    stoppedAt?: string;
+    status: QuizSessionStatusEnum;
+    resultsCount: number;
 }
 
 export interface QuizDashboardModalProps {
@@ -171,6 +190,14 @@ export interface QuizDashboardModalProps {
     results: StudentQuizResultItem[];
     activeQuiz?: SessionQuizItem | null;
     isClosed?: boolean;
+    sessionInfo?: {
+        attempt?: number;
+        startedAt?: string;
+        stoppedAt?: string;
+    } | null;
+    history?: ClassQuizSessionHistoryItem[];
+    selectedSessionId?: string;
+    onSelectAttempt?: (quizSessionId: string) => void;
 }
 
 export interface QuizReviewModalProps {
@@ -185,4 +212,12 @@ export interface QuizziSetDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     quizziSet: SessionQuizItem | null;
+}
+
+export interface StudentQuizDetailModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    studentResult: StudentQuizResultItem | null;
+    activeQuiz?: SessionQuizItem | null;
+    isClosed?: boolean;
 }

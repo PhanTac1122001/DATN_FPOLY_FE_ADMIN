@@ -1,43 +1,43 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldAlert, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { COMMON_VIOLATIONS } from "@/constants/class.constants";
-import { DEFAULT_PENALTY_POINTS, PENALTY_PRESETS } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { addStudentViolation } from "@/services/auto-rpoint.service";
 import { toast } from "@/services/toast.service";
 import type { AddViolationModalProps } from "@/types/rpoint.types";
 
+const violationOptions = COMMON_VIOLATIONS.map((item) => ({
+    id: item,
+    label: item,
+}));
+
 export function AddViolationModal({ isOpen, onClose, studentId, studentName, studentCode, courseId, classId, onSuccess }: AddViolationModalProps) {
-    const [penaltyPoints, setPenaltyPoints] = useState<number>(DEFAULT_PENALTY_POINTS);
+    const queryClient = useQueryClient();
     const [reason, setReason] = useState<string>("");
 
     const violationMutation = useMutation({
         mutationFn: async () => {
             if (!studentId || !courseId) throw new Error(UI_TEXT.violationModal.errMissingInfo);
-            if (penaltyPoints <= 0) throw new Error(UI_TEXT.violationModal.errInvalidPoints);
             await addStudentViolation({
                 studentId,
                 courseId,
                 classId,
-                penaltyPoints,
                 description: reason.trim() || UI_TEXT.violationModal.defaultReason,
             });
         },
         onSuccess: () => {
-            toast.success(
-                UI_TEXT.violationModal.toastSuccessTitle,
-                UI_TEXT.violationModal.toastSuccessDescPrefix +
-                    penaltyPoints +
-                    UI_TEXT.violationModal.toastSuccessDescMid +
-                    studentName +
-                    UI_TEXT.violationModal.toastSuccessDescSuffix,
-            );
+            toast.success(UI_TEXT.violationModal.toastSuccessTitle, `${UI_TEXT.violationModal.toastSuccessDescStudentPrefix}${studentName}`);
+            queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
+            queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
             if (onSuccess) onSuccess();
             onClose();
             setReason("");
@@ -82,58 +82,24 @@ export function AddViolationModal({ isOpen, onClose, studentId, studentName, stu
 
                     {/* Form Body */}
                     <div className="flex flex-col gap-4 px-6 py-5">
-                        {/* Penalty Points Input Pills */}
+                        {/* Select Component for Quick Violation Reason */}
+                        <Select
+                            label={UI_TEXT.violationModal.quickSelectLabel}
+                            placeholder={UI_TEXT.violationModal.placeholderSelectViolation}
+                            items={violationOptions}
+                            selectedKey={reason || null}
+                            onSelectionChange={(key) => {
+                                if (key) setReason(String(key));
+                            }}
+                        >
+                            {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
+                        </Select>
+
+                        {/* Detailed Reason Textarea */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-slate-800">{UI_TEXT.violationModal.selectPenaltyLabel}</label>
-                            <div className="flex items-center gap-2">
-                                {PENALTY_PRESETS.map((pts) => (
-                                    <button
-                                        key={pts}
-                                        type="button"
-                                        onClick={() => setPenaltyPoints(pts)}
-                                        className={`flex-1 cursor-pointer rounded-full border py-2.5 text-xs font-extrabold transition ${
-                                            penaltyPoints === pts
-                                                ? "border-2 border-rose-500 bg-rose-50 text-rose-800 shadow-2xs"
-                                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-                                        }`}
-                                    >
-                                        {"-"}
-                                        {pts}
-                                    </button>
-                                ))}
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={50}
-                                    value={penaltyPoints}
-                                    onChange={(e) => setPenaltyPoints(Number(e.target.value) || 0)}
-                                    className="w-20 rounded-full border border-slate-200 px-3 py-2.5 text-center text-xs font-black text-slate-800 outline-none focus:border-wine"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Quick Common Violations */}
-                        <div className="mt-1 flex flex-col gap-1.5">
-                            <label className="text-xs font-bold text-slate-800">{UI_TEXT.violationModal.quickSelectLabel}</label>
-                            <div className="flex flex-wrap gap-1.5">
-                                {COMMON_VIOLATIONS.map((item) => (
-                                    <button
-                                        key={item}
-                                        type="button"
-                                        onClick={() => setReason(item)}
-                                        className="cursor-pointer rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-200"
-                                    >
-                                        {"+"} {item}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Reason Input */}
-                        <div className="mt-1 flex flex-col gap-2">
                             <label className="text-xs font-bold text-slate-800">{UI_TEXT.violationModal.reasonLabel}</label>
                             <textarea
-                                rows={2}
+                                rows={3}
                                 placeholder={UI_TEXT.violationModal.reasonPlaceholder}
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}

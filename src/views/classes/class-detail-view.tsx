@@ -16,6 +16,7 @@ import {
     HelpCircle,
     Info,
     Notebook,
+    Pencil,
     PieChart,
     Plus,
     Trash2,
@@ -123,13 +124,13 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
     const featureCards = [
         {
-            id: "group",
-            title: UI_TEXT.classDetail.featureCards.groupTitle,
-            desc: UI_TEXT.classDetail.featureCards.groupDesc,
-            icon: Users,
-            color: "text-pink-600 bg-pink-50 border-pink-500",
-            hoverBorder: "hover:border-pink-500 hover:shadow-pink-500/10",
-            hoverTitle: "group-hover:text-pink-600",
+            id: "schedule",
+            title: UI_TEXT.classDetail.featureCards.scheduleTitle,
+            desc: UI_TEXT.classDetail.featureCards.scheduleDesc,
+            icon: Calendar,
+            color: "text-wine bg-wine-soft border-wine",
+            hoverBorder: "hover:border-wine hover:shadow-wine/10",
+            hoverTitle: "group-hover:text-wine",
         },
         {
             id: "learning",
@@ -202,15 +203,6 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
             color: "text-rose-600 bg-rose-50 border-rose-500",
             hoverBorder: "hover:border-rose-500 hover:shadow-rose-500/10",
             hoverTitle: "group-hover:text-rose-600",
-        },
-        {
-            id: "schedule",
-            title: UI_TEXT.classDetail.featureCards.scheduleTitle,
-            desc: UI_TEXT.classDetail.featureCards.scheduleDesc,
-            icon: Calendar,
-            color: "text-wine bg-wine-soft border-wine",
-            hoverBorder: "hover:border-wine hover:shadow-wine/10",
-            hoverTitle: "group-hover:text-wine",
         },
     ];
 
@@ -360,7 +352,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                         onClick={() => {
                                             if (card.id === "group") {
                                                 setActiveTab("groups");
-                                            } else if (card.id === "schedule" || card.id === "learning") {
+                                            } else if (card.id === "schedule" || card.id === "learning" || card.id === "homework" || card.id === "leaves") {
                                                 router.push(`/classes/${classId}/${card.id}` as Route);
                                             } else if (card.id === "quizziz") {
                                                 router.push(`/classes/${classId}/quiz` as Route);
@@ -488,18 +480,18 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                                     </Badge>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-2">
+                                            <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
+                                                <div className="flex items-center justify-center gap-1.5">
                                                     <button
                                                         type="button"
                                                         onClick={() => {
                                                             setSelectedCourseClass(c);
                                                             setIsCourseClassModalOpen(true);
                                                         }}
-                                                        className="cursor-pointer rounded-lg p-1.5 text-blue-600 hover:bg-blue-50"
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
                                                         title={UI_TEXT.classDetail.editAssignment}
                                                     >
-                                                        <Edit className="size-4" />
+                                                        <Pencil className="size-4" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -511,7 +503,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                                                 name: c.courseId?.name || "Môn học này",
                                                             })
                                                         }
-                                                        className="cursor-pointer rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
                                                         title={UI_TEXT.classDetail.cancelAssignment}
                                                     >
                                                         <Trash2 className="size-4" />
@@ -577,18 +569,18 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                             <td className="px-5 py-4 font-semibold text-slate-800">{st.student?.studentCode || "—"}</td>
                                             <td className="px-5 py-4 font-bold text-slate-900">{st.student?.fullName || "Sinh viên"}</td>
                                             <td className="px-5 py-4 text-slate-500">{st.student?.email || "—"}</td>
-                                            <td className="px-5 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-2">
+                                            <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
+                                                <div className="flex items-center justify-center gap-1.5">
                                                     <button
                                                         type="button"
                                                         onClick={() => {
                                                             setSelectedEnrollment(st);
                                                             setIsEnrollModalOpen(true);
                                                         }}
-                                                        className="cursor-pointer rounded-lg p-1.5 text-blue-600 hover:bg-blue-50"
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
                                                         title={UI_TEXT.classDetail.editEnrollmentStatus}
                                                     >
-                                                        <Edit className="size-4" />
+                                                        <Pencil className="size-4" />
                                                     </button>
                                                     <button
                                                         type="button"
@@ -600,7 +592,7 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                                                 name: st.student?.fullName || "Sinh viên này",
                                                             })
                                                         }
-                                                        className="cursor-pointer rounded-lg p-1.5 text-red-600 hover:bg-red-50"
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
                                                         title={UI_TEXT.classDetail.removeFromClass}
                                                     >
                                                         <Trash2 className="size-4" />
