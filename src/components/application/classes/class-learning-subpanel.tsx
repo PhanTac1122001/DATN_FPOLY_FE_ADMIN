@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, BookOpen, Download, Eye, FileSpreadsheet, FileText, Lock, Notebook, RefreshCw, ShieldAlert, Star, Unlock, Users } from "lucide-react";
 import { AddRpointBonusModal } from "@/components/application/modals/add-rpoint-bonus-modal";
 import { AddViolationModal } from "@/components/application/modals/add-violation-modal";
 import { StudentRpointDetailModal } from "@/components/application/modals/student-rpoint-detail-modal";
+import { UncompletedElearningModal } from "@/components/application/modals/uncompleted-elearning-modal";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
@@ -14,15 +15,14 @@ import { UI_TEXT } from "@/constants/ui-text.constants";
 import {
     finalizeClassRPoints,
     finalizeStudentRPoint,
+    getCourseRpointFormula,
     getStudentRPointDetail,
     recalculateStudentRPoint,
-    unfinalizeClassRPoints,
-    unfinalizeStudentRPoint,
 } from "@/services/auto-rpoint.service";
 import { getCourseClassStatistics, getCourseClassesByClassId } from "@/services/class.service";
 import { toast } from "@/services/toast.service";
 import type { ClassLearningSubpanelProps } from "@/types/class.types";
-import { extractCourseMongoId, extractStudentMongoId, formatPercent, getRateColorClass, isValidMongoId } from "@/utils/class.utils";
+import { extractCourseMongoId, extractStudentMongoId, formatPercent, isValidMongoId } from "@/utils/class.utils";
 import { cx } from "@/utils/cx";
 
 const percentageFactor = 100;
@@ -32,6 +32,8 @@ const passingScoreThreshold = 80;
 const maxPercentageVal = 100;
 const minTopOffsetIndex = 2;
 const bottomThresholdCount = 3;
+const defaultDeductionThreshold = 20;
+const defaultDeductionScale = 100;
 
 export function ClassLearningSubpanel({ classId, courses = [], students = [] }: ClassLearningSubpanelProps) {
     const queryClient = useQueryClient();
@@ -71,6 +73,7 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
     const [isViolationModalOpen, setIsViolationModalOpen] = useState(false);
+    const [isElearningModalOpen, setIsElearningModalOpen] = useState(false);
 
     // Query R-points detail map for all students in class for selected course
     const { data: rpointsMap = {} } = useQuery({
@@ -131,70 +134,227 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
         return map;
     }, [courseClassStats]);
 
+    // Query Course R-Point Formula for dynamic thresholds
+    const { data: formulaRes } = useQuery({
+        queryKey: ["course-rpoint-formula", selectedCourseId],
+        queryFn: () => getCourseRpointFormula(selectedCourseId),
+        enabled: !!selectedCourseId && isValidMongoId(selectedCourseId),
+    });
+
+    const rpointFormula = formulaRes?.formula;
+
+    const maxAbsenceThreshold = useMemo(() => {
+        if (!rpointFormula?.attendance?.deductionPerPercent || rpointFormula.attendance.deductionPerPercent <= 0) return defaultDeductionThreshold;
+        return Math.round((rpointFormula.attendance.max / rpointFormula.attendance.deductionPerPercent) * defaultDeductionScale) / defaultDeductionScale;
+    }, [rpointFormula]);
+
+    const maxHomeworkThreshold = useMemo(() => {
+        if (!rpointFormula?.assignment?.deductionPerPercent || rpointFormula.assignment.deductionPerPercent <= 0) return defaultDeductionThreshold;
+        return Math.round((rpointFormula.assignment.max / rpointFormula.assignment.deductionPerPercent) * defaultDeductionScale) / defaultDeductionScale;
+    }, [rpointFormula]);
+
+    // Sync class finalized state automatically when all student records are locked
+    const isAllStudentsLocked = useMemo(() => {
+        if (students.length === 0 || Object.keys(rpointsMap).length === 0) return false;
+        return students.every((s) => {
+            const sId = extractStudentMongoId(s);
+            const rDetail = rpointsMap[sId] as { isLocked?: boolean } | undefined;
+            return !!rDetail?.isLocked;
+        });
+    }, [students, rpointsMap]);
+
+    useEffect(() => {
+        if (Object.keys(rpointsMap).length > 0) {
+            setIsClassFinalized(isAllStudentsLocked);
+        }
+    }, [isAllStudentsLocked, rpointsMap]);
+
     const selectedCourseItem = courses.find((c) => extractCourseMongoId(c) === selectedCourseId);
     const selectedCourseObj = typeof selectedCourseItem?.courseId === "object" ? (selectedCourseItem.courseId as Record<string, unknown>) : null;
     const courseTotalSessions = Number(selectedCourseObj?.totalSessions || (selectedCourseItem as unknown as Record<string, unknown>)?.totalSessions || 0);
 
-    const calcStudentAbsenceRate = (d: Record<string, unknown>) => {
-        let rate = Number(d?.absenceRate || 0);
-        if (courseTotalSessions > 0) {
-            if (d?.absenceCount != null || d?.absentCount != null) {
-                const count = Number(d.absenceCount ?? d.absentCount ?? 0);
-                rate = (count / courseTotalSessions) * percentageFactor;
-            } else if (d?.totalSessions && Number(d.totalSessions) > 0 && rate > 0) {
-                const count = (rate / percentageFactor) * Number(d.totalSessions);
-                rate = (count / courseTotalSessions) * percentageFactor;
+    const calcStudentAbsenceRate = useCallback(
+        (d: Record<string, unknown>, isLocked?: boolean) => {
+            if (d?.absenceRate != null) return Number(d.absenceRate);
+            if (isLocked) return 0;
+            let rate = 0;
+            if (courseTotalSessions > 0) {
+                if (d?.absenceCount != null || d?.absentCount != null) {
+                    const count = Number(d.absenceCount ?? d.absentCount ?? 0);
+                    rate = (count / courseTotalSessions) * percentageFactor;
+                } else if (d?.totalSessions && Number(d.totalSessions) > 0 && rate > 0) {
+                    const count = (rate / percentageFactor) * Number(d.totalSessions);
+                    rate = (count / courseTotalSessions) * percentageFactor;
+                }
             }
-        }
-        return rate;
-    };
+            return rate;
+        },
+        [courseTotalSessions],
+    );
 
-    const calcHwMissingRate = (d: Record<string, unknown>) => {
+    const calcHwMissingRate = useCallback((d: Record<string, unknown>, isLocked?: boolean) => {
         if (d?.homeworkMissingRate != null) return Number(d.homeworkMissingRate);
         if (d?.submissionRate != null) return Math.max(0, maxPercentageVal - Number(d.submissionRate));
+        if (isLocked) return 0;
         return 0;
+    }, []);
+
+    // Helper to compute per-student effective thresholds and RED alert status considering locked formula snapshots
+    const getStudentThresholdAndAlert = useCallback(
+        (rDetail: Record<string, unknown>, fallbackAbsenceThresh: number, fallbackHwThresh: number) => {
+            const isLocked = !!rDetail?.isLocked;
+            let absThresh = fallbackAbsenceThresh;
+            let hwThresh = fallbackHwThresh;
+
+            const formula = rDetail?.formulaSnapshot as Record<string, Record<string, unknown>> | undefined;
+            if (formula?.attendance?.deductionPerPercent && Number(formula.attendance.deductionPerPercent) > 0) {
+                absThresh =
+                    Math.round((Number(formula.attendance.max) / Number(formula.attendance.deductionPerPercent)) * defaultDeductionScale) /
+                    defaultDeductionScale;
+            } else if (isLocked) {
+                // Infer attendance threshold from locked snapshot scores if formulaSnapshot is missing
+                const attScore = rDetail?.attendanceScore != null ? Number(rDetail.attendanceScore) : null;
+                const absRate = rDetail?.absenceRate != null ? Number(rDetail.absenceRate) : null;
+                const attMax = Number(formula?.attendance?.max ?? defaultDeductionThreshold);
+                if (attScore != null && absRate != null && absRate > 0 && attScore > 0 && attScore < attMax) {
+                    const inferredDeduction = (attMax - attScore) / absRate;
+                    if (inferredDeduction > 0) {
+                        absThresh = Math.round((attMax / inferredDeduction) * defaultDeductionScale) / defaultDeductionScale;
+                    }
+                }
+            }
+
+            if (formula?.assignment?.deductionPerPercent && Number(formula.assignment.deductionPerPercent) > 0) {
+                hwThresh =
+                    Math.round((Number(formula.assignment.max) / Number(formula.assignment.deductionPerPercent)) * defaultDeductionScale) /
+                    defaultDeductionScale;
+            } else if (isLocked) {
+                // Infer assignment threshold from locked snapshot scores if formulaSnapshot is missing
+                const hwScore = rDetail?.assignmentScore != null ? Number(rDetail.assignmentScore) : null;
+                const missRate =
+                    rDetail?.homeworkMissingRate != null
+                        ? Number(rDetail.homeworkMissingRate)
+                        : rDetail?.submissionRate != null
+                          ? Math.max(0, maxPercentageVal - Number(rDetail.submissionRate))
+                          : null;
+                const hwMax = Number(formula?.assignment?.max ?? defaultDeductionThreshold);
+                if (hwScore != null && missRate != null && missRate > 0 && hwScore > 0 && hwScore < hwMax) {
+                    const inferredDeduction = (hwMax - hwScore) / missRate;
+                    if (inferredDeduction > 0) {
+                        hwThresh = Math.round((hwMax / inferredDeduction) * defaultDeductionScale) / defaultDeductionScale;
+                    }
+                }
+            }
+
+            const absenceRateVal = calcStudentAbsenceRate(rDetail, isLocked);
+            const hwMissingRateVal = calcHwMissingRate(rDetail, isLocked);
+
+            // Invariant: if locked and attendanceScore > 0, attendance rate did NOT reach the threshold when locked
+            const attScore = rDetail?.attendanceScore != null ? Number(rDetail.attendanceScore) : null;
+            const isAbsenceRed = isLocked && attScore != null && attScore > 0 ? false : absenceRateVal >= absThresh && absThresh > 0;
+
+            const hwScore = rDetail?.assignmentScore != null ? Number(rDetail.assignmentScore) : null;
+            const isHwMissingRed = isLocked && hwScore != null && hwScore > 0 ? false : hwMissingRateVal >= hwThresh && hwThresh > 0;
+
+            return { absThresh, hwThresh, absenceRateVal, hwMissingRateVal, isAbsenceRed, isHwMissingRed };
+        },
+        [calcStudentAbsenceRate, calcHwMissingRate],
+    );
+
+    const getStudentRateColor = (rateVal: number, isRed: boolean) => {
+        if (isRed) return "text-rose-600 font-extrabold";
+        if (rateVal > 0) return "text-amber-600 font-extrabold";
+        return "text-emerald-600 font-bold";
     };
 
-    const thresholdRate = 10;
-    // Calculate KPI metrics from real student R-Points data
+    // Calculate KPI metrics using per-student threshold logic
     const totalStudents = students.length;
-    const highAbsenceCount = Object.values(rpointsMap).filter((d) => calcStudentAbsenceRate(d as Record<string, unknown>) > thresholdRate).length;
-    const highHwMissingCount = Object.values(rpointsMap).filter((d) => calcHwMissingRate(d as Record<string, unknown>) > thresholdRate).length;
-    const noPrepCount = Object.values(rpointsMap).filter((d) => Number((d as Record<string, unknown>)?.lateCount ?? 0) > 0).length;
+    const highAbsenceCount = Object.values(rpointsMap).filter((d) => {
+        return getStudentThresholdAndAlert(d as Record<string, unknown>, maxAbsenceThreshold, maxHomeworkThreshold).isAbsenceRed;
+    }).length;
+
+    const highHwMissingCount = Object.values(rpointsMap).filter((d) => {
+        return getStudentThresholdAndAlert(d as Record<string, unknown>, maxAbsenceThreshold, maxHomeworkThreshold).isHwMissingRed;
+    }).length;
+
+    const noPrepCount = students.filter((s) => {
+        const sId = extractStudentMongoId(s);
+        const rDetail = (rpointsMap[sId] as Record<string, unknown>) || {};
+        if (rDetail.isLocked && rDetail.lateCount != null) {
+            return Number(rDetail.lateCount) > 0;
+        }
+        const eStat = elearningStatsByStudent[sId];
+        if (eStat) return Number(eStat.lateSessions || 0) > 0;
+        return Number(rDetail.lateCount ?? 0) > 0;
+    }).length;
+
+    // Display threshold in card title (use locked class threshold if any student is locked)
+    const displayAbsenceThreshold = useMemo(() => {
+        const lockedStudent = students.find((s) => {
+            const sId = extractStudentMongoId(s);
+            const rDetail = (rpointsMap[sId] as Record<string, unknown>) || {};
+            return !!rDetail.isLocked;
+        });
+        if (lockedStudent) {
+            const sId = extractStudentMongoId(lockedStudent);
+            const rDetail = (rpointsMap[sId] as Record<string, unknown>) || {};
+            const info = getStudentThresholdAndAlert(rDetail, maxAbsenceThreshold, maxHomeworkThreshold);
+            return info.absThresh;
+        }
+        return maxAbsenceThreshold;
+    }, [students, rpointsMap, maxAbsenceThreshold, maxHomeworkThreshold, getStudentThresholdAndAlert]);
+
+    const displayHwThreshold = useMemo(() => {
+        const lockedStudent = students.find((s) => {
+            const sId = extractStudentMongoId(s);
+            const rDetail = (rpointsMap[sId] as Record<string, unknown>) || {};
+            return !!rDetail.isLocked;
+        });
+        if (lockedStudent) {
+            const sId = extractStudentMongoId(lockedStudent);
+            const rDetail = (rpointsMap[sId] as Record<string, unknown>) || {};
+            const info = getStudentThresholdAndAlert(rDetail, maxAbsenceThreshold, maxHomeworkThreshold);
+            return info.hwThresh;
+        }
+        return maxHomeworkThreshold;
+    }, [students, rpointsMap, maxAbsenceThreshold, maxHomeworkThreshold, getStudentThresholdAndAlert]);
+
+    const absenceCardRate = totalStudents > 0 ? (highAbsenceCount / totalStudents) * percentageFactor : 0;
+    const hwCardRate = totalStudents > 0 ? (highHwMissingCount / totalStudents) * percentageFactor : 0;
+    const noPrepCardRate = totalStudents > 0 ? (noPrepCount / totalStudents) * percentageFactor : 0;
+
+    const getKpiCardColorClass = (count: number): string => {
+        if (count > 0) return "text-rose-600";
+        return "text-emerald-600";
+    };
 
     const handleRefreshRPoints = () => {
         queryClient.invalidateQueries({ queryKey: ["class-detail"] });
         queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
         queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
         queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
+        queryClient.invalidateQueries({ queryKey: ["course-rpoint-formula"] });
     };
 
-    // Finalize / Unfinalize Class Mutation
+    // Finalize Class Mutation (Cannot be unfinalized once locked)
     const finalizeClassMutation = useMutation({
         mutationFn: async () => {
             if (!selectedCourseId) throw new Error("Vui lòng chọn môn học");
             if (isClassFinalized) {
-                await unfinalizeClassRPoints(classId, selectedCourseId);
-            } else {
-                await finalizeClassRPoints(classId, selectedCourseId);
+                toast.warning(UI_TEXT.staff.classLearning.toastInfoTitle, UI_TEXT.staff.classLearning.toastClassFinalizedLocked);
+                return;
             }
+            await finalizeClassRPoints(classId, selectedCourseId);
         },
         onSuccess: () => {
-            const nextState = !isClassFinalized;
-            setIsClassFinalized(nextState);
-            toast.success(
-                UI_TEXT.staff.classLearning.toastSuccessTitle,
-                nextState ? UI_TEXT.staff.classLearning.toastFinalizeSuccess : UI_TEXT.staff.classLearning.toastUnfinalizeSuccess,
-            );
-            handleRefreshRPoints();
+            if (!isClassFinalized) {
+                setIsClassFinalized(true);
+                toast.success(UI_TEXT.staff.classLearning.toastSuccessTitle, UI_TEXT.staff.classLearning.toastFinalizeSuccess);
+                handleRefreshRPoints();
+            }
         },
-        onError: () => {
-            const nextState = !isClassFinalized;
-            setIsClassFinalized(nextState);
-            toast.success(
-                UI_TEXT.staff.classLearning.toastSuccessTitle,
-                nextState ? UI_TEXT.staff.classLearning.toastFinalizeSuccess : UI_TEXT.staff.classLearning.toastUnfinalizeSuccess,
-            );
+        onError: (err: Error) => {
+            toast.error(UI_TEXT.staff.classLearning.toastErrorTitle, err.message || "Không thể chốt điểm lớp!");
         },
     });
 
@@ -213,21 +373,20 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
         },
     });
 
-    // Toggle Single Student Lock
+    // Toggle Single Student Lock (Cannot unlock once locked)
     const toggleStudentLock = async (studentId: string) => {
         const currentlyLocked = isClassFinalized || !!lockedStudents[studentId] || !!(rpointsMap[studentId] as { isLocked?: boolean })?.isLocked;
+        if (currentlyLocked) {
+            toast.warning(UI_TEXT.staff.classLearning.toastInfoTitle, UI_TEXT.staff.classLearning.toastStudentFinalizedLocked);
+            return;
+        }
         setLockedStudents((prev) => ({
             ...prev,
-            [studentId]: !currentlyLocked,
+            [studentId]: true,
         }));
         try {
-            if (currentlyLocked) {
-                await unfinalizeStudentRPoint(studentId, selectedCourseId, classId);
-                toast.info(UI_TEXT.staff.classLearning.toastInfoTitle, UI_TEXT.staff.classLearning.toastUnlockStudent);
-            } else {
-                await finalizeStudentRPoint(studentId, selectedCourseId, classId);
-                toast.success(UI_TEXT.staff.classLearning.toastSuccessTitle, UI_TEXT.staff.classLearning.toastLockStudent);
-            }
+            await finalizeStudentRPoint(studentId, selectedCourseId, classId);
+            toast.success(UI_TEXT.staff.classLearning.toastSuccessTitle, UI_TEXT.staff.classLearning.toastLockStudent);
             queryClient.invalidateQueries({ queryKey: ["class-rpoints-map", classId, selectedCourseId] });
         } catch {
             // UI optimism handled
@@ -304,17 +463,22 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                     <Button
                         color="secondary"
                         size="sm"
-                        onClick={() => finalizeClassMutation.mutate()}
+                        onClick={() => {
+                            if (!isClassFinalized) {
+                                finalizeClassMutation.mutate();
+                            }
+                        }}
                         isLoading={finalizeClassMutation.isPending}
+                        disabled={isClassFinalized}
                         className={cx(
                             "gap-1.5 border font-bold transition duration-150",
                             isClassFinalized
-                                ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                                ? "cursor-not-allowed border-amber-300 bg-amber-100/80 text-amber-800 opacity-90"
                                 : "border-amber-200 bg-amber-50/80 text-amber-900 hover:bg-amber-100",
                         )}
-                        iconLeading={isClassFinalized ? <Unlock className="size-3.5 text-amber-700" /> : <Lock className="size-3.5 text-amber-700" />}
+                        iconLeading={<Lock className="size-3.5 text-amber-700" />}
                     >
-                        {isClassFinalized ? UI_TEXT.staff.classLearning.btnUnfinalizeAll : UI_TEXT.staff.classLearning.btnFinalizeAll}
+                        {isClassFinalized ? UI_TEXT.staff.classLearning.statusClassFinalized : UI_TEXT.staff.classLearning.btnFinalizeAll}
                     </Button>
                 </div>
             </div>
@@ -322,12 +486,21 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
             {/* 3 KPI Summary Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {/* KPI Card 1 */}
-                <div className="flex items-center justify-between rounded-xl border border-t-4 border-slate-200 border-t-blue-600 bg-white p-4 shadow-xs">
+                <div
+                    className={cx(
+                        "flex items-center justify-between rounded-xl border border-t-4 bg-white p-4 shadow-xs transition-colors",
+                        highAbsenceCount > 0 ? "border-rose-200 border-t-rose-600 bg-rose-50/20" : "border-slate-200 border-t-blue-600",
+                    )}
+                >
                     <div>
-                        <span className="text-xs font-semibold text-slate-500">{UI_TEXT.staff.classLearning.cardAbsenceRate}</span>
-                        <strong className="mt-1 block text-2xl font-extrabold text-emerald-600">
-                            {totalStudents > 0 ? ((highAbsenceCount / totalStudents) * percentageFactor).toFixed(decimalPlaces) : "0.00"}
-                            {"%"}
+                        <span className="text-xs font-semibold text-slate-500">
+                            {UI_TEXT.staff.classLearning.cardAbsencePrefix}
+                            {displayAbsenceThreshold}
+                            {UI_TEXT.staff.classLearning.percentSymbol}
+                        </span>
+                        <strong className={cx("mt-1 block text-2xl font-extrabold", getKpiCardColorClass(highAbsenceCount))}>
+                            {absenceCardRate.toFixed(decimalPlaces)}
+                            {UI_TEXT.staff.classLearning.percentSymbol}
                         </strong>
                         <span className="text-[11px] text-slate-400">
                             {highAbsenceCount}
@@ -335,18 +508,32 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                             {totalStudents} {UI_TEXT.staff.classLearning.studentUnit}
                         </span>
                     </div>
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <div
+                        className={cx(
+                            "flex size-10 items-center justify-center rounded-xl transition-colors",
+                            highAbsenceCount > 0 ? "bg-rose-100 text-rose-600" : "bg-blue-50 text-blue-600",
+                        )}
+                    >
                         <Users className="size-5" />
                     </div>
                 </div>
 
                 {/* KPI Card 2 */}
-                <div className="flex items-center justify-between rounded-xl border border-t-4 border-slate-200 border-t-wine bg-white p-4 shadow-xs">
+                <div
+                    className={cx(
+                        "flex items-center justify-between rounded-xl border border-t-4 bg-white p-4 shadow-xs transition-colors",
+                        highHwMissingCount > 0 ? "border-rose-200 border-t-rose-600 bg-rose-50/20" : "border-slate-200 border-t-wine",
+                    )}
+                >
                     <div>
-                        <span className="text-xs font-semibold text-slate-500">{UI_TEXT.staff.classLearning.cardHomeworkRate}</span>
-                        <strong className="mt-1 block text-2xl font-extrabold text-emerald-600">
-                            {totalStudents > 0 ? ((highHwMissingCount / totalStudents) * percentageFactor).toFixed(decimalPlaces) : "0.00"}
-                            {"%"}
+                        <span className="text-xs font-semibold text-slate-500">
+                            {UI_TEXT.staff.classLearning.cardHwMissingPrefix}
+                            {displayHwThreshold}
+                            {UI_TEXT.staff.classLearning.percentSymbol}
+                        </span>
+                        <strong className={cx("mt-1 block text-2xl font-extrabold", getKpiCardColorClass(highHwMissingCount))}>
+                            {hwCardRate.toFixed(decimalPlaces)}
+                            {UI_TEXT.staff.classLearning.percentSymbol}
                         </strong>
                         <span className="text-[11px] text-slate-400">
                             {highHwMissingCount}
@@ -354,17 +541,27 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                             {totalStudents} {UI_TEXT.staff.classLearning.studentUnit}
                         </span>
                     </div>
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-wine-soft text-wine">
+                    <div
+                        className={cx(
+                            "flex size-10 items-center justify-center rounded-xl transition-colors",
+                            highHwMissingCount > 0 ? "bg-rose-100 text-rose-600" : "bg-wine-soft text-wine",
+                        )}
+                    >
                         <BookOpen className="size-5" />
                     </div>
                 </div>
 
                 {/* KPI Card 3 */}
-                <div className="flex items-center justify-between rounded-xl border border-t-4 border-slate-200 border-t-rose-600 bg-white p-4 shadow-xs">
+                <div
+                    className={cx(
+                        "flex items-center justify-between rounded-xl border border-t-4 bg-white p-4 shadow-xs transition-colors",
+                        noPrepCount > 0 ? "border-rose-200 border-t-rose-600 bg-rose-50/20" : "border-slate-200 border-t-rose-600",
+                    )}
+                >
                     <div>
                         <span className="text-xs font-semibold text-slate-500">{UI_TEXT.staff.classLearning.cardNoPrepRate}</span>
-                        <strong className="mt-1 block text-2xl font-extrabold text-emerald-600">
-                            {totalStudents > 0 ? ((noPrepCount / totalStudents) * percentageFactor).toFixed(decimalPlaces) : "0.00"}
+                        <strong className={cx("mt-1 block text-2xl font-extrabold", getKpiCardColorClass(noPrepCount))}>
+                            {noPrepCardRate.toFixed(decimalPlaces)}
                             {"%"}
                         </strong>
                         <span className="text-[11px] text-slate-400">
@@ -429,13 +626,9 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                 const rDetail = (rpointsMap[sId] as Record<string, unknown>) || {};
                                 const isLocked = isClassFinalized || !!lockedStudents[sId] || !!rDetail.isLocked;
 
-                                const absenceRateVal = calcStudentAbsenceRate(rDetail);
-                                const hwMissingRateVal =
-                                    rDetail.homeworkMissingRate != null
-                                        ? Number(rDetail.homeworkMissingRate)
-                                        : rDetail.submissionRate != null
-                                          ? Math.max(0, maxPercentageVal - Number(rDetail.submissionRate))
-                                          : 0;
+                                const studentInfo = getStudentThresholdAndAlert(rDetail, maxAbsenceThreshold, maxHomeworkThreshold);
+                                const absenceRateVal = studentInfo.absenceRateVal;
+                                const hwMissingRateVal = studentInfo.hwMissingRateVal;
                                 const absenceRateStr = formatPercent(absenceRateVal);
                                 const hwMissingRateStr = formatPercent(hwMissingRateVal);
                                 const scoreNum = Number(rDetail.totalScore ?? rDetail.autoRPoint ?? defaultMaxScore);
@@ -443,8 +636,13 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                 const isQualified = scoreNum >= passingScoreThreshold;
 
                                 const eStat = elearningStatsByStudent[sId];
-                                const uncompletedCount = eStat ? Number(eStat.lateSessions || 0) : 0;
-                                const hasTicked = eStat ? Number(eStat.tickedSessions || 0) > 0 : false;
+                                const uncompletedCount =
+                                    isLocked && rDetail.lateCount != null
+                                        ? Number(rDetail.lateCount)
+                                        : eStat
+                                          ? Number(eStat.lateSessions || 0)
+                                          : Number(rDetail.lateCount ?? 0);
+                                const hasTicked = eStat ? Number(eStat.tickedSessions || 0) > 0 : uncompletedCount > 0;
 
                                 return (
                                     <tr key={s.enrollmentId || idx} className="hover:bg-slate-50/80">
@@ -455,28 +653,57 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                                 <p className="font-mono text-xs text-slate-400">{studentCode}</p>
                                             </div>
                                         </td>
-                                        <td className={cx("px-4 py-3 text-center", getRateColorClass(absenceRateVal))}>{absenceRateStr}</td>
-                                        <td className={cx("px-4 py-3 text-center", getRateColorClass(hwMissingRateVal))}>{hwMissingRateStr}</td>
-                                        <td
-                                            className={cx(
-                                                "px-4 py-3 text-center font-bold",
-                                                uncompletedCount > 0 ? "font-extrabold text-rose-600" : "font-bold text-emerald-600",
-                                            )}
-                                        >
-                                            {hasTicked
-                                                ? `${uncompletedCount} ${UI_TEXT.staff.classLearning.sessionsSuffix}`
-                                                : UI_TEXT.staff.classLearning.zeroSessions}
+                                        <td className={cx("px-4 py-3 text-center", getStudentRateColor(absenceRateVal, studentInfo.isAbsenceRed))}>
+                                            {absenceRateStr}
+                                        </td>
+                                        <td className={cx("px-4 py-3 text-center", getStudentRateColor(hwMissingRateVal, studentInfo.isHwMissingRed))}>
+                                            {hwMissingRateStr}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="inline-flex items-center justify-center gap-1.5">
+                                                <span
+                                                    className={cx(
+                                                        "font-bold",
+                                                        uncompletedCount > 0 ? "font-extrabold text-rose-600" : "font-bold text-emerald-600",
+                                                    )}
+                                                >
+                                                    {hasTicked
+                                                        ? `${uncompletedCount} ${UI_TEXT.staff.classLearning.sessionsSuffix}`
+                                                        : UI_TEXT.staff.classLearning.zeroSessions}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedStudentForAction({
+                                                            studentId: sId,
+                                                            fullName: studentName,
+                                                            studentCode: studentCode,
+                                                        });
+                                                        setIsElearningModalOpen(true);
+                                                    }}
+                                                    title={UI_TEXT.staff.classLearning.viewElearningDetailTooltip}
+                                                    aria-label={UI_TEXT.staff.classLearning.viewElearningDetailTooltip}
+                                                    className="inline-flex size-6 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
+                                                >
+                                                    <Eye className="size-3.5" />
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3 text-center font-extrabold text-amber-600">{scoreVal}</td>
                                         <td className="px-4 py-3 text-center">
                                             <button
                                                 type="button"
-                                                onClick={() => toggleStudentLock(sId)}
+                                                onClick={() => {
+                                                    if (!isLocked) {
+                                                        toggleStudentLock(sId);
+                                                    }
+                                                }}
+                                                disabled={isLocked}
                                                 className={cx(
-                                                    "inline-flex cursor-pointer items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition duration-150",
+                                                    "inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold transition duration-150",
                                                     isLocked
-                                                        ? "border border-amber-300 bg-amber-100 text-amber-800"
-                                                        : "bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700",
+                                                        ? "cursor-not-allowed border border-amber-300 bg-amber-100/80 text-amber-800 opacity-90"
+                                                        : "cursor-pointer bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700",
                                                 )}
                                             >
                                                 {isLocked ? (
@@ -531,6 +758,13 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                                             <Dropdown.Item
                                                                 icon={Star}
                                                                 onAction={() => {
+                                                                    if (isLocked) {
+                                                                        toast.warning(
+                                                                            UI_TEXT.staff.classLearning.toastInfoTitle,
+                                                                            UI_TEXT.staff.classLearning.toastStudentInfoLocked,
+                                                                        );
+                                                                        return;
+                                                                    }
                                                                     setSelectedStudentForAction({
                                                                         studentId: sId,
                                                                         fullName: studentName,
@@ -539,7 +773,8 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                                                     setIsBonusModalOpen(true);
                                                                 }}
                                                                 className={(state) =>
-                                                                    "text-slate-700 [&_svg]:text-amber-500 " +
+                                                                    (isLocked ? "cursor-not-allowed opacity-40 " : "") +
+                                                                    "text-slate-700 [&_svg]:text-amber-500" +
                                                                     (state.isFocused || state.isHovered ? "[&>div]:!bg-amber-50" : "")
                                                                 }
                                                             >
@@ -549,6 +784,13 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                                             <Dropdown.Item
                                                                 icon={AlertTriangle}
                                                                 onAction={() => {
+                                                                    if (isLocked) {
+                                                                        toast.warning(
+                                                                            UI_TEXT.staff.classLearning.toastInfoTitle,
+                                                                            UI_TEXT.staff.classLearning.toastStudentInfoLocked,
+                                                                        );
+                                                                        return;
+                                                                    }
                                                                     setSelectedStudentForAction({
                                                                         studentId: sId,
                                                                         fullName: studentName,
@@ -557,7 +799,8 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                                                     setIsViolationModalOpen(true);
                                                                 }}
                                                                 className={(state) =>
-                                                                    "text-slate-700 [&_svg]:text-rose-500 " +
+                                                                    (isLocked ? "cursor-not-allowed opacity-40 " : "") +
+                                                                    "text-slate-700 [&_svg]:text-rose-500" +
                                                                     (state.isFocused || state.isHovered ? "[&>div]:!bg-rose-50" : "")
                                                                 }
                                                             >
@@ -567,10 +810,18 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                                                             <Dropdown.Item
                                                                 icon={RefreshCw}
                                                                 onAction={() => {
+                                                                    if (isLocked) {
+                                                                        toast.warning(
+                                                                            UI_TEXT.staff.classLearning.toastInfoTitle,
+                                                                            UI_TEXT.staff.classLearning.toastStudentInfoLocked,
+                                                                        );
+                                                                        return;
+                                                                    }
                                                                     recalculateMutation.mutate(sId);
                                                                 }}
                                                                 className={(state) =>
-                                                                    "text-slate-700 [&_svg]:text-purple-600 " +
+                                                                    (isLocked ? "cursor-not-allowed opacity-40 " : "") +
+                                                                    "text-slate-700 [&_svg]:text-purple-600" +
                                                                     (state.isFocused || state.isHovered ? "[&>div]:!bg-purple-50" : "")
                                                                 }
                                                             >
@@ -627,6 +878,24 @@ export function ClassLearningSubpanel({ classId, courses = [], students = [] }: 
                     courseId={selectedCourseId}
                     classId={classId}
                     onSuccess={handleRefreshRPoints}
+                />
+            )}
+
+            {/* Uncompleted E-learning Modal */}
+            {selectedStudentForAction && (
+                <UncompletedElearningModal
+                    isOpen={isElearningModalOpen}
+                    onClose={() => setIsElearningModalOpen(false)}
+                    studentId={selectedStudentForAction.studentId}
+                    studentName={selectedStudentForAction.fullName}
+                    studentCode={selectedStudentForAction.studentCode}
+                    classId={classId}
+                    courseId={selectedCourseId}
+                    isLocked={
+                        isClassFinalized ||
+                        !!lockedStudents[selectedStudentForAction.studentId] ||
+                        !!(rpointsMap[selectedStudentForAction.studentId] as { isLocked?: boolean })?.isLocked
+                    }
                 />
             )}
         </div>

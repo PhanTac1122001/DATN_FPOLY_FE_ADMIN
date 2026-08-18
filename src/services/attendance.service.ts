@@ -62,3 +62,10 @@ export async function updateAttendanceSession(sessionId: string, data: Partial<C
         return response?.data || response;
     }
 }
+
+export async function completeStudentElearning(sessionId: string, studentId: string): Promise<any> {
+    const response = await httpClient<any>(`/staff/attendance/sessions/${sessionId}/elearning/${studentId}/complete`, {
+        method: HttpMethod.POST,
+    });
+    return response?.data || response;
+}

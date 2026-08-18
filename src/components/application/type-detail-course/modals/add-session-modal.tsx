@@ -7,6 +7,8 @@ import type { AddSessionModalProps, SessionTypeOption } from "@/types/courseware
 import { SessionTypeEnum } from "@/types/material.types";
 import { AddSessionTypeModal } from "./add-session-type-modal";
 
+const defaultMaxAiAttempts = 3;
+
 export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSubmit, isPending }: AddSessionModalProps) {
     const [availableTypes, setAvailableTypes] = useState<SessionTypeOption[]>([
         { id: SessionTypeEnum.LY_THUYET, label: UI_TEXT.addSessionModal.sessionTypeTheory, code: SessionTypeEnum.LY_THUYET },
@@ -86,8 +88,8 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                                 <h4 className="border-b border-slate-100 pb-1.5 text-[11px] font-extrabold tracking-wider text-wine uppercase">
                                     {UI_TEXT.courseDetail.sessionTabGeneral}
                                 </h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="col-span-2 flex flex-col gap-1.5">
+                                <div className="grid grid-cols-12 gap-4">
+                                    <div className="col-span-8 flex flex-col gap-1.5">
                                         <label className="text-xs font-medium text-slate-500 uppercase">{UI_TEXT.courseDetail.sessionNameLabel}</label>
                                         <input
                                             type="text"
@@ -99,7 +101,25 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                                             required
                                         />
                                     </div>
-                                    <div className="col-span-2 flex flex-col gap-1.5">
+
+                                    <div className="col-span-4 flex flex-col gap-1.5">
+                                        <label className="text-xs font-medium text-slate-500 uppercase">{UI_TEXT.courseDetail.maxAiGradeAttemptsLabel}</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            value={fields.maxAiGradeAttempts ?? defaultMaxAiAttempts}
+                                            onChange={(e) =>
+                                                setFields((prev) => ({
+                                                    ...prev,
+                                                    maxAiGradeAttempts: Math.max(1, parseInt(e.target.value, 10) || 1),
+                                                }))
+                                            }
+                                            placeholder={UI_TEXT.courseDetail.maxAiGradeAttemptsPlaceholder}
+                                            className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold focus:border-wine focus:outline-none"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="col-span-12 flex flex-col gap-1.5">
                                         <div className="flex items-center justify-between">
                                             <label className="text-xs font-medium text-slate-500 uppercase">{UI_TEXT.addSessionModal.sessionTypeLabel}</label>
                                             <button
@@ -144,7 +164,7 @@ export function AddSessionModal({ isOpen, onOpenChange, fields, setFields, onSub
                                     </div>
 
                                     {selectedType?.defaultBlocks && selectedType.defaultBlocks.length > 0 && (
-                                        <div className="col-span-2 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                                        <div className="col-span-12 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
                                             <div className="flex items-center gap-1.5 font-extrabold text-blue-900">
                                                 <Layers className="size-4 text-blue-600" />
                                                 <span>{UI_TEXT.addSessionModal.autoBlocksHint}</span>

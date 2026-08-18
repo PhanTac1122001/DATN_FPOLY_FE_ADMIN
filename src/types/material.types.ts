@@ -119,6 +119,7 @@ export interface Session {
     practice?: SessionPractice | null;
     practices?: SessionPractice[];
     completionLogic?: SessionCompletionLogic;
+    maxAiGradeAttempts?: number;
 }
 
 export interface Course {

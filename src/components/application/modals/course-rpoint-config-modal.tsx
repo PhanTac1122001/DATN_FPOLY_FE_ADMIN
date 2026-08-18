@@ -97,6 +97,10 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
             toast.success(t.toastSaveTitle, `${t.toastSaveDesc}. `);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
             queryClient.invalidateQueries({ queryKey: ["course-rpoint-formula", courseId] });
+            queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
+            queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
+            queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
             onOpenChange(false);
         },
         onError: (err: Error) => {
@@ -109,6 +113,11 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
         onSuccess: async () => {
             toast.success(t.toastResetTitle, t.toastResetDesc);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
+            queryClient.invalidateQueries({ queryKey: ["course-rpoint-formula", courseId] });
+            queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
+            queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
+            queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
             await refetch();
             onOpenChange(false);
         },

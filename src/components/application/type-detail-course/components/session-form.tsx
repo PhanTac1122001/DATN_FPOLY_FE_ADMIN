@@ -5,6 +5,8 @@ import { sessionTypeService } from "@/services/session-type.service";
 import type { SessionFormProps, SessionTypeOption } from "@/types/courseware.types";
 import { SessionTypeEnum } from "@/types/material.types";
 
+const defaultMaxAiAttempts = 3;
+
 export function SessionForm({
     mode,
     fields,
@@ -100,8 +102,8 @@ export function SessionForm({
             <form ref={formRef} onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col justify-between gap-4">
                 <div className="custom-scrollbar flex flex-1 flex-col gap-6 overflow-y-auto pr-2">
                     <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2 flex flex-col gap-1.5">
+                        <div className="grid grid-cols-12 gap-4">
+                            <div className="col-span-8 flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.sessionNameLabel}</label>
                                 <input
                                     type="text"
@@ -114,7 +116,25 @@ export function SessionForm({
                                 />
                             </div>
 
-                            <div className="col-span-2 flex flex-col gap-1.5">
+                            <div className="col-span-4 flex flex-col gap-1.5">
+                                <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.maxAiGradeAttemptsLabel}</label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={fields.maxAiGradeAttempts ?? defaultMaxAiAttempts}
+                                    onChange={(e) =>
+                                        setFields((prev) => ({
+                                            ...prev,
+                                            maxAiGradeAttempts: Math.max(1, parseInt(e.target.value, 10) || 1),
+                                        }))
+                                    }
+                                    placeholder={UI_TEXT.courseDetail.maxAiGradeAttemptsPlaceholder}
+                                    className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium focus:border-wine focus:outline-none"
+                                    required
+                                />
+                            </div>
+
+                            <div className="col-span-12 flex flex-col gap-1.5">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.sessionTypeLabel}</label>
                                     {onOpenManageTypes && (
@@ -161,7 +181,7 @@ export function SessionForm({
                             </div>
 
                             {mode === "create" && selectedType?.defaultBlocks && selectedType.defaultBlocks.length > 0 && (
-                                <div className="col-span-2 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                                <div className="col-span-12 flex flex-col gap-2 rounded-2xl border border-blue-100 bg-blue-50/50 p-3 text-xs">
                                     <div className="flex items-center gap-1.5 font-extrabold text-blue-900">
                                         <Layers className="size-4 text-blue-600" />
                                         <span>{UI_TEXT.addSessionModal.autoBlocksHint}</span>
@@ -189,7 +209,7 @@ export function SessionForm({
                                 </div>
                             )}
 
-                            <div className="col-span-2 flex flex-col gap-1.5">
+                            <div className="col-span-12 flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.sessionDescLabel}</label>
                                 <textarea
                                     value={fields.description || ""}

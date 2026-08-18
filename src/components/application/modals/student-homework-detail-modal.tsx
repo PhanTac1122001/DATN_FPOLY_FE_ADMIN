@@ -11,6 +11,7 @@ import { UI_TEXT } from "@/constants/ui-text.constants";
 import { approveCompletionFeedback, getCompletionDetail, getCompletionSubmissions, gradeCompletion } from "@/services/homework-completion.service";
 import { toast } from "@/services/toast.service";
 import { AiDecisionEnum, AiStatusEnum, HomeworkStatusEnum, type StudentHomeworkDetailModalProps } from "@/types/homework.types";
+import { formatAiReportText } from "@/utils/class.utils";
 import { cx } from "@/utils/cx";
 
 export function StudentHomeworkDetailModal({ isOpen, onClose, completionId, onSuccess }: StudentHomeworkDetailModalProps) {
@@ -54,6 +55,7 @@ export function StudentHomeworkDetailModal({ isOpen, onClose, completionId, onSu
             );
             queryClient.invalidateQueries({ queryKey: ["homework-completion-detail", completionId] });
             queryClient.invalidateQueries({ queryKey: ["homework-completions"] });
+            queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
             if (onSuccess) onSuccess();
         },
         onError: (err: Error) => {
@@ -219,9 +221,9 @@ export function StudentHomeworkDetailModal({ isOpen, onClose, completionId, onSu
                                                 <p className="text-amber-700">{UI_TEXT.studentHomeworkDetailModal.aiExceededDesc}</p>
                                             </div>
                                         </div>
-                                    ) : detail?.aiReport || detail?.aiSummary ? (
+                                    ) : formatAiReportText(detail?.aiReport) || formatAiReportText(detail?.aiSummary) ? (
                                         <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50 p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-800">
-                                            {detail.aiReport || detail.aiSummary}
+                                            {formatAiReportText(detail?.aiReport) || formatAiReportText(detail?.aiSummary)}
                                         </div>
                                     ) : (
                                         <p className="text-xs text-slate-400 italic">{UI_TEXT.studentHomeworkDetailModal.noAiResult}</p>
@@ -332,13 +334,13 @@ export function StudentHomeworkDetailModal({ isOpen, onClose, completionId, onSu
                                                 </div>
                                             )}
 
-                                            {sub.aiReport && (
+                                            {(formatAiReportText(sub.aiReport) || formatAiReportText(sub.aiSummary)) && (
                                                 <details className="mt-1">
                                                     <summary className="cursor-pointer font-semibold text-purple-700 hover:underline">
                                                         {`${UI_TEXT.studentHomeworkDetailModal.viewAiReportBtnPrefix}${sub.attemptNo}${UI_TEXT.studentHomeworkDetailModal.viewAiReportBtnSuffix}`}
                                                     </summary>
                                                     <div className="mt-1 max-h-40 overflow-y-auto rounded border border-slate-200 bg-white p-2 font-mono text-[11px] whitespace-pre-wrap">
-                                                        {sub.aiReport}
+                                                        {formatAiReportText(sub.aiReport) || formatAiReportText(sub.aiSummary)}
                                                     </div>
                                                 </details>
                                             )}

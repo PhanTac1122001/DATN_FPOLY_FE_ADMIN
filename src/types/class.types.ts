@@ -169,6 +169,16 @@ export interface AttendanceEntry {
     studentId: string;
     status: AttendanceStatus;
     note?: string;
+    isSessionCompleted?: boolean;
+}
+
+export interface AttendanceRosterItem {
+    studentId: string;
+    fullName: string;
+    studentCode: string;
+    status: AttendanceStatus | string | null;
+    note?: string | null;
+    isSessionCompleted?: boolean;
 }
 
 export interface CreateSessionRequest {
@@ -237,4 +247,15 @@ export interface EnrollStudentModalProps {
     onClose: () => void;
     classId: string;
     enrollmentData?: StudentClassEmbed | null;
+}
+
+export interface UncompletedElearningModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    studentId: string;
+    studentName: string;
+    studentCode: string;
+    classId: string;
+    courseId: string;
+    isLocked?: boolean;
 }

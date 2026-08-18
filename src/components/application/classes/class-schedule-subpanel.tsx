@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Calendar, CheckCircle2, Clock, History, Plus, Save, UserPlus, UserX, Users } from "lucide-react";
+import { AlertCircle, BookOpen, Calendar, CheckCircle2, Clock, History, Plus, Save, UserPlus, UserX, Users } from "lucide-react";
 import { DatePicker } from "@/components/application/date-picker/date-picker";
 import { AttendanceHistoryModal } from "@/components/application/modals/attendance-history-modal";
 import { CourseClassModal } from "@/components/application/modals/course-class-modal";
@@ -150,6 +150,19 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
     });
 
     const isAlreadyAttended = !!selectedSessionId && !!currentRosterData?.session;
+
+    const elearningCompletionMap = useMemo(() => {
+        const map: Record<string, boolean> = {};
+        if (currentRosterData?.roster && Array.isArray(currentRosterData.roster)) {
+            currentRosterData.roster.forEach((r) => {
+                const item = r as Record<string, unknown>;
+                if (item.studentId) {
+                    map[String(item.studentId)] = item.isSessionCompleted === true;
+                }
+            });
+        }
+        return map;
+    }, [currentRosterData]);
 
     // Update local attendanceMap when backend roster or students list changes
     useEffect(() => {
@@ -662,6 +675,7 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                             <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
                                 <th className="w-12 px-6 py-4 text-center">{UI_TEXT.classes.thStt}</th>
                                 <th className="w-56 px-6 py-4 whitespace-nowrap">{UI_TEXT.classes.thStudentCodeName}</th>
+                                <th className="px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.classSchedule.thElearningPrep}</th>
                                 <th className="px-6 py-4 text-center">{UI_TEXT.classes.thNote}</th>
                                 <th className="w-[430px] px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.classes.thAttendanceStatus}</th>
                             </tr>
@@ -672,6 +686,7 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                                 const studentName = s.student?.fullName || "Sinh viên";
                                 const studentCode = s.student?.studentCode || s.student?.email || "-";
                                 const current = attendanceMap[sId] || { status: AttendanceStatusEnum.PRESENT, note: "" };
+                                const isCompleted = elearningCompletionMap[sId] === true;
 
                                 return (
                                     <tr key={s.enrollmentId || idx} className="group transition duration-150 hover:bg-slate-50">
@@ -681,6 +696,26 @@ export function ClassScheduleSubpanel({ classId, courses = [], students = [] }: 
                                                 <p className="text-[14.5px] font-bold text-ink">{studentName}</p>
                                                 <p className="font-mono text-xs text-muted">{studentCode}</p>
                                             </div>
+                                        </td>
+                                        <td className="border-b border-line px-6 py-4 text-center whitespace-nowrap">
+                                            {selectedSessionId ? (
+                                                isCompleted ? (
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                                                        <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                                        {UI_TEXT.staff.classSchedule.statusCompleted}
+                                                    </span>
+                                                ) : (
+                                                    <span
+                                                        className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700"
+                                                        title={UI_TEXT.staff.classSchedule.uncompletedElearningTooltip}
+                                                    >
+                                                        <AlertCircle className="size-3.5 text-rose-600" />
+                                                        {UI_TEXT.staff.classSchedule.statusUncompleted}
+                                                    </span>
+                                                )
+                                            ) : (
+                                                <span className="text-xs text-slate-400">{"—"}</span>
+                                            )}
                                         </td>
                                         <td className="border-b border-line px-6 py-4 text-center">
                                             <input

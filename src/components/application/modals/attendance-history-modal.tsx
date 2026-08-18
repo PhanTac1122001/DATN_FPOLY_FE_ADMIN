@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, CheckCircle2, Eye, History, Save, Users, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, CheckCircle2, Eye, History, Save, Users, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
@@ -309,6 +309,7 @@ export function AttendanceHistoryModal({
                                                 <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
                                                     <th className="w-12 px-4 py-3 text-center">{UI_TEXT.classes.thStt}</th>
                                                     <th className="px-4 py-3">{UI_TEXT.classes.thStudentCodeName}</th>
+                                                    <th className="px-4 py-3 text-center whitespace-nowrap">{UI_TEXT.staff.classSchedule.thElearningPrep}</th>
                                                     <th className="px-4 py-3 text-center">{UI_TEXT.classes.thNote}</th>
                                                     <th className="w-[420px] px-4 py-3 text-center whitespace-nowrap">{UI_TEXT.classes.thAttendanceStatus}</th>
                                                 </tr>
@@ -320,6 +321,7 @@ export function AttendanceHistoryModal({
                                                         status: typeof st.status === "string" ? st.status : "PRESENT",
                                                         note: typeof st.note === "string" ? st.note : "",
                                                     };
+                                                    const isCompleted = st.isSessionCompleted !== false;
 
                                                     return (
                                                         <tr key={sId || idx} className="group transition duration-150 hover:bg-slate-50">
@@ -335,6 +337,22 @@ export function AttendanceHistoryModal({
                                                                         {typeof st.studentCode === "string" ? st.studentCode : "-"}
                                                                     </p>
                                                                 </div>
+                                                            </td>
+                                                            <td className="border-b border-line px-4 py-3 text-center whitespace-nowrap">
+                                                                {isCompleted ? (
+                                                                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
+                                                                        <CheckCircle2 className="size-3 text-emerald-600" />
+                                                                        {UI_TEXT.staff.classSchedule.statusCompleted}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span
+                                                                        className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700"
+                                                                        title={UI_TEXT.staff.classSchedule.uncompletedElearningTooltip}
+                                                                    >
+                                                                        <AlertCircle className="size-3 text-rose-600" />
+                                                                        {UI_TEXT.staff.classSchedule.statusUncompleted}
+                                                                    </span>
+                                                                )}
                                                             </td>
                                                             <td className="border-b border-line px-4 py-3 text-center">
                                                                 <input

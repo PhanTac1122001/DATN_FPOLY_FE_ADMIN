@@ -80,12 +80,13 @@ export const formatPercent = (val: unknown): string => {
     return num % wholeNumberMod === 0 ? `${num}%` : `${num.toFixed(decimalPlaces)}%`;
 };
 
-export const getRateColorClass = (rateVal: unknown): string => {
+const defaultMaxThreshold = 10;
+const jsonIndentSpaces = 2;
+
+export const getRateColorClass = (rateVal: unknown, maxThreshold = defaultMaxThreshold, warnThreshold = 0): string => {
     const num = Number(rateVal || 0);
-    const highThreshold = 10;
-    const warnThreshold = 5;
-    if (num > highThreshold) return "text-rose-600 font-extrabold";
-    if (num >= warnThreshold) return "text-amber-600 font-extrabold";
+    if (num >= maxThreshold && maxThreshold > 0) return "text-rose-600 font-extrabold";
+    if (num > warnThreshold) return "text-amber-600 font-extrabold";
     return "text-emerald-600 font-bold";
 };
 
@@ -111,3 +112,78 @@ export function formatSubmittedAt(dateStr?: string): string {
     if (isNaN(d.getTime())) return "---";
     return d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
+
+export const formatAiReportText = (val: unknown): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    if (typeof val === "object") {
+        try {
+            const obj = val as Record<string, unknown>;
+            const parts: string[] = [];
+
+            if (Array.isArray(obj.criteriaResults) && obj.criteriaResults.length > 0) {
+                parts.push("=== KẾT QUẢ TIÊU CHÍ ===");
+                obj.criteriaResults.forEach((c: Record<string, unknown>, i: number) => {
+                    const status = c.result || c.status || (c.passed ? "PASS" : "FAIL");
+                    const name = c.name || c.criterionName || c.title || `Tiêu chí ${i + 1}`;
+                    const reason = c.reason || c.explanation || c.feedback || "";
+                    parts.push(`${i + 1}. [${status}] ${name}${reason ? `: ${reason}` : ""}`);
+                    if (Array.isArray(c.evidence) && c.evidence.length > 0) {
+                        c.evidence.forEach((ev: unknown) => {
+                            if (typeof ev === "string") {
+                                parts.push(`   - Evidence: ${ev}`);
+                            } else if (ev && typeof ev === "object") {
+                                const evObj = ev as Record<string, unknown>;
+                                const loc = [evObj.filePath, evObj.lineStart ? `L${evObj.lineStart}${evObj.lineEnd ? `-${evObj.lineEnd}` : ""}` : null]
+                                    .filter(Boolean)
+                                    .join(":");
+                                const exp = evObj.explanation || evObj.quote || "";
+                                parts.push(`   - Evidence (${loc}): ${exp}`);
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (Array.isArray(obj.blockingFailures) && obj.blockingFailures.length > 0) {
+                if (parts.length > 0) parts.push("");
+                parts.push("=== LỖI CHẶN (BLOCKING FAILURES) ===");
+                obj.blockingFailures.forEach((b: unknown, i: number) => {
+                    const bObj = typeof b === "object" && b !== null ? (b as Record<string, unknown>) : null;
+                    parts.push(`${i + 1}. ${typeof b === "string" ? b : bObj?.message || bObj?.description || JSON.stringify(b)}`);
+                });
+            }
+
+            if (Array.isArray(obj.recommendations) && obj.recommendations.length > 0) {
+                if (parts.length > 0) parts.push("");
+                parts.push("=== KHUYẾN NGHỊ KHẮC PHỤC ===");
+                obj.recommendations.forEach((r: unknown, i: number) => {
+                    const rObj = typeof r === "object" && r !== null ? (r as Record<string, unknown>) : null;
+                    parts.push(`${i + 1}. ${typeof r === "string" ? r : rObj?.message || rObj?.description || JSON.stringify(r)}`);
+                });
+            }
+
+            if (Array.isArray(obj.studentQuestions) && obj.studentQuestions.length > 0) {
+                if (parts.length > 0) parts.push("");
+                parts.push("=== CÂU HỎI CHO HỌC VIÊN ===");
+                obj.studentQuestions.forEach((q: unknown, i: number) => {
+                    if (typeof q === "string") {
+                        parts.push(`${i + 1}. ${q}`);
+                    } else if (q && typeof q === "object") {
+                        const qObj = q as Record<string, unknown>;
+                        parts.push(`${i + 1}. ${qObj.question || qObj.text || JSON.stringify(q)}`);
+                    }
+                });
+            }
+
+            if (parts.length > 0) {
+                return parts.join("\n");
+            }
+
+            return JSON.stringify(obj, null, jsonIndentSpaces);
+        } catch {
+            return String(val);
+        }
+    }
+    return String(val);
+};

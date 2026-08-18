@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Play, Plus, Save, ShieldAlert } from "lucide-react";
 import type { Route } from "next";
-import { useAppRouter } from "@/hooks/use-app-router";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { SessionTypeModal } from "@/components/application/modals/session-type-modal";
 import { LessonEditorWrapper } from "@/components/application/type-detail-course/components/lesson-editor-wrapper";
@@ -16,12 +15,15 @@ import { SessionCompletionRuleModal } from "@/components/application/type-detail
 import { SessionSelectItem, SessionSelectModal } from "@/components/application/type-detail-course/modals/session-select-modal";
 import { Button } from "@/components/base/buttons/button";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { createSession, deleteSession, getQuizzesList, getSessionsByCourse, updateSession } from "@/services/material.service";
+import { useAppRouter } from "@/hooks/use-app-router";
 import { getCourseById } from "@/services/course.service";
+import { createSession, deleteSession, getQuizzesList, getSessionsByCourse, updateSession } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
 import type { SessionFields } from "@/types/courseware.types";
 import { type Lesson, type Session, SessionTypeEnum } from "@/types/material.types";
 import type { TypeDetailCourseViewProps } from "@/types/type.types";
+
+const defaultMaxAiGradeAttempts = 3;
 
 export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps) {
     const router = useAppRouter();
@@ -51,6 +53,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         practiceEntranceQuiz: "",
         isShowMindmap: false,
         description: "",
+        maxAiGradeAttempts: 3,
     };
 
     const [newSessionFields, setNewSessionFields] = useState<SessionFields>(initialSessionFields);
@@ -87,13 +90,14 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         practiceEntranceQuiz: (fields.practiceEntranceQuiz || "").trim(),
         isShowMindmap: !!fields.isShowMindmap,
         description: (fields.description || "").trim(),
+        maxAiGradeAttempts: fields.maxAiGradeAttempts && Number(fields.maxAiGradeAttempts) >= 1 ? Number(fields.maxAiGradeAttempts) : defaultMaxAiGradeAttempts,
     });
 
     const isSessionDirty = isAddingSession
         ? JSON.stringify(normalizeSessionFields(newSessionFields)) !== JSON.stringify(normalizeSessionFields(initialSessionFields))
         : editingSession
-            ? JSON.stringify(normalizeSessionFields(editSessionFields)) !== JSON.stringify(normalizeSessionFields(savedSessionFields))
-            : false;
+          ? JSON.stringify(normalizeSessionFields(editSessionFields)) !== JSON.stringify(normalizeSessionFields(savedSessionFields))
+          : false;
 
     const hasUnsavedChanges = isAddingSession || !!editingSession ? isSessionDirty : !!selectedLessonId && isLessonDirty;
 
@@ -235,6 +239,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 practiceEntranceQuiz: ses.practiceEntranceQuiz || "",
                 isShowMindmap: ses.isShowMindmap ?? false,
                 description: ses.description || "",
+                maxAiGradeAttempts: ses.maxAiGradeAttempts ?? defaultMaxAiGradeAttempts,
             };
             setEditSessionFields(fields);
             setSavedSessionFields(fields);
@@ -276,19 +281,16 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 courseId,
                 position: newPos,
             };
-            addSessionMutation.mutate(
-                payload as Omit<Session, "id" | "createdAt" | "position"> & { position?: number },
-                {
-                    onSuccess: (newSession) => {
-                        setIsAddingSession(false);
-                        setNewSessionFields(initialSessionFields);
-                        setSavedSessionFields(initialSessionFields);
-                        if (newSession?.id) {
-                            setSelectedSessionId(newSession.id);
-                        }
-                    },
+            addSessionMutation.mutate(payload as Omit<Session, "id" | "createdAt" | "position"> & { position?: number }, {
+                onSuccess: (newSession) => {
+                    setIsAddingSession(false);
+                    setNewSessionFields(initialSessionFields);
+                    setSavedSessionFields(initialSessionFields);
+                    if (newSession?.id) {
+                        setSelectedSessionId(newSession.id);
+                    }
                 },
-            );
+            });
         }
     };
 
@@ -367,7 +369,12 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                         type="button"
                         onClick={() => {
                             executeWithUnsavedCheck(() => {
-                                if (typeof window !== "undefined" && window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
+                                if (
+                                    typeof window !== "undefined" &&
+                                    window.history.length > 1 &&
+                                    document.referrer &&
+                                    document.referrer.includes(window.location.host)
+                                ) {
                                     router.back();
                                 } else if (id) {
                                     router.push(`/type/${id}` as Route);
@@ -393,7 +400,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             onClick={() => {
                                 setIsSessionSelectModalOpen(true);
                             }}
-                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-brand-300  px-4 py-2 text-xs font-bold text-brand-800 transition hover:bg-brand-50 shadow-xs"
+                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-brand-300 px-4 py-2 text-xs font-bold text-brand-800 shadow-xs transition hover:bg-brand-50"
                         >
                             <ShieldAlert className="size-4 text-brand-600" />
                             <span>{UI_TEXT.typeDetailCourse.completionConditions}</span>
@@ -446,8 +453,9 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                         setDraggedIndex(null);
                                     }}
                                     onDragEnd={() => setDraggedIndex(null)}
-                                    className={`rounded-xl transition-all duration-150 ${draggedIndex === idx ? "scale-[0.98] border-2 border-dashed border-blue-300 opacity-30" : ""
-                                        }`}
+                                    className={`rounded-xl transition-all duration-150 ${
+                                        draggedIndex === idx ? "scale-[0.98] border-2 border-dashed border-blue-300 opacity-30" : ""
+                                    }`}
                                 >
                                     <SessionNode
                                         session={ses}
@@ -501,6 +509,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                     practiceEntranceQuiz: session.practiceEntranceQuiz || "",
                                                     isShowMindmap: !!session.isShowMindmap,
                                                     description: session.description || "",
+                                                    maxAiGradeAttempts: session.maxAiGradeAttempts ?? defaultMaxAiGradeAttempts,
                                                 };
                                                 setEditingSession(session);
                                                 setEditSessionFields(fields);
@@ -744,7 +753,6 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 cancelText={UI_TEXT.common.cancel}
                 variant="danger"
             />
-
         </div>
     );
 }
