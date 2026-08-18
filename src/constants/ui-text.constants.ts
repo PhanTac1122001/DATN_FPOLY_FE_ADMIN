@@ -3324,6 +3324,28 @@ export const UI_TEXT = {
         tagsModalSubtitle: "Chọn các tag nghề nghiệp cho môn học này",
         tagsPlaceholder: "Tìm và chọn tag nghề nghiệp...",
         noTags: "Chưa gắn tag",
+        // System selector (per-system roadmap builder)
+        systemSelectorLabel: "Hệ đào tạo",
+        systemSelectorPlaceholder: "Chọn hệ đào tạo",
+        noSystemSelected: "Chọn một hệ đào tạo để xem lộ trình",
+        emptySystemRoadmap: "Hệ này chưa có môn trong lộ trình",
+        // Career panel (reverse tagging)
+        careerPanelTitle: "Gán môn theo nghề",
+        careerPanelPickCareer: "Chọn nghề",
+        careerPanelCoursesLabel: "Chọn các môn thuộc nghề này",
+        careerPanelSave: "Lưu",
+        careerPanelCount: "{count} môn",
+        careerPanelEmpty: "Chọn một nghề để gán môn",
+        toastCareerSaveTitle: "Đã lưu",
+        toastCareerSaveDesc: "Đã cập nhật môn cho nghề",
+        toastCareerSaveError: "Không thể lưu môn cho nghề",
+        // Reorder courses within a column
+        moveUp: "Lên",
+        moveDown: "Xuống",
+        toastReorderError: "Không thể sắp thứ tự",
+        // Inline create category / career
+        createCategoryInline: "+ Nhóm mới",
+        createCareerInline: "+ Nghề mới",
     },
     courseCategories: {
         modalTitle: "Quản lý nhóm môn",

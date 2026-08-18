@@ -1,6 +1,7 @@
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
 import type { CareerTag, CreateCareerTagPayload, UpdateCareerTagPayload } from "@/types/career-tag.types";
+import type { TagCourse } from "@/types/course-roadmap.types";
 
 function unwrap<T>(response: unknown): T {
     if (response && typeof response === "object" && "data" in response) {
@@ -40,5 +41,22 @@ export const careerTagService = {
             method: HttpMethod.DELETE,
         });
         unwrap(response);
+    },
+
+    getCourses: async (tagId: string): Promise<TagCourse[]> => {
+        const response = await httpClient<any>(`/staff/tags/${tagId}/courses`, {
+            method: HttpMethod.GET,
+        });
+        const data = unwrap<TagCourse[] | { items?: TagCourse[] }>(response);
+        if (Array.isArray(data)) return data;
+        return data?.items || [];
+    },
+
+    setCourses: async (tagId: string, courseIds: string[]): Promise<{ added: number; removed: number }> => {
+        const response = await httpClient<any>(`/staff/tags/${tagId}/courses`, {
+            method: HttpMethod.PUT,
+            body: JSON.stringify({ courseIds }),
+        });
+        return unwrap<{ added: number; removed: number }>(response);
     },
 };

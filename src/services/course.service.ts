@@ -1,5 +1,6 @@
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
+import type { ReorderCourseItem, SystemRoadmap } from "@/types/course-roadmap.types";
 import type {
     BackendScoringFormula,
     CourseBackendEntity,
@@ -219,6 +220,28 @@ export async function assignCourseCategory(courseIds: string[], categoryId: stri
     const response = await httpClient<any>("/staff/courses/assign-category", {
         method: HttpMethod.POST,
         body: JSON.stringify({ courseIds, categoryId }),
+    });
+    return unwrapData<{ updated: number }>(response) ?? { updated: 0 };
+}
+
+export async function getSystemRoadmap(systemId: string): Promise<SystemRoadmap> {
+    const response = await httpClient<any>(`/staff/roadmap?systemId=${encodeURIComponent(systemId)}`, {
+        method: HttpMethod.GET,
+    });
+    return (
+        unwrapData<SystemRoadmap>(response) ?? {
+            systemId,
+            totalCourses: 0,
+            categories: [],
+            uncategorized: { totalCourses: 0, courses: [] },
+        }
+    );
+}
+
+export async function reorderCourses(items: ReorderCourseItem[]): Promise<{ updated: number }> {
+    const response = await httpClient<any>("/staff/courses/reorder", {
+        method: HttpMethod.POST,
+        body: JSON.stringify({ items }),
     });
     return unwrapData<{ updated: number }>(response) ?? { updated: 0 };
 }

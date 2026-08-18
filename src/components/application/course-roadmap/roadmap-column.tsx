@@ -12,14 +12,15 @@ export function RoadmapColumn({
     selectedIds,
     onToggleSelect,
     onMove,
-    onEditTags,
+    onReorder,
     onEditCategory,
     onHideCategory,
 }: RoadmapColumnProps) {
     const t = UI_TEXT.courseRoadmap;
-    const { category, isUncategorized, courses } = column;
-    const dotColor = category?.color || COURSE_CATEGORY_NEUTRAL_COLOR;
-    const columnName = category ? category.name : t.uncategorizedColumn;
+    const { categoryId, isUncategorized, courses } = column;
+    const dotColor = column.color || COURSE_CATEGORY_NEUTRAL_COLOR;
+    const columnName = isUncategorized ? t.uncategorizedColumn : column.name;
+    const lastIndex = courses.length - 1;
 
     return (
         <div className="flex w-80 shrink-0 flex-col rounded-3xl border border-slate-100 bg-slate-50/60">
@@ -31,13 +32,13 @@ export function RoadmapColumn({
                         {courses.length} {t.courseCountSuffix}
                     </span>
                 </div>
-                {!isUncategorized && category && (
+                {!isUncategorized && categoryId && (
                     <Dropdown.Root>
                         <Dropdown.DotsButton className="p-1.5" />
                         <Dropdown.Popover>
                             <Dropdown.Menu>
-                                <Dropdown.Item label={t.columnMenuEdit} onAction={() => onEditCategory(category.id)} />
-                                <Dropdown.Item label={t.columnMenuHide} onAction={() => onHideCategory(category.id)} />
+                                <Dropdown.Item label={t.columnMenuEdit} onAction={() => onEditCategory(categoryId)} />
+                                <Dropdown.Item label={t.columnMenuHide} onAction={() => onHideCategory(categoryId)} />
                             </Dropdown.Menu>
                         </Dropdown.Popover>
                     </Dropdown.Root>
@@ -48,15 +49,18 @@ export function RoadmapColumn({
                 {courses.length === 0 ? (
                     <div className="flex flex-1 items-center justify-center px-4 py-10 text-center text-xs font-medium text-slate-400">{t.emptyColumn}</div>
                 ) : (
-                    courses.map((course) => (
+                    courses.map((course, index) => (
                         <CourseCard
-                            key={course.id}
+                            key={course.courseId}
                             course={course}
                             activeCategories={activeCategories}
-                            isSelected={selectedIds.has(course.id)}
+                            isSelected={selectedIds.has(course.courseId)}
+                            isFirst={index === 0}
+                            isLast={index === lastIndex}
                             onToggleSelect={onToggleSelect}
                             onMove={onMove}
-                            onEditTags={onEditTags}
+                            onMoveUp={(courseId) => onReorder(column.id, courseId, "up")}
+                            onMoveDown={(courseId) => onReorder(column.id, courseId, "down")}
                         />
                     ))
                 )}
