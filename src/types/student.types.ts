@@ -156,7 +156,6 @@ export interface StudentFormValues {
     password: string;
     status: StudentStatus;
     systemId: string;
-    specializeId: string;
     lockedUntil: string;
     systemIds: string[];
 }

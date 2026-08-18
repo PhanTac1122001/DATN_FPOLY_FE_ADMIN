@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Controller, useForm } from "react-hook-form";
@@ -11,7 +11,7 @@ import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { STUDENT_STATUS_OPTIONS, StudentLocationEnum } from "@/constants/student.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { createStudent, getSpecializationsList, updateStudent } from "@/services/student.service";
+import { createStudent, updateStudent } from "@/services/student.service";
 import { toast } from "@/services/toast.service";
 import { type Student, type StudentFormValues, StudentStatusEnum } from "@/types/student.types";
 import type { System } from "@/types/system.types";
@@ -19,12 +19,6 @@ import type { System } from "@/types/system.types";
 export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen: boolean; onClose: () => void; student?: Student | null; systems: System[] }) {
     const queryClient = useQueryClient();
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
-
-    const { data: specializations = [] } = useQuery({
-        queryKey: ["specializations-list"],
-        queryFn: getSpecializationsList,
-        enabled: isOpen,
-    });
 
     const { control, handleSubmit, reset } = useForm<StudentFormValues>({
         defaultValues: {
@@ -37,7 +31,6 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
             password: "",
             status: StudentStatusEnum.DANG_HOC,
             systemId: "",
-            specializeId: "",
             lockedUntil: "",
             systemIds: [] as string[],
         },
@@ -55,7 +48,6 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                 password: "",
                 status: student.status || StudentStatusEnum.DANG_HOC,
                 systemId: student.systemIds?.[0] || "",
-                specializeId: student.specializeIds?.[0] || "",
                 lockedUntil: student.lockedUntil ? student.lockedUntil.split("T")[0] : "",
                 systemIds: student.systemIds || [],
             });
@@ -71,7 +63,6 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                 password: "",
                 status: StudentStatusEnum.DANG_HOC,
                 systemId: (systems[0]?.id as string) || "",
-                specializeId: "",
                 lockedUntil: "",
                 systemIds: (systems[0]?.id as string) ? [systems[0].id as string] : [],
             });
@@ -107,7 +98,6 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                     location: data.location,
                     dateOfBirth: data.dateOfBirth,
                     systemId: data.systemId || data.systemIds?.[0],
-                    specializeId: data.specializeId || undefined,
                     studentCode: data.studentCode || undefined,
                     password: data.password || undefined,
                 });
@@ -136,11 +126,6 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
         id: sys.id,
         label: sys.name,
     }));
-
-    const specializeOptions = [
-        { id: "", label: UI_TEXT.studentFormModal.seedAllSystem },
-        ...specializations.map((spec) => ({ id: spec.id, label: spec.name })),
-    ];
 
     const studentStatusOptions = STUDENT_STATUS_OPTIONS;
 
@@ -283,7 +268,7 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                             {!student ? (
                                 /* CREATE STUDENT FIELDS */
                                 <>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <Controller
                                             name="systemId"
                                             control={control}
@@ -293,25 +278,6 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                                                     label={UI_TEXT.excelImportModal.defaultSystemLabel}
                                                     placeholder={UI_TEXT.excelImportModal.selectSystemPlaceholder}
                                                     items={systemOptions}
-                                                    selectedKey={field.value}
-                                                    onSelectionChange={field.onChange}
-                                                >
-                                                    {(item) => (
-                                                        <Select.Item key={item.id} id={item.id}>
-                                                            {item.label}
-                                                        </Select.Item>
-                                                    )}
-                                                </Select>
-                                            )}
-                                        />
-                                        <Controller
-                                            name="specializeId"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    label={UI_TEXT.studentFormModal.labelSpecializationOptional}
-                                                    placeholder={UI_TEXT.studentFormModal.placeholderSelectSpecialization}
-                                                    items={specializeOptions}
                                                     selectedKey={field.value}
                                                     onSelectionChange={field.onChange}
                                                 >
