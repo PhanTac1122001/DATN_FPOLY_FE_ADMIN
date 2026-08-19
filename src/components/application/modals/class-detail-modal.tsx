@@ -500,12 +500,12 @@ export function ClassDetailModal({ isOpen, onClose, classId }: ClassDetailModalP
                                                                 </td>
                                                                 <td className="px-4 py-3 text-center">
                                                                     <div className="flex items-center justify-center gap-1.5">
-                                                                        {c.courseId?.id && (
+                                                                        {(c.courseId?._id || c.courseId?.id) && (
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() =>
                                                                                     setRpointCourseClass({
-                                                                                        courseId: c.courseId?.id || "",
+                                                                                        courseId: c.courseId?._id || c.courseId?.id || "",
                                                                                         title: c.courseId?.name || "",
                                                                                     })
                                                                                 }
