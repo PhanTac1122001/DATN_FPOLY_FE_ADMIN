@@ -1,10 +1,33 @@
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
-import type { AutoRPointSeries, RpointFormula, RpointPreviewInputs, RpointPreviewResult } from "@/types/rpoint.types";
+import type { AutoRPointSeries, EffectiveFormulaResponse, RpointFormula, RpointPreviewInputs, RpointPreviewResult } from "@/types/rpoint.types";
 
-export async function getCourseRpointFormula(courseId: string): Promise<{ formula: RpointFormula; isDefault: boolean }> {
+export async function getCourseRpointFormula(courseId: string): Promise<EffectiveFormulaResponse> {
     const response = await httpClient<any>(`/auto-rpoint/course/${courseId}/rpoint-formula`, {
         method: HttpMethod.GET,
+    });
+    return response?.data || response;
+}
+
+// ── Công thức R-point theo (môn + lớp): override cấp môn, fallback môn -> mặc định.
+export async function getClassRpointFormula(classId: string, courseId: string): Promise<EffectiveFormulaResponse> {
+    const response = await httpClient<any>(`/auto-rpoint/class/${classId}/course/${courseId}/rpoint-formula`, {
+        method: HttpMethod.GET,
+    });
+    return response?.data || response;
+}
+
+export async function setClassRpointFormula(classId: string, courseId: string, formula: RpointFormula): Promise<any> {
+    const response = await httpClient<any>(`/auto-rpoint/class/${classId}/course/${courseId}/rpoint-formula`, {
+        method: HttpMethod.PUT,
+        body: JSON.stringify(formula),
+    });
+    return response?.data || response;
+}
+
+export async function deleteClassRpointFormula(classId: string, courseId: string): Promise<any> {
+    const response = await httpClient<any>(`/auto-rpoint/class/${classId}/course/${courseId}/rpoint-formula`, {
+        method: HttpMethod.DELETE,
     });
     return response?.data || response;
 }
