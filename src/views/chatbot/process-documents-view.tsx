@@ -11,6 +11,7 @@ import { SearchFilters } from "@/components/application/search-filters/search-fi
 import { DEFAULT_INITIAL_LIMIT, DEFAULT_INITIAL_PAGE, DEFAULT_SEARCH_DEBOUNCE_MS } from "@/constants/table.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { deleteProcessDocument, getProcessDocuments } from "@/services/chatbot.service";
+import { getSystemsList } from "@/services/system.service";
 import { toast } from "@/services/toast.service";
 import type { ProcessDocument } from "@/types/chatbot.types";
 
@@ -40,6 +41,10 @@ export function ProcessDocumentsView() {
         queryKey: ["chatbot-process-documents", debouncedSearch, page, limit],
         queryFn: () => getProcessDocuments({ search: debouncedSearch, page, limit }),
     });
+
+    // Map hệ id -> mã để hiển thị phạm vi áp dụng của mỗi quy trình.
+    const { data: systems = [] } = useQuery({ queryKey: ["systems"], queryFn: getSystemsList });
+    const systemCodeById = new Map(systems.map((sys) => [sys.id, sys.systemCode]));
 
     const items = data?.items ?? [];
     const total = data?.total ?? 0;
@@ -110,12 +115,13 @@ export function ProcessDocumentsView() {
                             <p className="text-sm text-slate-500">{t.noDocDesc}</p>
                         </div>
                     ) : (
-                        <table className="w-full min-w-[760px] table-auto border-collapse text-left text-sm text-slate-700">
+                        <table className="w-full min-w-[880px] table-auto border-collapse text-left text-sm text-slate-700">
                             <thead>
                                 <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-500 uppercase">
                                     <th className="w-16 px-6 py-4 text-center">{t.thStt}</th>
                                     <th className="w-40 px-6 py-4">{t.thCode}</th>
                                     <th className="px-6 py-4">{t.thTitle}</th>
+                                    <th className="w-44 px-6 py-4">{t.thSystems}</th>
                                     <th className="w-32 px-6 py-4 text-center">{t.thActive}</th>
                                     <th className="w-36 px-6 py-4 text-center">{t.thUpdatedAt}</th>
                                     <th className="w-40 px-6 py-4 text-center">{t.thActions}</th>
@@ -129,6 +135,24 @@ export function ProcessDocumentsView() {
                                         </td>
                                         <td className="border-b border-slate-100 px-6 py-4 font-bold text-slate-600 uppercase">{doc.code}</td>
                                         <td className="border-b border-slate-100 px-6 py-4 font-bold text-slate-900">{doc.title}</td>
+                                        <td className="border-b border-slate-100 px-6 py-4">
+                                            {doc.systemIds && doc.systemIds.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {doc.systemIds.map((id) => (
+                                                        <span
+                                                            key={id}
+                                                            className="inline-flex rounded-md bg-amber-50 px-2 py-0.5 text-xs font-bold text-wine uppercase"
+                                                        >
+                                                            {systemCodeById.get(id) ?? id}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500">
+                                                    {t.systemsShared}
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="border-b border-slate-100 px-6 py-4 text-center">
                                             {doc.isActive ? (
                                                 <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600">
