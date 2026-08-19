@@ -202,10 +202,10 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onOpenChange}>
-            <CustomModal.Content className="w-full max-w-3xl overflow-hidden !rounded-[24px] bg-white shadow-2xl">
-                <Dialog className="flex flex-col outline-none">
+            <CustomModal.Content className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden !rounded-[24px] bg-white shadow-2xl">
+                <Dialog className="flex min-h-0 flex-1 flex-col outline-none">
                     {/* Header */}
-                    <div className="relative flex flex-col px-6 pt-6">
+                    <div className="relative flex shrink-0 flex-col px-6 pt-6">
                         <div className="flex items-center gap-3">
                             <div className="flex size-10 items-center justify-center rounded-2xl border border-amber-100 bg-amber-50 font-bold text-amber-600">
                                 <Award className="size-5" />
@@ -269,7 +269,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                     </div>
 
                     {/* Modal Body */}
-                    <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto p-6">
+                    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-6">
                         {isLoading || !formula ? (
                             <div className="flex h-48 items-center justify-center gap-2 text-sm text-slate-500">
                                 <div className="size-5 animate-spin rounded-full border-2 border-slate-200 border-t-wine" />
@@ -567,7 +567,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+                    <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                         <div className="flex gap-2">
                             <button
                                 type="button"

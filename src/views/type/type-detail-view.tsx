@@ -179,7 +179,6 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
                                 <th className="w-16 px-6 py-4 text-center">{UI_TEXT.trainingTypesEl.thId}</th>
                                 <th className="w-36 px-6 py-4">{UI_TEXT.trainingTypesEl.thCourseCode}</th>
                                 <th className="px-6 py-4">{UI_TEXT.trainingTypesEl.thCourseName}</th>
-                                <th className="w-52 px-6 py-4 whitespace-nowrap">{UI_TEXT.trainingTypesEl.thCategory}</th>
                                 <th className="w-32 px-6 py-4 text-center">{UI_TEXT.trainingTypesEl.thHours}</th>
                                 <th className="px-6 py-4">{UI_TEXT.trainingTypesEl.thDescription}</th>
                                 <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap"></th>
@@ -188,7 +187,7 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
                         <tbody>
                             {sortedCourses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-8 text-center text-muted">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-muted">
                                         {UI_TEXT.trainingTypesEl.noCoursesData}
                                     </td>
                                 </tr>
@@ -200,11 +199,6 @@ export function TypeDetailView({ id }: TypeDetailViewProps) {
                                             {course.courseCode}
                                         </td>
                                         <td className="border-b border-line px-6 py-4 font-bold text-ink group-last:border-b-0">{course.name}</td>
-                                        <td className="border-b border-line px-6 py-4 whitespace-nowrap group-last:border-b-0">
-                                            <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-slate-700">
-                                                {course.category || UI_TEXT.trainingTypesEl.defaultCategory}
-                                            </span>
-                                        </td>
                                         <td className="border-b border-line px-6 py-4 text-center font-bold whitespace-nowrap text-wine group-last:border-b-0">
                                             {course.hour} {UI_TEXT.trainingTypesEl.hours}
                                         </td>

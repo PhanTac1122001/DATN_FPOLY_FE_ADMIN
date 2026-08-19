@@ -245,3 +245,10 @@ export async function reorderCourses(items: ReorderCourseItem[]): Promise<{ upda
     });
     return unwrapData<{ updated: number }>(response) ?? { updated: 0 };
 }
+
+export async function assignCourseToSemesters(courseId: string, semesterIds: string[]): Promise<void> {
+    await httpClient<any>(`/staff/courses/${courseId}/assign-semesters`, {
+        method: HttpMethod.PATCH,
+        body: JSON.stringify({ semesterIds }),
+    });
+}

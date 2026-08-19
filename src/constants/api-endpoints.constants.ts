@@ -47,4 +47,11 @@ export const API_ENDPOINTS = {
         CONTACT_BY_ID: (id: string) => `${CHATBOT_PREFIX}/admin/contacts/${id}`,
         BOT_SETTINGS: `${CHATBOT_PREFIX}/admin/bot-settings`,
     },
+    APPLICATION_REQUESTS: {
+        BASE: `${API_PREFIX}/staff/application-requests`,
+        BY_ID: (id: string) => `${API_PREFIX}/staff/application-requests/${id}`,
+        APPROVE: (id: string) => `${API_PREFIX}/staff/application-requests/${id}/approve`,
+        REJECT: (id: string) => `${API_PREFIX}/staff/application-requests/${id}/reject`,
+        STUDENT_BASE: `${API_PREFIX}/student/application-requests`,
+    },
 } as const;

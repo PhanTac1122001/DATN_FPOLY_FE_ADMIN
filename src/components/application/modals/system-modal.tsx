@@ -351,7 +351,7 @@ export function SystemModal({ isOpen, onClose, system }: SystemModalProps) {
                                     <button
                                         type="button"
                                         onClick={() => appendSpecialize({ name: "", semesters: [] })}
-                                        className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3.5 py-1.5 text-xs font-bold text-blue-600 transition hover:bg-blue-50"
+                                        className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-blue-600 transition hover:text-blue-700"
                                     >
                                         <Plus className="size-4" />
                                         <span>{UI_TEXT.trainingSystem.btnAddMajor}</span>
@@ -374,13 +374,13 @@ export function SystemModal({ isOpen, onClose, system }: SystemModalProps) {
                         )}
 
                         {/* Footer Actions */}
-                        <div className="flex justify-end gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+                        <div className="grid w-full grid-cols-3 gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                             <Button
                                 type="button"
                                 color="secondary"
                                 onClick={onClose}
                                 isDisabled={isPending}
-                                className="rounded-full border-slate-200 px-5 font-semibold text-slate-700 hover:bg-slate-100"
+                                className="col-span-1 justify-center rounded-full border-slate-200 font-semibold text-slate-700 hover:bg-slate-100"
                             >
                                 {UI_TEXT.trainingSystem.btnCancel}
                             </Button>
@@ -388,7 +388,7 @@ export function SystemModal({ isOpen, onClose, system }: SystemModalProps) {
                                 type="submit"
                                 color="primary"
                                 isLoading={isPending}
-                                className="rounded-full border-none bg-wine px-6 font-bold text-white shadow-md shadow-wine/10 hover:bg-wine-deep"
+                                className="col-span-2 justify-center rounded-full border-none bg-wine font-bold text-white shadow-md shadow-wine/10 hover:bg-wine-deep"
                             >
                                 {system ? UI_TEXT.trainingSystem.btnUpdate : UI_TEXT.trainingSystem.btnSave}
                             </Button>

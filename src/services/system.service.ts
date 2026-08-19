@@ -106,6 +106,11 @@ export async function getSemestersBySpecialize(specializeId: string): Promise<Se
     return response?.data || response || [];
 }
 
+export async function getAllSemesters(): Promise<Semester[]> {
+    const response = await httpClient<any>("/staff/semesters", { method: HttpMethod.GET });
+    return response?.data || response || [];
+}
+
 export async function createSemester(data: { name: string; priority: number; specializeId: string }): Promise<Semester> {
     const response = await httpClient<any>("/staff/semesters", {
         method: HttpMethod.POST,

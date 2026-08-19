@@ -2,13 +2,12 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Edit, Lock, Mail, MapPin, Phone, Plus, Trash2, Unlock } from "lucide-react";
+import { AlertTriangle, Lock, Mail, MapPin, Pencil, Phone, Plus, Trash2, Unlock } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { StaffModal } from "@/components/application/modals/staff-modal";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { STAFF_FILTER_FIELDS } from "@/constants/staff.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -110,7 +109,6 @@ export function StaffListView() {
                 return roleName;
         }
     };
-
     // Filtering logic
     const filteredStaffs = staffs.filter((staff) => {
         const matchesSearch =
@@ -196,7 +194,7 @@ export function StaffListView() {
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thRole}</th>
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.staff.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thStatus}</th>
-                                    <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
+                                    <th className="sticky right-0 z-20 w-36 bg-slate-50 px-4 py-4 text-center whitespace-nowrap">{UI_TEXT.staff.thActions}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -325,49 +323,31 @@ export function StaffListView() {
                                             </Badge>
                                         </td>
                                         <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50">
-                                            <div className="flex justify-center">
-                                                <Dropdown.Root>
-                                                    <Dropdown.DotsButton className="rounded-lg p-1.5 text-muted hover:bg-cream" />
-                                                    <Dropdown.Popover className="z-50 w-48 rounded-xl border border-line bg-white shadow-xl ring-1 ring-line">
-                                                        <Dropdown.Menu>
-                                                            <Dropdown.Item
-                                                                icon={Edit}
-                                                                onAction={() => handleOpenEdit(staff)}
-                                                                className={(state) =>
-                                                                    "text-blue-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-blue-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.staff.editTooltip}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item
-                                                                icon={staff.status === StatusEnum.ACTIVE ? Lock : Unlock}
-                                                                onAction={() => handleToggleStatus(staff)}
-                                                                className={(state) =>
-                                                                    "text-amber-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-amber-50" : "")
-                                                                }
-                                                            >
-                                                                <span>
-                                                                    {staff.status === StatusEnum.ACTIVE
-                                                                        ? UI_TEXT.staff.lockTooltip
-                                                                        : UI_TEXT.staff.unlockTooltip}
-                                                                </span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Separator className="my-1 bg-line" />
-                                                            <Dropdown.Item
-                                                                icon={Trash2}
-                                                                onAction={() => handleOpenDelete(staff)}
-                                                                className={(state) =>
-                                                                    "text-red-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-red-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.staff.deleteTooltip}</span>
-                                                            </Dropdown.Item>
-                                                        </Dropdown.Menu>
-                                                    </Dropdown.Popover>
-                                                </Dropdown.Root>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEdit(staff)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
+                                                    title={UI_TEXT.staff.editTooltip}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleToggleStatus(staff)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-amber-50 text-amber-600 transition duration-200 hover:bg-amber-500 hover:text-white"
+                                                    title={staff.status === StatusEnum.ACTIVE ? UI_TEXT.staff.lockTooltip : UI_TEXT.staff.unlockTooltip}
+                                                >
+                                                    {staff.status === StatusEnum.ACTIVE ? <Lock className="size-4" /> : <Unlock className="size-4" />}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenDelete(staff)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                                                    title={UI_TEXT.staff.deleteTooltip}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Book, Bot, ChevronDown, Layers, LogOut, Notebook, PieChart } from "lucide-react";
+import { Book, Bot, ChevronDown, Layers, LogOut, Notebook } from "lucide-react";
 import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -85,21 +85,8 @@ export function AdminSidebar() {
 
             {/* Menu Items */}
             <div className="sidebar-menu-wrapper custom-scrollbar my-4 -mr-6 flex-1 overflow-y-auto pr-5">
-                <Link
-                    href="/"
-                    className={cx(
-                        "menu-item flex w-full items-center justify-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-semibold transition duration-150 lg:justify-start",
-                        pathname === "/"
-                            ? "bg-white font-extrabold text-brand-500 shadow-[0_6px_16px_-8px_rgba(0,0,0,0.4)] hover:bg-white"
-                            : "text-nav-100 hover:bg-white/10 hover:text-white",
-                    )}
-                >
-                    <PieChart className="size-[18px] shrink-0" />
-                    <span className="hidden lg:inline">{UI_TEXT.layout.adminSidebar.statisticsLabel}</span>
-                </Link>
-
                 {/* Collapsible Group: Quản lý đào tạo */}
-                <div className="menu-collapsible-group mt-1">
+                <div className="menu-collapsible-group">
                     <button
                         onClick={() => toggleGroup("dt")}
                         className={cx(
@@ -158,37 +145,39 @@ export function AdminSidebar() {
                     </div>
                 </div>
 
-                {/* Collapsible Group: Quản lý điểm thi */}
-                <div className="menu-collapsible-group mt-1">
-                    <button
-                        onClick={() => toggleGroup("diem")}
-                        className={cx(
-                            "menu-group-header flex w-full items-center justify-between justify-center rounded-xl px-3.5 py-3 text-[13.5px] font-bold transition duration-150 hover:bg-white/10 hover:text-white lg:justify-between",
-                            isDiemActive ? "text-white" : "text-nav-300",
-                        )}
-                    >
-                        <span className="flex items-center justify-center gap-3 lg:justify-start">
-                            <Notebook className="size-[18px] shrink-0" />
-                            <span className="hidden lg:inline">{UI_TEXT.layout.adminSidebar.examGradeManagementLabel}</span>
-                        </span>
-                        <ChevronDown
-                            className={cx("hidden size-[14px] transition-transform duration-200 lg:block", openGroups.diem ? "rotate-180" : "rotate-0")}
-                        />
-                    </button>
+                {/* Collapsible Group: Quản lý điểm thi (nếu có sub-items) */}
+                {diemItems.length > 0 && (
+                    <div className="menu-collapsible-group mt-1">
+                        <button
+                            onClick={() => toggleGroup("diem")}
+                            className={cx(
+                                "menu-group-header flex w-full items-center justify-between justify-center rounded-xl px-3.5 py-3 text-[13.5px] font-bold transition duration-150 hover:bg-white/10 hover:text-white lg:justify-between",
+                                isDiemActive ? "text-white" : "text-nav-300",
+                            )}
+                        >
+                            <span className="flex items-center justify-center gap-3 lg:justify-start">
+                                <Notebook className="size-[18px] shrink-0" />
+                                <span className="hidden lg:inline">{UI_TEXT.layout.adminSidebar.examGradeManagementLabel}</span>
+                            </span>
+                            <ChevronDown
+                                className={cx("hidden size-[14px] transition-transform duration-200 lg:block", openGroups.diem ? "rotate-180" : "rotate-0")}
+                            />
+                        </button>
 
-                    <div
-                        className={cx(
-                            "menu-sub-items flex flex-col gap-0.5 overflow-hidden pl-0 transition-all duration-300 lg:pl-3",
-                            openGroups.diem ? "mt-1 max-h-[300px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
-                        )}
-                    >
-                        {diemItems.map((item) => (
-                            <SidebarLink key={item.path} href={item.path} label={item.label} icon={item.icon} />
-                        ))}
+                        <div
+                            className={cx(
+                                "menu-sub-items flex flex-col gap-0.5 overflow-hidden pl-0 transition-all duration-300 lg:pl-3",
+                                openGroups.diem ? "mt-1 max-h-[300px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
+                            )}
+                        >
+                            {diemItems.map((item) => (
+                                <SidebarLink key={item.path} href={item.path} label={item.label} icon={item.icon} />
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
-                {/* Top-level: Chatbot quy trình (mục riêng, ngang các nhóm) */}
+                {/* Top-level: Chatbot quy trình */}
                 <Link
                     href={"/chatbot" as Route}
                     className={cx(

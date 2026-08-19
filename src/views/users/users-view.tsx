@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Award, BookOpen, Edit, FileSpreadsheet, Layers, Mail, MapPin, Phone, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Award, BookOpen, FileSpreadsheet, Layers, Mail, MapPin, Pencil, Phone, Plus, Trash2 } from "lucide-react";
 import { ClassEnrollmentsModal } from "@/components/application/modals/class-enrollments-modal";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { ExcelImportModal } from "@/components/application/modals/excel-import-modal";
@@ -14,7 +14,6 @@ import { SearchFilters } from "@/components/application/search-filters/search-fi
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { DEFAULT_PAGE_SIZE } from "@/constants/options.constants";
 import { STUDENT_LOCATION_OPTIONS, STUDENT_STATUS_OPTIONS } from "@/constants/student.constants";
@@ -218,13 +217,15 @@ export function UsersView() {
                         <table className="w-full min-w-[1000px] table-auto border-collapse text-left text-sm text-ink">
                             <thead>
                                 <tr className="sticky top-0 z-10 border-b border-line bg-slate-50 text-[11px] font-bold tracking-wider text-muted uppercase">
-                                    <th className="w-12 px-6 py-4 text-center">{UI_TEXT.studentsPage.thStt}</th>
+                                    <th className="w-16 px-6 py-4 text-center">{UI_TEXT.studentsPage.thStt}</th>
                                     <th className="px-6 py-4">{UI_TEXT.studentsPage.thStudent}</th>
                                     <th className="px-6 py-4">{UI_TEXT.studentsPage.thContact}</th>
                                     <th className="w-24 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.studentsPage.thLocation}</th>
                                     <th className="px-6 py-4 whitespace-nowrap">{UI_TEXT.studentsPage.thSystem}</th>
                                     <th className="w-28 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.studentsPage.thStatus}</th>
-                                    <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
+                                    <th className="sticky right-0 z-20 w-48 bg-slate-50 px-4 py-4 text-center whitespace-nowrap">
+                                        {UI_TEXT.studentsPage.thActions}
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -299,77 +300,59 @@ export function UsersView() {
                                             </Badge>
                                         </td>
                                         <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50">
-                                            <div className="flex justify-center">
-                                                <Dropdown.Root>
-                                                    <Dropdown.DotsButton className="rounded-lg p-1.5 text-muted hover:bg-cream" />
-                                                    <Dropdown.Popover className="z-50 w-52 rounded-xl border border-line bg-white shadow-xl ring-1 ring-line">
-                                                        <Dropdown.Menu>
-                                                            <Dropdown.Item
-                                                                icon={Edit}
-                                                                onAction={() => {
-                                                                    setActiveStudent(stu);
-                                                                    setIsStudentModalOpen(true);
-                                                                }}
-                                                                className={(state) =>
-                                                                    "text-blue-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-blue-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.studentsPage.actionEdit}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item
-                                                                icon={Layers}
-                                                                onAction={() => {
-                                                                    setActiveStudent(stu);
-                                                                    setIsEnrollOpen(true);
-                                                                }}
-                                                                className={(state) =>
-                                                                    "text-emerald-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-emerald-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.studentsPage.actionClasses}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item
-                                                                icon={BookOpen}
-                                                                onAction={() => {
-                                                                    setActiveStudent(stu);
-                                                                    setIsLearningPathOpen(true);
-                                                                }}
-                                                                className={(state) =>
-                                                                    "text-indigo-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-indigo-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.studentsPage.actionLearningPath}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item
-                                                                icon={Award}
-                                                                onAction={() => {
-                                                                    setActiveStudent(stu);
-                                                                    setIsTranscriptOpen(true);
-                                                                }}
-                                                                className={(state) =>
-                                                                    "text-amber-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-amber-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.studentsPage.actionTranscript}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Separator className="my-1 bg-line" />
-                                                            <Dropdown.Item
-                                                                icon={Trash2}
-                                                                onAction={() => handleOpenDelete(stu)}
-                                                                className={(state) =>
-                                                                    "text-red-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-red-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.studentsPage.actionDelete}</span>
-                                                            </Dropdown.Item>
-                                                        </Dropdown.Menu>
-                                                    </Dropdown.Popover>
-                                                </Dropdown.Root>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveStudent(stu);
+                                                        setIsStudentModalOpen(true);
+                                                    }}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
+                                                    title={UI_TEXT.studentsPage.actionEdit}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveStudent(stu);
+                                                        setIsEnrollOpen(true);
+                                                    }}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-purple-50 text-purple-600 transition duration-200 hover:bg-purple-600 hover:text-white"
+                                                    title={UI_TEXT.studentsPage.actionClasses}
+                                                >
+                                                    <Layers className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveStudent(stu);
+                                                        setIsLearningPathOpen(true);
+                                                    }}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-200 hover:bg-indigo-600 hover:text-white"
+                                                    title={UI_TEXT.studentsPage.actionLearningPath}
+                                                >
+                                                    <BookOpen className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveStudent(stu);
+                                                        setIsTranscriptOpen(true);
+                                                    }}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-amber-50 text-amber-700 transition duration-200 hover:bg-amber-500 hover:text-white"
+                                                    title={UI_TEXT.studentsPage.actionTranscript}
+                                                >
+                                                    <Award className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenDelete(stu)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                                                    title={UI_TEXT.studentsPage.actionDelete}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

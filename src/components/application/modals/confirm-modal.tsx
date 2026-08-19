@@ -21,15 +21,15 @@ export function ConfirmModal({
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onClose}>
             <CustomModal.Content className={cx("max-w-[440px] !overflow-visible !rounded-[24px]", modalClassName)}>
-                <div className="flex w-full flex-col items-center gap-2 p-8">
+                <div className="flex w-full flex-col items-center gap-3 p-8">
+                    {/* Title */}
+                    <h3 className="text-center text-2xl leading-8 font-bold text-slate-950">{title}</h3>
+
                     {/* Icon */}
                     {icon && <div className="flex size-10 shrink-0 items-center justify-center">{icon}</div>}
 
-                    {/* Text Content */}
-                    <div className="flex w-full flex-col items-center gap-1 text-center">
-                        <h3 className="text-2xl leading-8 font-semibold text-slate-950">{title}</h3>
-                        <p className="text-sm leading-5 text-slate-600">{message}</p>
-                    </div>
+                    {/* Message */}
+                    <p className="text-center text-sm leading-5 text-slate-600">{message}</p>
 
                     {/* Buttons */}
                     <div className="mt-5 flex w-full items-center justify-center gap-3">

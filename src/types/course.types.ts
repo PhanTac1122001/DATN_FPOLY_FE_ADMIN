@@ -137,3 +137,10 @@ export interface CategoryManagementModalProps {
     onSelectCategory?: (category: string) => void;
     selectedCategory?: string;
 }
+
+export interface AssignCourseToSemesterModalProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    course: CourseItem | null;
+    onSuccess?: () => void;
+}

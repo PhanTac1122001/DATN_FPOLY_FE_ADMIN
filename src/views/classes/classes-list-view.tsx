@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Edit, Eye, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import { ClassModal } from "@/components/application/modals/class-modal";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { CLASS_FILTER_FIELDS } from "@/constants/class.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
@@ -173,45 +172,31 @@ export function ClassesListView() {
                                             {cls.courseCount ?? cls.courseIds?.length ?? 0} {UI_TEXT.classes.coursesAssigned}
                                         </td>
                                         <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-hover:bg-slate-50">
-                                            <div className="flex justify-center">
-                                                <Dropdown.Root>
-                                                    <Dropdown.DotsButton className="rounded-lg p-1.5 text-muted hover:bg-cream" />
-                                                    <Dropdown.Popover className="z-50 w-48 rounded-xl border border-line bg-white shadow-xl ring-1 ring-line">
-                                                        <Dropdown.Menu>
-                                                            <Dropdown.Item
-                                                                icon={Eye}
-                                                                onAction={() => handleOpenDetail(cls)}
-                                                                className={(state) =>
-                                                                    "text-slate-700 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-slate-100" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.classes.classDetail}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item
-                                                                icon={Edit}
-                                                                onAction={() => handleOpenEdit(cls)}
-                                                                className={(state) =>
-                                                                    "text-blue-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-blue-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.classes.editClass}</span>
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Separator className="my-1 bg-line" />
-                                                            <Dropdown.Item
-                                                                icon={Trash2}
-                                                                onAction={() => handleOpenDelete(cls)}
-                                                                className={(state) =>
-                                                                    "text-red-600 [&_svg]:text-current " +
-                                                                    (state.isFocused || state.isHovered ? "[&>div]:!bg-red-50" : "")
-                                                                }
-                                                            >
-                                                                <span>{UI_TEXT.classes.deleteClass}</span>
-                                                            </Dropdown.Item>
-                                                        </Dropdown.Menu>
-                                                    </Dropdown.Popover>
-                                                </Dropdown.Root>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenDetail(cls)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-200 hover:scale-105 hover:bg-indigo-600 hover:text-white"
+                                                    title={UI_TEXT.classes.classDetail}
+                                                >
+                                                    <Eye className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEdit(cls)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
+                                                    title={UI_TEXT.classes.editClass}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenDelete(cls)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                                                    title={UI_TEXT.classes.deleteClass}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

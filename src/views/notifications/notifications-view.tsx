@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Edit2, Eye, Plus, Radio, RefreshCw, Tag, Trash2, Users } from "lucide-react";
+import { Eye, Pencil, Plus, Radio, RefreshCw, Tag, Trash2, Users } from "lucide-react";
 import { TablePagination } from "@/components/application/pagination/table-pagination";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Button } from "@/components/base/buttons/button";
-import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { CreateNotificationModal } from "@/components/layout/admin/modals/create-notification-modal";
 import { ManageCategoriesModal } from "@/components/layout/admin/modals/manage-categories-modal";
 import { NotificationDetailModal } from "@/components/layout/admin/modals/notification-detail-modal";
@@ -215,7 +214,9 @@ export function NotificationsView() {
                                 <th className="w-40 px-6 py-4">{UI_TEXT.notifications.thCategory}</th>
                                 <th className="w-44 px-6 py-4">{UI_TEXT.notifications.thRecipient}</th>
                                 <th className="w-44 px-6 py-4 text-center whitespace-nowrap">{UI_TEXT.notifications.thCreatedAt}</th>
-                                <th className="sticky right-0 z-20 w-16 bg-slate-50 px-4 py-4 text-center whitespace-nowrap" />
+                                <th className="sticky right-0 z-20 w-36 bg-slate-50 px-4 py-4 text-center whitespace-nowrap">
+                                    {UI_TEXT.notifications.thActions}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -270,45 +271,31 @@ export function NotificationsView() {
                                                 {formatDate(item.createdAt)}
                                             </td>
                                             <td className="sticky right-0 z-20 border-b border-line bg-white px-4 py-4 text-center transition-colors group-last:border-b-0 group-hover:bg-slate-50">
-                                                <div className="flex justify-center">
-                                                    <Dropdown.Root>
-                                                        <Dropdown.DotsButton className="rounded-lg p-1.5 text-muted hover:bg-cream" />
-                                                        <Dropdown.Popover className="z-50 w-44 rounded-xl border border-line bg-white shadow-xl ring-1 ring-line">
-                                                            <Dropdown.Menu>
-                                                                <Dropdown.Item
-                                                                    icon={Eye}
-                                                                    onAction={() => handleViewDetail(item)}
-                                                                    className={(state) =>
-                                                                        "text-blue-600 [&_svg]:text-current " +
-                                                                        (state.isFocused || state.isHovered ? "[&>div]:!bg-blue-50" : "")
-                                                                    }
-                                                                >
-                                                                    <span>{UI_TEXT.notifications.viewDetail}</span>
-                                                                </Dropdown.Item>
-                                                                <Dropdown.Item
-                                                                    icon={Edit2}
-                                                                    onAction={() => handleEdit(item)}
-                                                                    className={(state) =>
-                                                                        "text-amber-600 [&_svg]:text-current " +
-                                                                        (state.isFocused || state.isHovered ? "[&>div]:!bg-amber-50" : "")
-                                                                    }
-                                                                >
-                                                                    <span>{UI_TEXT.notifications.editNotification || "Chỉnh sửa thông báo"}</span>
-                                                                </Dropdown.Item>
-                                                                <Dropdown.Separator className="my-1 bg-line" />
-                                                                <Dropdown.Item
-                                                                    icon={Trash2}
-                                                                    onAction={() => handleDelete(item.id)}
-                                                                    className={(state) =>
-                                                                        "text-red-600 [&_svg]:text-current " +
-                                                                        (state.isFocused || state.isHovered ? "[&>div]:!bg-red-50" : "")
-                                                                    }
-                                                                >
-                                                                    <span>{UI_TEXT.notifications.deleteNotification}</span>
-                                                                </Dropdown.Item>
-                                                            </Dropdown.Menu>
-                                                        </Dropdown.Popover>
-                                                    </Dropdown.Root>
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewDetail(item)}
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-200 hover:scale-105 hover:bg-indigo-600 hover:text-white"
+                                                        title={UI_TEXT.notifications.viewDetail}
+                                                    >
+                                                        <Eye className="size-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleEdit(item, e)}
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
+                                                        title={UI_TEXT.notifications.editNotification || "Chỉnh sửa thông báo"}
+                                                    >
+                                                        <Pencil className="size-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => handleDelete(item.id, e)}
+                                                        className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-rose-50 text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                                                        title={UI_TEXT.notifications.deleteNotification}
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

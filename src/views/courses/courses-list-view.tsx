@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Award, CalendarPlus, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
+import { AssignCourseToSemesterModal } from "@/components/application/modals/assign-course-to-semester-modal";
 import { CourseFormModal } from "@/components/application/modals/course-form-modal";
 import { CourseRpointConfigModal } from "@/components/application/modals/course-rpoint-config-modal";
 import { DeleteCourseModal } from "@/components/application/modals/delete-course-modal";
@@ -28,6 +29,7 @@ export function CoursesListView() {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [courseToDelete, setCourseToDelete] = useState<CourseItem | null>(null);
     const [rpointCourse, setRpointCourse] = useState<CourseItem | null>(null);
+    const [assignSemesterCourse, setAssignSemesterCourse] = useState<CourseItem | null>(null);
 
     const { data: courses = [], isLoading } = useQuery({
         queryKey: ["courses", search],
@@ -149,13 +151,13 @@ export function CoursesListView() {
                                         <td className="border-b border-line px-6 py-4 text-center font-bold text-slate-400 group-last:border-b-0">
                                             {(page - 1) * limit + index + 1}
                                         </td>
-                                        <td className="border-b border-line px-6 py-4 group-last:border-b-0 whitespace-nowrap">
-                                            <span className="inline-flex items-center rounded-lg bg-wine/5 px-2.5 py-1 font-mono text-xs font-bold text-wine border border-wine/10 whitespace-nowrap">
+                                        <td className="border-b border-line px-6 py-4 whitespace-nowrap group-last:border-b-0">
+                                            <span className="inline-flex items-center rounded-lg border border-wine/10 bg-wine/5 px-2.5 py-1 font-mono text-xs font-bold whitespace-nowrap text-wine">
                                                 {item.code}
                                             </span>
                                         </td>
                                         <td className="border-b border-line px-6 py-4 group-last:border-b-0">
-                                            <div className="font-bold text-slate-900 text-sm">{item.title}</div>
+                                            <div className="text-sm font-bold text-slate-900">{item.title}</div>
                                         </td>
                                         <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
                                             <div className="flex items-center justify-center gap-1.5">
@@ -166,6 +168,14 @@ export function CoursesListView() {
                                                 >
                                                     <Eye className="size-4" />
                                                 </Link>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAssignSemesterCourse(item)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-purple-50 text-purple-600 transition duration-200 hover:bg-purple-600 hover:text-white"
+                                                    title={UI_TEXT.coursesPage.assignSemesterTooltip}
+                                                >
+                                                    <CalendarPlus className="size-4" />
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setRpointCourse(item)}
@@ -228,8 +238,15 @@ export function CoursesListView() {
                 courseTitle={rpointCourse?.title || ""}
             />
 
+            <AssignCourseToSemesterModal
+                isOpen={!!assignSemesterCourse}
+                onOpenChange={(open) => {
+                    if (!open) setAssignSemesterCourse(null);
+                }}
+                course={assignSemesterCourse}
+            />
+
             <DeleteCourseModal isOpen={isDeleteOpen} onOpenChange={setIsDeleteOpen} course={courseToDelete} onConfirm={handleConfirmDelete} />
         </div>
     );
 }
-

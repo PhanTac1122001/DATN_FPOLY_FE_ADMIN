@@ -102,11 +102,11 @@ export function ExamSetListView() {
     };
 
     return (
-        <div className="flex w-full flex-col gap-8">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-hidden">
             {/* Filter Bar & Table Area */}
-            <div className="rounded-2xl border border-slate-100 bg-white shadow-xs">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {/* Filters header */}
-                <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex shrink-0 flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
                         <SearchFilters search={search} onSearchChange={handleSearchChange} searchPlaceholder={UI_TEXT.examsSetsEl.searchPlaceholder} />
                     </div>
@@ -121,15 +121,16 @@ export function ExamSetListView() {
                 </div>
 
                 {/* Table list */}
-                <div className="overflow-x-auto">
+                <div className="flex-1 overflow-auto">
                     {isLoading ? (
-                        <div className="flex min-h-[250px] items-center justify-center p-8">
+                        <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-4 p-8">
                             <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
+                            <p className="text-sm font-semibold text-slate-500">{UI_TEXT.examsSetsEl.loading}</p>
                         </div>
                     ) : (
                         <table className="w-full min-w-[800px] table-auto border-collapse text-left text-sm text-slate-700">
                             <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                                <tr className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/50 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
                                     <th className="w-16 px-6 py-4 text-center">{UI_TEXT.examsSetsEl.thStt}</th>
                                     <th className="px-6 py-4">{UI_TEXT.examsSetsEl.thName}</th>
                                     <th className="w-64 px-6 py-4 whitespace-nowrap">{UI_TEXT.examsSetsEl.thCreatedAt}</th>
