@@ -32,6 +32,7 @@ export interface CourseClassEmbed {
     endDate?: string;
     courseId?: {
         id?: string;
+        _id?: string;
         name: string;
         courseCode: string;
         hour?: number;

@@ -492,11 +492,14 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                             </td>
                                             <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
                                                 <div className="flex items-center justify-center gap-1.5">
-                                                    {c.courseId?.id && (
+                                                    {(c.courseId?._id || c.courseId?.id) && (
                                                         <button
                                                             type="button"
                                                             onClick={() =>
-                                                                setRpointCourseClass({ courseId: c.courseId?.id || "", title: c.courseId?.name || "" })
+                                                                setRpointCourseClass({
+                                                                    courseId: c.courseId?._id || c.courseId?.id || "",
+                                                                    title: c.courseId?.name || "",
+                                                                })
                                                             }
                                                             className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-amber-50 text-amber-600 transition duration-200 hover:bg-amber-600 hover:text-white"
                                                             title={UI_TEXT.classDetail.configRpoint}
