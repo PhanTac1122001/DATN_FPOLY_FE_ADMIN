@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { FileText, FileUp, Loader2, Plus, Save, X } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { CHATBOT_UPLOAD_ACCEPT, CHATBOT_UPLOAD_EXTENSIONS, CHATBOT_UPLOAD_MAX_BYTES } from "@/constants/chatbot.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { createProcessDocument, ingestProcessDocument, updateProcessDocument } from "@/services/chatbot.service";
+import { getSystemsList } from "@/services/system.service";
 import { toast } from "@/services/toast.service";
 import type { ProcessDocumentModalProps } from "@/types/chatbot.types";
 
@@ -28,7 +30,23 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
     const [department, setDepartment] = useState("");
     const [contactInfo, setContactInfo] = useState("");
     const [answerGuidance, setAnswerGuidance] = useState("");
+    const [systemIds, setSystemIds] = useState<string[]>([]);
     const [isActive, setIsActive] = useState(true);
+
+    // Danh sách hệ đào tạo để tick chọn phạm vi áp dụng (rỗng = dùng chung).
+    const { data: systems = [] } = useQuery({
+        queryKey: ["systems"],
+        queryFn: getSystemsList,
+        enabled: isOpen,
+    });
+    const systemOptions = systems.map((sys) => ({
+        id: sys.id,
+        label: sys.name ? `${sys.systemCode} (${sys.name})` : sys.systemCode,
+    }));
+
+    const toggleSystem = (id: string) => {
+        setSystemIds((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+    };
 
     const [submitting, setSubmitting] = useState(false);
     const [extracting, setExtracting] = useState(false);
@@ -53,6 +71,7 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
             setDepartment(editingDocument.department || "");
             setContactInfo(editingDocument.contactInfo || "");
             setAnswerGuidance(editingDocument.answerGuidance || "");
+            setSystemIds(editingDocument.systemIds || []);
             setIsActive(editingDocument.isActive ?? true);
         } else {
             setCode("");
@@ -63,6 +82,7 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
             setDepartment("");
             setContactInfo("");
             setAnswerGuidance("");
+            setSystemIds([]);
             setIsActive(true);
         }
     }, [isOpen, editingDocument]);
@@ -124,6 +144,7 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
                     department: department.trim() || undefined,
                     contactInfo: contactInfo.trim() || undefined,
                     answerGuidance: answerGuidance.trim() || undefined,
+                    systemIds,
                     isActive,
                 });
                 targetId = created._id;
@@ -161,6 +182,7 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
                 department: department.trim() || undefined,
                 contactInfo: contactInfo.trim() || undefined,
                 answerGuidance: answerGuidance.trim() || undefined,
+                systemIds,
                 isActive,
             };
 
@@ -333,6 +355,28 @@ export function ProcessDocumentModal({ isOpen, onClose, onSuccess, editingDocume
                                     placeholder={t.placeholderAnswerGuidance}
                                     className={inputClass}
                                 />
+                            </div>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className={labelClass}>{t.fieldSystems}</label>
+                                <div className="flex max-h-[160px] flex-col gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                                    {systemOptions.length === 0 ? (
+                                        <p className="py-1 text-center text-xs font-semibold text-slate-400">{t.loadingSystems}</p>
+                                    ) : (
+                                        systemOptions.map((opt) => (
+                                            <label key={opt.id} className="flex cursor-pointer items-start gap-2.5 py-0.5 text-xs font-bold text-slate-700">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={systemIds.includes(opt.id)}
+                                                    onChange={() => toggleSystem(opt.id)}
+                                                    className="mt-0.5 size-4 accent-wine"
+                                                />
+                                                <span className="leading-tight">{opt.label}</span>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                                <p className="text-[11px] font-medium text-slate-400">{t.systemsHint}</p>
                             </div>
 
                             <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5">

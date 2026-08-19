@@ -3374,6 +3374,7 @@ export const UI_TEXT = {
         thTitle: "Tiêu đề",
         thName: "Tên",
         thDepartment: "Bộ phận",
+        thSystems: "Phạm vi hệ",
         thActive: "Kích hoạt",
         thDefault: "Mặc định",
         thUpdatedAt: "Cập nhật",
@@ -3414,6 +3415,10 @@ export const UI_TEXT = {
         placeholderDepartment: "VD: Phòng Đào tạo",
         placeholderContactInfo: "VD: daotao@truong.edu.vn",
         placeholderAnswerGuidance: "VD: Luôn nhắc nộp trong 5 ngày làm việc",
+        fieldSystems: "Hệ đào tạo áp dụng",
+        systemsHint: "Để trống = áp dụng chung cho mọi hệ. Chọn hệ để chỉ sinh viên thuộc hệ đó thấy quy trình này.",
+        loadingSystems: "Đang tải danh sách hệ...",
+        systemsShared: "Dùng chung",
         // Modal đầu mối
         createContactTitle: "Thêm đầu mối",
         editContactTitle: "Sửa đầu mối",

@@ -11,6 +11,8 @@ export interface ProcessDocument {
     department?: string;
     contactInfo?: string;
     answerGuidance?: string;
+    // Hệ đào tạo áp dụng (khớp Student.systemIds). Rỗng = dùng chung mọi hệ.
+    systemIds?: string[];
     isActive?: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -25,6 +27,7 @@ export interface CreateProcessDocumentInput {
     department?: string;
     contactInfo?: string;
     answerGuidance?: string;
+    systemIds?: string[];
     isActive?: boolean;
 }
 
