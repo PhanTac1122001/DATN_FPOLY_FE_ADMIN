@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+    Award,
     BookMarked,
     Calendar,
     ChevronRight,
@@ -29,6 +30,7 @@ import { ClassGroupsTab } from "@/components/application/classes/class-groups-ta
 import { ClassModal } from "@/components/application/modals/class-modal";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { CourseClassModal } from "@/components/application/modals/course-class-modal";
+import { CourseRpointConfigModal } from "@/components/application/modals/course-rpoint-config-modal";
 import { EnrollStudentModal } from "@/components/application/modals/enroll-student-modal";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
@@ -53,6 +55,8 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
 
     const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
     const [selectedEnrollment, setSelectedEnrollment] = useState<StudentClassEmbed | null>(null);
+
+    const [rpointCourseClass, setRpointCourseClass] = useState<{ courseId: string; title: string } | null>(null);
 
     const [confirmDelete, setConfirmDelete] = useState<{
         isOpen: boolean;
@@ -482,6 +486,18 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                             </td>
                                             <td className="border-b border-line px-6 py-4 text-center group-last:border-b-0">
                                                 <div className="flex items-center justify-center gap-1.5">
+                                                    {c.courseId?.id && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setRpointCourseClass({ courseId: c.courseId?.id || "", title: c.courseId?.name || "" })
+                                                            }
+                                                            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-amber-50 text-amber-600 transition duration-200 hover:bg-amber-600 hover:text-white"
+                                                            title={UI_TEXT.classDetail.configRpoint}
+                                                        >
+                                                            <Award className="size-4" />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         onClick={() => {
@@ -636,6 +652,17 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                 }}
                 classId={classId}
                 courseClassData={selectedCourseClass}
+            />
+
+            {/* Course R-point Config Modal (per course-class) */}
+            <CourseRpointConfigModal
+                isOpen={!!rpointCourseClass}
+                onOpenChange={(open) => {
+                    if (!open) setRpointCourseClass(null);
+                }}
+                courseId={rpointCourseClass?.courseId || ""}
+                courseTitle={rpointCourseClass?.title || ""}
+                classId={classId}
             />
 
             {/* Enroll Student Modal (Enroll/Edit Student) */}
