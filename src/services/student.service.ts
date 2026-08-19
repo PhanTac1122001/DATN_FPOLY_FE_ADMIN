@@ -42,7 +42,7 @@ export async function getStudentById(id: string): Promise<Student> {
     return res.data || res;
 }
 
-export async function createStudent(data: Partial<Student> & { systemId: string; specializeId?: string; password?: string }): Promise<Student> {
+export async function createStudent(data: Partial<Student> & { systemId: string; password?: string }): Promise<Student> {
     const res = await httpClient<any>("/students", {
         method: HttpMethod.POST,
         body: JSON.stringify(data),
