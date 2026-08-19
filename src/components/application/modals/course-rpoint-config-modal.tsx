@@ -6,31 +6,44 @@ import { AlertCircle, Award, Info, RotateCcw, Save, Trash2, X } from "lucide-rea
 import { Heading } from "react-aria-components";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
-import { ROUND_FACTOR } from "@/constants/options.constants";
+import { FULL_PERCENT, ROUND_FACTOR } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { deleteCourseRpointFormula, getCourseRpointFormula, setCourseRpointFormula } from "@/services/auto-rpoint.service";
+import {
+    deleteClassRpointFormula,
+    deleteCourseRpointFormula,
+    getClassRpointFormula,
+    getCourseRpointFormula,
+    setClassRpointFormula,
+    setCourseRpointFormula,
+} from "@/services/auto-rpoint.service";
 import { toast } from "@/services/toast.service";
-import type { CourseRpointConfigModalProps, CourseRpointTabType, RpointFormula, RpointTier } from "@/types/rpoint.types";
+import type { CourseRpointConfigModalProps, CourseRpointTabType, EligibilityRule, RpointFormula, RpointFormulaSource, RpointTier } from "@/types/rpoint.types";
 import { cloneRpointFormula } from "@/utils/rpoint-formula.utils";
 
-export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, courseTitle }: CourseRpointConfigModalProps) {
+export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, courseTitle, classId }: CourseRpointConfigModalProps) {
     const queryClient = useQueryClient();
     const [formula, setFormula] = useState<RpointFormula | null>(null);
     const [isDefault, setIsDefault] = useState(true);
+    const [source, setSource] = useState<RpointFormulaSource | undefined>(undefined);
     const [activeTab, setActiveTab] = useState<CourseRpointTabType>("linear");
 
     const t = UI_TEXT.courseRpointModal;
 
     const { data, isLoading, refetch } = useQuery({
-        queryKey: ["course-rpoint-formula", courseId],
-        queryFn: () => getCourseRpointFormula(courseId),
+        queryKey: classId ? ["class-rpoint-formula", classId, courseId] : ["course-rpoint-formula", courseId],
+        queryFn: () => (classId ? getClassRpointFormula(classId, courseId) : getCourseRpointFormula(courseId)),
         enabled: isOpen && !!courseId,
     });
 
     useEffect(() => {
         if (data?.formula) {
-            setFormula(cloneRpointFormula(data.formula));
+            const cloned = cloneRpointFormula(data.formula);
+            if (!cloned.eligibility) {
+                cloned.eligibility = { rpointMin: 80, attendanceRateMin: 80, homeworkRateMin: 80, elearningLateMax: 3 };
+            }
+            setFormula(cloned);
             setIsDefault(!!data.isDefault);
+            setSource(data.source);
         }
     }, [data]);
 
@@ -86,17 +99,26 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
             }
         });
 
+        // Eligibility
+        if (formula.eligibility) {
+            if (formula.eligibility.rpointMin < 0) errors.push(t.eligibilityRpointMinInvalid);
+            if (formula.eligibility.attendanceRateMin < 0 || formula.eligibility.attendanceRateMin > FULL_PERCENT) errors.push(t.eligibilityAttendanceInvalid);
+            if (formula.eligibility.homeworkRateMin < 0 || formula.eligibility.homeworkRateMin > FULL_PERCENT) errors.push(t.eligibilityHomeworkInvalid);
+            if (!Number.isInteger(formula.eligibility.elearningLateMax) || formula.eligibility.elearningLateMax < 0) errors.push(t.eligibilityElearningInvalid);
+        }
+
         return errors;
-    }, [formula]);
+    }, [formula, t]);
 
     const isValid = validationErrors.length === 0;
 
     const saveMutation = useMutation({
-        mutationFn: () => setCourseRpointFormula(courseId, formula!),
+        mutationFn: () => (classId ? setClassRpointFormula(classId, courseId, formula!) : setCourseRpointFormula(courseId, formula!)),
         onSuccess: () => {
             toast.success(t.toastSaveTitle, `${t.toastSaveDesc}. `);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
             queryClient.invalidateQueries({ queryKey: ["course-rpoint-formula", courseId] });
+            if (classId) queryClient.invalidateQueries({ queryKey: ["class-rpoint-formula", classId, courseId] });
             queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
             queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
             queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
@@ -109,11 +131,12 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
     });
 
     const resetMutation = useMutation({
-        mutationFn: () => deleteCourseRpointFormula(courseId),
+        mutationFn: () => (classId ? deleteClassRpointFormula(classId, courseId) : deleteCourseRpointFormula(courseId)),
         onSuccess: async () => {
             toast.success(t.toastResetTitle, t.toastResetDesc);
             queryClient.invalidateQueries({ queryKey: ["courses"] });
             queryClient.invalidateQueries({ queryKey: ["course-rpoint-formula", courseId] });
+            if (classId) queryClient.invalidateQueries({ queryKey: ["class-rpoint-formula", classId, courseId] });
             queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
             queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
             queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
@@ -198,6 +221,12 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
         setIsDefault(false);
     };
 
+    const updateEligibility = (field: keyof EligibilityRule, value: number) => {
+        if (!formula) return;
+        setFormula({ ...formula, eligibility: { ...formula.eligibility, [field]: value } });
+        setIsDefault(false);
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -212,17 +241,27 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                             </div>
                             <div>
                                 <Heading slot="title" className="text-xl font-bold text-slate-900">
-                                    {t.title}
+                                    {classId ? t.titleClass : t.title}
                                 </Heading>
                                 <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                                     <span className="font-semibold text-slate-800">{courseTitle}</span>
-                                    <span
-                                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${
-                                            isDefault ? "bg-slate-100 text-slate-600" : "bg-amber-100 text-amber-800"
-                                        }`}
-                                    >
-                                        {isDefault ? t.statusDefaultBadge : t.statusCustomBadge}
-                                    </span>
+                                    {classId ? (
+                                        <span
+                                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                                                source === "class" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
+                                            }`}
+                                        >
+                                            {source === "class" ? t.scopeClassBadge : t.scopeCourseBadge}
+                                        </span>
+                                    ) : (
+                                        <span
+                                            className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                                                isDefault ? "bg-slate-100 text-slate-600" : "bg-amber-100 text-amber-800"
+                                            }`}
+                                        >
+                                            {isDefault ? t.statusDefaultBadge : t.statusCustomBadge}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -264,6 +303,15 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                 }`}
                             >
                                 {t.tabBonus}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("eligibility")}
+                                className={`cursor-pointer border-b-2 px-4 py-2.5 transition ${
+                                    activeTab === "eligibility" ? "border-wine text-wine" : "border-transparent hover:text-slate-900"
+                                }`}
+                            >
+                                {t.tabEligibility}
                             </button>
                         </div>
                     </div>
@@ -562,6 +610,46 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                                         <p className="text-xs text-slate-500">{t.bonusCapHint}</p>
                                     </div>
                                 )}
+
+                                {/* TAB 4: Eligibility */}
+                                {activeTab === "eligibility" && formula.eligibility && (
+                                    <div className="flex flex-col gap-3 rounded-2xl">
+                                        <h3 className="text-xs font-bold text-slate-800">{t.eligibilitySection}</h3>
+                                        <p className="text-xs text-slate-500">{t.eligibilityHint}</p>
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            <Input
+                                                label={t.rpointMinLabel}
+                                                type="number"
+                                                min={0}
+                                                value={String(formula.eligibility.rpointMin)}
+                                                onChange={(v) => updateEligibility("rpointMin", Number(v))}
+                                            />
+                                            <Input
+                                                label={t.attendanceRateMinLabel}
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                value={String(formula.eligibility.attendanceRateMin)}
+                                                onChange={(v) => updateEligibility("attendanceRateMin", Number(v))}
+                                            />
+                                            <Input
+                                                label={t.homeworkRateMinLabel}
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                value={String(formula.eligibility.homeworkRateMin)}
+                                                onChange={(v) => updateEligibility("homeworkRateMin", Number(v))}
+                                            />
+                                            <Input
+                                                label={t.elearningLateMaxLabel}
+                                                type="number"
+                                                min={0}
+                                                value={String(formula.eligibility.elearningLateMax)}
+                                                onChange={(v) => updateEligibility("elearningLateMax", Number(v))}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -571,12 +659,12 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                         <div className="flex gap-2">
                             <button
                                 type="button"
-                                disabled={resetMutation.isPending || isDefault}
+                                disabled={resetMutation.isPending || (classId ? source !== "class" : isDefault)}
                                 onClick={() => resetMutation.mutate()}
                                 className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <RotateCcw className="size-4 shrink-0" />
-                                <span>{t.resetSystemBtn}</span>
+                                <span>{classId ? t.resetClassBtn : t.resetSystemBtn}</span>
                             </button>
                         </div>
                         <div className="flex gap-2">
