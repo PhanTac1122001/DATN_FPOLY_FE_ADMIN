@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookText, CheckCircle2, CheckSquare, ChevronDown, ChevronRight, Circle, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, BookText, CheckCircle2, CheckSquare, ChevronDown, ChevronRight, Circle, Plus, Trash2 } from "lucide-react";
+import { DEFAULT_QUESTION_POINTS, MAX_TOTAL_POINTS } from "@/constants/quiz.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { getQuizDetails, updateQuiz } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
@@ -93,9 +94,19 @@ export function QuizConfigTab({
         }
     }, [onRegisterOpenModal, quizId]);
 
+    const totalPoints = localQuestions.reduce((sum, q) => sum + Number(q.points || 0), 0);
+
     useEffect(() => {
         if (onRegisterSave) {
             onRegisterSave(async () => {
+                const currentTotal = localQuestions.reduce((sum, q) => sum + Number(q.points || 0), 0);
+                if (currentTotal > MAX_TOTAL_POINTS) {
+                    toast.error(
+                        UI_TEXT.quizConfigTab.errSaveConfigTitle,
+                        `${UI_TEXT.quizConfigTab.errSaveConfigPointsExceedPrefix}${currentTotal}${UI_TEXT.quizConfigTab.errSaveConfigPointsExceedSuffix}`,
+                    );
+                    throw new Error("Total points exceed 100 limit");
+                }
                 const updated = normalizeQuestions(localQuestions);
                 await saveQuizMutation.mutateAsync(updated);
             });
@@ -140,10 +151,23 @@ export function QuizConfigTab({
         });
     };
 
-    const handleQuestionPointsChange = (qIdx: number, val: number) => {
+    const handleQuestionPointsChange = (qIdx: number, rawVal: number) => {
+        const val = Math.max(0, Number(rawVal) || 0);
         setLocalQuestions((prev) => {
+            const otherTotal = prev.reduce((sum, q, i) => (i === qIdx ? sum : sum + Number(q.points || 0)), 0);
+            const maxAllowedForThisQuestion = Math.max(0, MAX_TOTAL_POINTS - otherTotal);
+
+            let finalPoints = val;
+            if (otherTotal + val > MAX_TOTAL_POINTS) {
+                finalPoints = maxAllowedForThisQuestion;
+                toast.warning(
+                    UI_TEXT.quizConfigTab.warnPointsLimitTitle,
+                    `${UI_TEXT.quizConfigTab.warnPointsLimitPrefix}${maxAllowedForThisQuestion}${UI_TEXT.quizConfigTab.warnPointsLimitSuffix}`,
+                );
+            }
+
             const next = [...prev];
-            next[qIdx] = { ...next[qIdx], points: val };
+            next[qIdx] = { ...next[qIdx], points: finalPoints };
             return next;
         });
     };
@@ -200,11 +224,16 @@ export function QuizConfigTab({
     };
 
     const handleAddQuestion = () => {
+        if (totalPoints >= MAX_TOTAL_POINTS) {
+            toast.warning(UI_TEXT.quizConfigTab.warnCannotAddQuestionTitle, UI_TEXT.quizConfigTab.warnCannotAddQuestionDesc);
+            return;
+        }
+        const defaultPoints = Math.min(DEFAULT_QUESTION_POINTS, Math.max(1, MAX_TOTAL_POINTS - totalPoints));
         setLocalQuestions((prev) => {
             const newQ: QuizQuestionItem = {
                 content: "",
                 type: QuestionTypeEnum.SINGLE_CHOICE,
-                points: 1,
+                points: defaultPoints,
                 options: [
                     { content: "", isCorrect: true },
                     { content: "", isCorrect: false },
@@ -222,8 +251,8 @@ export function QuizConfigTab({
     };
 
     return (
-        <div className="flex h-full min-h-0 flex-1 flex-col justify-between gap-4">
-            <div className="flex flex-col gap-3">
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
+            <div className="flex flex-1 flex-col gap-3">
                 {quizId !== "" && selectedQuiz ? (
                     <div className="flex flex-col gap-3">
                         <div className="border-b border-slate-100 pb-3">
@@ -241,8 +270,8 @@ export function QuizConfigTab({
                                     <span className="text-xs font-medium text-slate-400">
                                         {String(
                                             (selectedQuiz as Record<string, unknown>).questionsCount ||
-                                            ((selectedQuiz as Record<string, unknown>).questions as unknown[])?.length ||
-                                            0,
+                                                ((selectedQuiz as Record<string, unknown>).questions as unknown[])?.length ||
+                                                0,
                                         )}{" "}
                                         {UI_TEXT.learningMaterials.questionsCountLabel}
                                     </span>
@@ -254,7 +283,7 @@ export function QuizConfigTab({
                     </div>
                 ) : (
                     /* Centered Empty State View for Quiz */
-                    <div className="animate-fadeIn flex flex-1 flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 p-8 py-14 text-center">
+                    <div className="animate-fadeIn flex min-h-[360px] flex-1 flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 p-8 py-16 text-center">
                         <div className="flex size-16 items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-white text-slate-400">
                             <BookText className="size-6 text-slate-400" />
                         </div>
@@ -278,16 +307,40 @@ export function QuizConfigTab({
             </div>
 
             {quizId !== "" && (
-                <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-4">
                     <div className="mb-3 flex items-center justify-between">
                         <label className="text-sm font-bold text-slate-700">{UI_TEXT.quizConfigTab.questionDetailTitle}</label>
-                        {quizDetails?.questions && (
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
-                                {localQuestions.length}{" "}
-                                {UI_TEXT.quizConfigTab.questionsCountSuffix}
+                        <div className="flex items-center gap-2">
+                            <span
+                                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition-colors ${
+                                    totalPoints > MAX_TOTAL_POINTS
+                                        ? "border-red-200 bg-red-100 text-red-600"
+                                        : "border-indigo-100 bg-indigo-50/80 text-indigo-600"
+                                }`}
+                            >
+                                {UI_TEXT.quizConfigTab.totalPointsLabel}
+                                {totalPoints}
+                                {UI_TEXT.quizConfigTab.ptsSuffix}
                             </span>
-                        )}
+                            {quizDetails?.questions && (
+                                <span className="rounded-lg border border-slate-200/80 bg-slate-100/70 px-2.5 py-1 text-xs font-bold text-slate-600">
+                                    {localQuestions.length}
+                                    {UI_TEXT.quizConfigTab.questionsCountSuffix}
+                                </span>
+                            )}
+                        </div>
                     </div>
+
+                    {totalPoints > MAX_TOTAL_POINTS && (
+                        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600">
+                            <AlertTriangle className="size-4 shrink-0 text-red-500" />
+                            <span>
+                                {UI_TEXT.quizConfigTab.totalPointsExceedPrefix}
+                                {totalPoints}
+                                {UI_TEXT.quizConfigTab.totalPointsExceedSuffix}
+                            </span>
+                        </div>
+                    )}
 
                     {isLoadingQuiz ? (
                         <div className="flex justify-center py-6">
@@ -352,9 +405,7 @@ export function QuizConfigTab({
                                         {isExpanded && (
                                             <div className="flex flex-col gap-3 border-t border-slate-100/60 bg-slate-50/10 p-3.5 pt-3">
                                                 <div className="flex flex-col gap-1.5">
-                                                    <label className="text-xs font-bold text-slate-700">
-                                                        {UI_TEXT.quizConfigTab.questionContentLabel}
-                                                    </label>
+                                                    <label className="text-xs font-bold text-slate-700">{UI_TEXT.quizConfigTab.questionContentLabel}</label>
                                                     <textarea
                                                         value={q.content}
                                                         onChange={(e) => handleQuestionContentChange(idx, e.target.value)}
@@ -366,9 +417,7 @@ export function QuizConfigTab({
 
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="flex flex-col gap-1.5">
-                                                        <label className="text-xs font-bold text-slate-700">
-                                                            {UI_TEXT.quizConfigTab.questionTypeLabel}
-                                                        </label>
+                                                        <label className="text-xs font-bold text-slate-700">{UI_TEXT.quizConfigTab.questionTypeLabel}</label>
                                                         <div className="flex h-[42px] w-full items-center gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner">
                                                             <button
                                                                 type="button"
@@ -418,7 +467,7 @@ export function QuizConfigTab({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleAddOption(idx)}
-                                                                className="flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-wine transition hover:bg-slate-100 hover:text-wine-hover"
+                                                                className="hover:text-wine-hover flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-wine transition hover:bg-slate-100"
                                                             >
                                                                 <Plus className="size-3.5 text-wine" />
                                                                 <span>{UI_TEXT.quizConfigTab.addOptionBtn}</span>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@/components/base/buttons/button";
@@ -30,6 +30,10 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
         id: sys.id,
         label: sys.name ? `${sys.systemCode} (${sys.name})` : sys.systemCode,
     }));
+
+    const [systemSearchTerm, setSystemSearchTerm] = useState("");
+
+    const filteredSystemOptions = systemOptions.filter((opt) => opt.label.toLowerCase().includes(systemSearchTerm.toLowerCase()));
 
     const roleOptions = [
         { id: RoleEnum.ADMIN, label: UI_TEXT.staff.roleAdmin },
@@ -64,6 +68,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
     // Reset form when modal opens/closes or selected staff changes
     useEffect(() => {
         if (isOpen) {
+            setSystemSearchTerm("");
             if (staff) {
                 reset({
                     fullName: staff.fullName,
@@ -137,7 +142,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <CustomModal.Content className="max-w-2xl !overflow-visible !rounded-[24px]">
+            <CustomModal.Content className="max-w-4xl !overflow-visible !rounded-[24px]">
                 <Dialog className="flex max-h-[90vh] w-full flex-col rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Header */}
                     <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
@@ -351,44 +356,110 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
 
                             {/* Systems Selection */}
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-semibold text-slate-700">{UI_TEXT.staff.labelSystems}</label>
                                 <Controller
                                     name="systemIds"
                                     control={control}
-                                    render={({ field }) => (
-                                        <div className="custom-scrollbar flex max-h-[160px] flex-col gap-2 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                                            {systemOptions.length === 0 ? (
-                                                <p className="py-2 text-center text-xs text-slate-400">{UI_TEXT.staff.loadingSystems}</p>
-                                            ) : (
-                                                systemOptions.map((opt) => {
-                                                    const isChecked = field.value?.includes(opt.id);
-                                                    return (
-                                                        <label key={opt.id} className="flex cursor-pointer items-start gap-2.5 py-0.5 text-sm text-slate-700">
+                                    render={({ field }) => {
+                                        const selectedValues = field.value || [];
+                                        return (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex items-center justify-between">
+                                                    <label className="text-sm font-semibold text-slate-700">{UI_TEXT.staff.labelSystems}</label>
+                                                    {selectedValues.length > 0 && (
+                                                        <span className="text-xs font-semibold text-wine">
+                                                            {UI_TEXT.staff.selectedCountPrefix}
+                                                            {selectedValues.length}
+                                                            {UI_TEXT.staff.selectedCountSuffix}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Selected tags bar (1 horizontal scrollable row) */}
+                                                {selectedValues.length > 0 && (
+                                                    <div className="custom-scrollbar flex flex-nowrap items-center gap-1.5 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2">
+                                                        {selectedValues.map((sysId: string) => {
+                                                            const sysOpt = systemOptions.find((s) => s.id === sysId);
+                                                            if (!sysOpt) return null;
+                                                            return (
+                                                                <div
+                                                                    key={sysId}
+                                                                    className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-slate-700"
+                                                                >
+                                                                    <span>{sysOpt.label}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            field.onChange(selectedValues.filter((id: string) => id !== sysId));
+                                                                        }}
+                                                                        className="ml-0.5 rounded-full p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-500"
+                                                                    >
+                                                                        <X className="size-3" />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+
+                                                {/* Search & Always-visible Scrollable Checkbox List */}
+                                                <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/50">
+                                                    {/* Search input */}
+                                                    <div className="border-b border-slate-200 bg-white p-2">
+                                                        <div className="relative flex items-center">
+                                                            <Search className="absolute left-3 size-3.5 text-slate-400" />
                                                             <input
-                                                                type="checkbox"
-                                                                checked={isChecked}
-                                                                onChange={() => {
-                                                                    const newValue = isChecked
-                                                                        ? field.value.filter((k) => k !== opt.id)
-                                                                        : [...(field.value || []), opt.id];
-                                                                    field.onChange(newValue);
-                                                                }}
-                                                                className="mt-0.5 size-4 accent-wine"
+                                                                type="text"
+                                                                placeholder={UI_TEXT.staff.searchSystemPlaceholder}
+                                                                value={systemSearchTerm}
+                                                                onChange={(e) => setSystemSearchTerm(e.target.value)}
+                                                                className="w-full rounded-full border border-slate-200 bg-slate-50/50 py-1.5 pr-3 pl-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-wine focus:bg-white focus:outline-none"
                                                             />
-                                                            <span className="leading-tight">{opt.label}</span>
-                                                        </label>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Checkbox list */}
+                                                    <div className="custom-scrollbar flex max-h-[160px] flex-col gap-1 overflow-y-auto p-2">
+                                                        {filteredSystemOptions.length === 0 ? (
+                                                            <p className="py-3 text-center text-xs text-slate-400">{UI_TEXT.staff.noSystemsFound}</p>
+                                                        ) : (
+                                                            filteredSystemOptions.map((opt) => {
+                                                                const isChecked = selectedValues.includes(opt.id);
+                                                                return (
+                                                                    <label
+                                                                        key={opt.id}
+                                                                        className={`flex cursor-pointer items-start gap-2.5 rounded-xl p-2 transition ${
+                                                                            isChecked ? "bg-wine/5 font-bold text-wine" : "text-slate-700 hover:bg-slate-100/70"
+                                                                        }`}
+                                                                    >
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isChecked}
+                                                                            onChange={() => {
+                                                                                const newValue = isChecked
+                                                                                    ? selectedValues.filter((k: string) => k !== opt.id)
+                                                                                    : [...selectedValues, opt.id];
+                                                                                field.onChange(newValue);
+                                                                            }}
+                                                                            className="mt-0.5 size-4 rounded border-slate-300 accent-wine focus:ring-wine"
+                                                                        />
+                                                                        <span className="text-xs leading-tight">{opt.label}</span>
+                                                                    </label>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }}
                                 />
+                                {errors.systemIds && <p className="text-xs font-medium text-red-500">{errors.systemIds.message}</p>}
                             </div>
                         </div>
 
                         {/* Footer */}
-                        <div className="flex justify-end gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
-                            <Button type="button" color="secondary-gray" size="md" onClick={onClose} isDisabled={isPending}>
+                        <div className="flex w-full items-center justify-center gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
+                            <Button type="button" color="secondary-gray" size="md" onClick={onClose} isDisabled={isPending} className="w-1/3 justify-center">
                                 {UI_TEXT.staff.btnCancel}
                             </Button>
                             <Button
@@ -396,7 +467,7 @@ export function StaffModal({ isOpen, onClose, staff }: StaffModalProps) {
                                 size="md"
                                 type="submit"
                                 isLoading={isPending}
-                                className="border-none bg-wine px-6 font-bold text-white hover:bg-wine-deep"
+                                className="w-2/3 justify-center border-none bg-wine font-bold text-white hover:bg-wine-deep"
                             >
                                 {staff ? UI_TEXT.staff.btnUpdate : UI_TEXT.staff.btnSave}
                             </Button>

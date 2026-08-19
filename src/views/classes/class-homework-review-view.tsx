@@ -2,28 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Eye, Filter, HelpCircle, RotateCcw, Search, Sparkles, Users, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Eye, HelpCircle, RotateCcw, Sparkles, Users, XCircle } from "lucide-react";
 import { Breadcrumb } from "@/components/application/breadcrumb";
+import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Select } from "@/components/base/select/select";
 import { ALL_FILTER } from "@/constants/application.constants";
+import { HOMEWORK_REVIEW_FILTER_FIELDS, UNGRADED_FILTER_KEY } from "@/constants/class.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { getClassDetail } from "@/services/class.service";
 import { getCompletionsBySession, getSessionsByCourseId, markSessionCompletion } from "@/services/homework-completion.service";
 import { toast } from "@/services/toast.service";
+import type { FilterState } from "@/types/filter.types";
 import { type ClassHomeworkReviewViewProps, HomeworkStatusEnum } from "@/types/homework.types";
 import { extractCourseMongoId, isValidMongoId } from "@/utils/class.utils";
 import { StudentHomeworkDetailView } from "@/views/classes/student-homework-detail-view";
-
-const ungradedFilterKey = "UNGRADED";
 
 export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProps) {
     const queryClient = useQueryClient();
     const [selectedCourseId, setSelectedCourseId] = useState<string>("");
     const [selectedSessionId, setSelectedSessionId] = useState<string>("");
     const [searchQuery, setSearchQuery] = useState<string>("");
-    const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER);
+    const [statusFilter] = useState<string>(ALL_FILTER);
+    const [advancedFilterState, setAdvancedFilterState] = useState<FilterState>({
+        conditions: [],
+    });
 
     // Full-page view state for student detail
     const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; code: string; sessionId: string } | null>(null);
@@ -140,8 +144,35 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
 
         if (!matchesSearch) return false;
 
+        let matchesAdvanced = true;
+        for (const condition of advancedFilterState.conditions) {
+            if (!condition.fieldKey || condition.value === null || condition.value === "") continue;
+
+            if (condition.fieldKey === "status") {
+                const condVal = condition.value;
+                const effectiveStatus = item.status || UNGRADED_FILTER_KEY;
+
+                if (Array.isArray(condVal)) {
+                    if (condVal.length > 0 && !condVal.includes(effectiveStatus)) {
+                        matchesAdvanced = false;
+                        break;
+                    }
+                } else if (condVal === UNGRADED_FILTER_KEY) {
+                    if (item.status) {
+                        matchesAdvanced = false;
+                        break;
+                    }
+                } else if (item.status !== condVal) {
+                    matchesAdvanced = false;
+                    break;
+                }
+            }
+        }
+
+        if (!matchesAdvanced) return false;
+
         if (statusFilter === ALL_FILTER) return true;
-        if (statusFilter === ungradedFilterKey) return !item.status;
+        if (statusFilter === UNGRADED_FILTER_KEY) return !item.status;
         return item.status === statusFilter;
     });
 
@@ -210,11 +241,11 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
 
                     <Button
                         size="md"
-                        color="secondary"
+                        color="primary"
                         onClick={handleExportExcel}
                         isDisabled={filteredCompletions.length === 0}
-                        className="gap-2 font-bold shadow-2xs"
-                        iconLeading={<Download className="size-4 text-slate-600" />}
+                        className="gap-2 !bg-emerald-600 font-bold !text-white shadow-2xs hover:!bg-emerald-700 disabled:opacity-50"
+                        iconLeading={<Download className="size-4 text-white" />}
                     >
                         {UI_TEXT.homeworkReview.exportExcelBtn}
                     </Button>
@@ -334,31 +365,14 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
 
             {/* Table Search & Status Filter */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="relative min-w-[240px] flex-1">
-                    <Search className="absolute top-2.5 left-3 size-4 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={UI_TEXT.classHomeworkReview.filterSearchPlaceholder}
-                        className="w-full rounded-xl border border-slate-200 bg-white py-2 pr-4 pl-9 text-xs text-slate-800 placeholder-slate-400 shadow-2xs focus:border-emerald-500 focus:outline-none"
-                    />
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <Filter className="size-3.5 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500">{UI_TEXT.classHomeworkReview.filterStatusLabel}</span>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-2xs focus:outline-none"
-                    >
-                        <option value={ALL_FILTER}>{UI_TEXT.classHomeworkReview.filterAll}</option>
-                        <option value={ungradedFilterKey}>{UI_TEXT.homeworkReview.tableHeaderUngraded}</option>
-                        <option value={HomeworkStatusEnum.COMPLETED}>{UI_TEXT.classHomeworkReview.filterCompleted}</option>
-                        <option value={HomeworkStatusEnum.NOT_COMPLETED}>{UI_TEXT.classHomeworkReview.filterNotCompleted}</option>
-                    </select>
-                </div>
+                <SearchFilters
+                    search={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    advancedFilterState={advancedFilterState}
+                    setAdvancedFilterState={setAdvancedFilterState}
+                    filterFields={HOMEWORK_REVIEW_FILTER_FIELDS}
+                    searchPlaceholder={UI_TEXT.classHomeworkReview.filterSearchPlaceholder}
+                />
             </div>
 
             {/* Main Table Roster */}
@@ -383,17 +397,17 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
                     <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead>
                             <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
-                                <th className="w-12 px-4 py-3.5 text-center">{"#"}</th>
-                                <th className="px-4 py-3.5">{UI_TEXT.homeworkReview.thFullName}</th>
-                                <th className="px-4 py-3.5">{UI_TEXT.homeworkReview.thStudentCode}</th>
-                                <th className="px-4 py-3.5 text-center">{UI_TEXT.homeworkReview.thDob}</th>
-                                <th className="px-4 py-3.5 text-center">{UI_TEXT.homeworkReview.thSubmissionCount}</th>
-                                <th className="px-4 py-3.5 text-center">{UI_TEXT.homeworkReview.thStatus}</th>
-                                <th className="px-4 py-3.5 text-center">{UI_TEXT.homeworkReview.thUpdatedAt}</th>
-                                <th className="px-4 py-3.5 text-center">{UI_TEXT.homeworkReview.thActions}</th>
+                                <th className="w-12 px-6 py-4 text-center">{"#"}</th>
+                                <th className="px-6 py-4">{UI_TEXT.homeworkReview.thFullName}</th>
+                                <th className="px-6 py-4">{UI_TEXT.homeworkReview.thStudentCode}</th>
+                                <th className="px-6 py-4 text-center">{UI_TEXT.homeworkReview.thDob}</th>
+                                <th className="px-6 py-4 text-center">{UI_TEXT.homeworkReview.thSubmissionCount}</th>
+                                <th className="px-6 py-4 text-center">{UI_TEXT.homeworkReview.thStatus}</th>
+                                <th className="px-6 py-4 text-center">{UI_TEXT.homeworkReview.thUpdatedAt}</th>
+                                <th className="px-6 py-4 text-center">{UI_TEXT.homeworkReview.thActions}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 font-medium">
                             {filteredCompletions.map((item, idx) => {
                                 const stId = item.studentId || item.student?.id || "";
                                 const stName = item.student?.fullName || UI_TEXT.enrollStudentModal.defaultStudentLabel;
@@ -403,83 +417,107 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
                                 const currentStatus = item.status;
 
                                 return (
-                                    <tr key={stId || idx} className="transition duration-150 hover:bg-slate-50/80">
-                                        <td className="px-4 py-3.5 text-center font-semibold text-slate-400">{idx + 1}</td>
+                                    <tr key={stId || idx} className="group transition duration-150 hover:bg-slate-50">
+                                        <td className="px-6 py-4 text-center font-semibold text-slate-400">{idx + 1}</td>
 
                                         {/* Họ tên */}
-                                        <td className="px-4 py-3.5">
-                                            <p className="font-bold text-slate-900">{stName}</p>
-                                        </td>
+                                        <td className="px-6 py-4 text-[14.5px] font-bold text-slate-900">{stName}</td>
 
                                         {/* MSSV */}
-                                        <td className="px-4 py-3.5">
-                                            <span className="font-mono text-xs text-slate-600">{stCode}</span>
-                                        </td>
+                                        <td className="px-6 py-4 font-mono text-[13px] font-medium text-slate-700">{stCode}</td>
 
                                         {/* Ngày sinh */}
-                                        <td className="px-4 py-3.5 text-center text-xs text-slate-600">{dob}</td>
+                                        <td className="px-6 py-4 text-center text-xs font-semibold text-slate-500">{dob}</td>
 
                                         {/* Số bài nộp */}
-                                        <td className="px-4 py-3.5 text-center">
-                                            <Badge
-                                                color={submittedCount > 0 ? "brand" : "gray"}
-                                            >{`${submittedCount} ${UI_TEXT.homeworkReview.submissionsSuffix}`}</Badge>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center">
+                                                <Badge
+                                                    color={submittedCount > 0 ? "brand" : "gray"}
+                                                    className="font-mono text-xs font-bold"
+                                                >{`${submittedCount} ${UI_TEXT.homeworkReview.submissionsSuffix}`}</Badge>
+                                            </div>
                                         </td>
 
                                         {/* Dropdown Trạng thái */}
-                                        <td className="px-4 py-3.5 text-center">
-                                            <select
-                                                value={
-                                                    currentStatus === HomeworkStatusEnum.COMPLETED
-                                                        ? HomeworkStatusEnum.COMPLETED
-                                                        : currentStatus === HomeworkStatusEnum.NOT_COMPLETED
-                                                          ? HomeworkStatusEnum.NOT_COMPLETED
-                                                          : HomeworkStatusEnum.PENDING_TEACHER
-                                                }
-                                                onChange={(e) => {
-                                                    const val = e.target.value as
-                                                        HomeworkStatusEnum.COMPLETED | HomeworkStatusEnum.NOT_COMPLETED | HomeworkStatusEnum.PENDING_TEACHER;
-                                                    if (val) {
-                                                        markSessionMutation.mutate({ studentId: stId, status: val });
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="mx-auto w-[165px]">
+                                                <Select
+                                                    size="sm"
+                                                    isClearable={false}
+                                                    isDisabled={markSessionMutation.isPending}
+                                                    selectedKey={
+                                                        currentStatus === HomeworkStatusEnum.COMPLETED
+                                                            ? HomeworkStatusEnum.COMPLETED
+                                                            : currentStatus === HomeworkStatusEnum.NOT_COMPLETED
+                                                              ? HomeworkStatusEnum.NOT_COMPLETED
+                                                              : HomeworkStatusEnum.PENDING_TEACHER
                                                     }
-                                                }}
-                                                disabled={markSessionMutation.isPending}
-                                                className={`rounded-xl border px-3 py-1.5 text-xs font-bold shadow-2xs focus:outline-none ${
-                                                    currentStatus === HomeworkStatusEnum.COMPLETED
-                                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                                        : currentStatus === HomeworkStatusEnum.NOT_COMPLETED
-                                                          ? "border-rose-200 bg-rose-50 text-rose-700"
-                                                          : "border-amber-200 bg-amber-50 text-amber-800"
-                                                }`}
-                                            >
-                                                <option value={HomeworkStatusEnum.PENDING_TEACHER}>{UI_TEXT.homeworkReview.tableHeaderUngraded}</option>
-                                                <option value={HomeworkStatusEnum.COMPLETED}>{UI_TEXT.homeworkReview.statusCompletedUpper}</option>
-                                                <option value={HomeworkStatusEnum.NOT_COMPLETED}>{UI_TEXT.homeworkReview.statusNotCompletedUpper}</option>
-                                            </select>
+                                                    onSelectionChange={(key) => {
+                                                        const val = String(key || "") as
+                                                            | HomeworkStatusEnum.COMPLETED
+                                                            | HomeworkStatusEnum.NOT_COMPLETED
+                                                            | HomeworkStatusEnum.PENDING_TEACHER;
+                                                        if (val) {
+                                                            markSessionMutation.mutate({ studentId: stId, status: val });
+                                                        }
+                                                    }}
+                                                    triggerClassName={`!rounded-full border !px-3 !py-0.5 *:!py-0.5 *:!px-0 *:!w-full *:!justify-between !h-7 !min-h-0 text-xs font-extrabold shadow-2xs [&_p]:!text-inherit [&_svg]:!text-inherit ${
+                                                        currentStatus === HomeworkStatusEnum.COMPLETED
+                                                            ? "!border-success-200 !bg-success-50 !text-success-700 hover:!bg-success-100"
+                                                            : currentStatus === HomeworkStatusEnum.NOT_COMPLETED
+                                                              ? "!border-error-200 !bg-error-50 !text-error-600 hover:!bg-error-100"
+                                                              : "!border-warning-200 !bg-warning-50 !text-warning-700 hover:!bg-warning-100"
+                                                    }`}
+                                                    items={[
+                                                        { id: HomeworkStatusEnum.PENDING_TEACHER, label: UI_TEXT.homeworkReview.tableHeaderUngraded },
+                                                        { id: HomeworkStatusEnum.COMPLETED, label: UI_TEXT.classHomeworkReview.filterCompleted },
+                                                        { id: HomeworkStatusEnum.NOT_COMPLETED, label: UI_TEXT.classHomeworkReview.filterNotCompleted },
+                                                    ]}
+                                                >
+                                                    {(item) => (
+                                                        <Select.Item
+                                                            id={item.id}
+                                                            label={item.label}
+                                                            className={`!text-xs !font-bold ${
+                                                                item.id === HomeworkStatusEnum.COMPLETED
+                                                                    ? "text-success-700"
+                                                                    : item.id === HomeworkStatusEnum.NOT_COMPLETED
+                                                                      ? "text-error-600"
+                                                                      : "text-warning-700"
+                                                            }`}
+                                                        >
+                                                            {item.label}
+                                                        </Select.Item>
+                                                    )}
+                                                </Select>
+                                            </div>
                                         </td>
 
                                         {/* Ngày cập nhật */}
-                                        <td className="px-4 py-3.5 text-center text-xs font-medium text-slate-500">
+                                        <td className="px-6 py-4 text-center font-mono text-xs text-slate-500">
                                             {item.updatedAt ? new Date(item.updatedAt).toLocaleString("vi-VN") : "—"}
                                         </td>
 
                                         {/* Hành động */}
-                                        <td className="px-4 py-3.5 text-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedStudent({
-                                                        id: stId,
-                                                        sessionId: selectedSessionId,
-                                                        name: stName,
-                                                        code: stCode,
-                                                    });
-                                                }}
-                                                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-emerald-700"
-                                            >
-                                                <Eye className="size-3.5 text-slate-500" />
-                                                <span>{UI_TEXT.homeworkReview.actionDetail}</span>
-                                            </button>
+                                        <td className="px-6 py-4 text-center">
+                                            <div className="flex items-center justify-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedStudent({
+                                                            id: stId,
+                                                            sessionId: selectedSessionId,
+                                                            name: stName,
+                                                            code: stCode,
+                                                        });
+                                                    }}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-indigo-50 text-indigo-600 transition duration-200 hover:bg-indigo-600 hover:text-white"
+                                                    title={UI_TEXT.homeworkReview.actionDetail}
+                                                >
+                                                    <Eye className="size-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );

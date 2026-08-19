@@ -19,6 +19,7 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
     const queryClient = useQueryClient();
 
     const [title, setTitle] = useState("");
+    const [titleError, setTitleError] = useState<string | null>(null);
     const [description, setDescription] = useState("");
     const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -92,6 +93,7 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
 
     useEffect(() => {
         if (isOpen) {
+            setTitleError(null);
             if (groupData) {
                 setTitle(groupData.title || "");
                 setDescription(groupData.description || "");
@@ -107,12 +109,14 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
 
     const mutation = useMutation({
         mutationFn: async () => {
-            if (!title.trim()) {
+            const trimmedTitle = title.trim();
+            if (!trimmedTitle) {
+                setTitleError(UI_TEXT.groupModal.errorTitleRequired);
                 throw new Error(UI_TEXT.groupModal.errorTitleRequired);
             }
             if (groupData) {
                 return updateGroup(groupData.id, {
-                    title: title.trim(),
+                    title: trimmedTitle,
                     description: description.trim(),
                     subjectIds: selectedSubjectIds,
                     studentIds: selectedStudentIds,
@@ -120,7 +124,7 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
             }
             return createGroup({
                 classId,
-                title: title.trim(),
+                title: trimmedTitle,
                 description: description.trim(),
                 subjectIds: selectedSubjectIds,
                 studentIds: selectedStudentIds,
@@ -161,8 +165,21 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
                         {/* Basic Info */}
                         <Input
                             label={UI_TEXT.groupModal.labelTitle}
+                            isRequired
+                            isInvalid={!!titleError}
+                            hint={titleError || undefined}
                             value={title}
-                            onChange={(val) => setTitle(val)}
+                            onChange={(val) => {
+                                setTitle(val);
+                                if (val.trim()) {
+                                    setTitleError(null);
+                                }
+                            }}
+                            onBlur={() => {
+                                if (!title.trim()) {
+                                    setTitleError(UI_TEXT.groupModal.errorTitleRequired);
+                                }
+                            }}
                             placeholder={UI_TEXT.groupModal.placeholderTitle}
                         />
 
@@ -277,9 +294,16 @@ export function GroupModal({ isOpen, onClose, classId, groupData, availableSubje
                             color="primary"
                             size="md"
                             type="button"
-                            onClick={() => mutation.mutate()}
+                            onClick={() => {
+                                if (!title.trim()) {
+                                    setTitleError(UI_TEXT.groupModal.errorTitleRequired);
+                                    toast.error(UI_TEXT.groupModal.toastError, UI_TEXT.groupModal.errorTitleRequired);
+                                    return;
+                                }
+                                setTitleError(null);
+                                mutation.mutate();
+                            }}
                             isLoading={mutation.isPending}
-                            isDisabled={!title.trim()}
                             className="w-2/3 justify-center rounded-full border-none bg-wine py-2.5 text-xs font-extrabold text-white shadow-md hover:bg-wine-deep"
                         >
                             {groupData ? UI_TEXT.groupModal.btnUpdate : UI_TEXT.groupModal.btnCreate}

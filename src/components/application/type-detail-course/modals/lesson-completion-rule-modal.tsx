@@ -161,8 +161,10 @@ export function LessonCompletionRuleModal({ isOpen, onOpenChange, lessonId, less
             await completionRuleService.setLessonRule(lessonId, payload);
 
             await queryClient.invalidateQueries({ queryKey: ["lessons"] });
-            await queryClient.invalidateQueries({ queryKey: ["lesson-blocks", lessonId] });
-            await queryClient.invalidateQueries({ queryKey: ["lesson-details-editor", lessonId] });
+            await queryClient.invalidateQueries({ queryKey: ["lesson-blocks"] });
+            await queryClient.invalidateQueries({ queryKey: ["lesson-details-editor"] });
+            await queryClient.invalidateQueries({ queryKey: ["sessions"] });
+            await queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
 
             toast.success(UI_TEXT.common.successTitle, UI_TEXT.lessonCompletionRuleModal.toastSaveSuccess);
             onOpenChange(false);

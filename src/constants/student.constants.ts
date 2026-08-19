@@ -25,3 +25,6 @@ export enum LearningPathSourceEnum {
     SYSTEM_SEED = "SYSTEM_SEED",
     MANUAL_ASSIGN = "MANUAL_ASSIGN",
 }
+
+export const MIN_PASSWORD_LENGTH = 6;
+export const MAX_PASSWORD_LENGTH = 30;

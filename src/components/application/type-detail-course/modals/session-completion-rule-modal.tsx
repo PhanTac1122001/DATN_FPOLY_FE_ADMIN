@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BookOpen, CheckSquare, ChevronRight, Layers, Loader2, Map, Plus, ShieldAlert, X } from "lucide-react";
-import { BlockTypeEnum } from "@/constants/application.constants";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { BlockTypeEnum } from "@/constants/application.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { completionRuleService } from "@/services/completion-rule.service";
 import { coursewareService } from "@/services/courseware.service";
@@ -24,6 +25,7 @@ export function SessionCompletionRuleModal({
     onBackToSessionSelect,
     onSelectLessonForRule,
 }: SessionCompletionRuleModalProps) {
+    const queryClient = useQueryClient();
     const [isCustomRule, setIsCustomRule] = useState(false);
     const [_groups, setGroups] = useState<RuleGroupDraft[]>([createDefaultGroupDraft()]);
     const [blocks, setBlocks] = useState<CoursewareBlockEntity[]>([]);
@@ -41,10 +43,7 @@ export function SessionCompletionRuleModal({
         return sessionName;
     }, [sessions, sessionId, sessionName]);
 
-    const mindmapSubmissionBlock = useMemo(
-        () => blocks.find((b) => b.type === BlockTypeEnum.MINDMAP_SUBMISSION),
-        [blocks],
-    );
+    const mindmapSubmissionBlock = useMemo(() => blocks.find((b) => b.type === BlockTypeEnum.MINDMAP_SUBMISSION), [blocks]);
 
     const practiceBlocks = useMemo(
         () => blocks.filter((b) => b.type === BlockTypeEnum.PRACTICE || b.type === BlockTypeEnum.ASSIGNMENT || b.type === BlockTypeEnum.HOMEWORK),
@@ -120,12 +119,12 @@ export function SessionCompletionRuleModal({
             });
 
             if (modifiedBlocks.length > 0) {
-                await Promise.all(
-                    modifiedBlocks.map((b) =>
-                        coursewareService.updateBlock(b.id, { isRequired: b.isRequired }),
-                    ),
-                );
+                await Promise.all(modifiedBlocks.map((b) => coursewareService.updateBlock(b.id, { isRequired: b.isRequired })));
             }
+
+            queryClient.invalidateQueries({ queryKey: ["session-blocks"] });
+            queryClient.invalidateQueries({ queryKey: ["sessions"] });
+            queryClient.invalidateQueries({ queryKey: ["session-rule"] });
 
             toast.success(UI_TEXT.common.successTitle, t.toastSaveSuccess || "Đã lưu điều kiện hoàn thành buổi thành công");
             onOpenChange(false);
@@ -174,7 +173,7 @@ export function SessionCompletionRuleModal({
                         <X className="size-4" />
                     </button>
 
-                    <div className="pr-8 flex flex-col gap-1.5 border-b border-slate-100 pb-4">
+                    <div className="flex flex-col gap-1.5 border-b border-slate-100 pr-8 pb-4">
                         <div className="flex items-center gap-2.5">
                             {onBackToSessionSelect && (
                                 <button
@@ -207,9 +206,7 @@ export function SessionCompletionRuleModal({
                                         <ShieldAlert className="size-5 shrink-0 text-amber-600" />
                                         <span>{t.customRuleTitle}</span>
                                     </div>
-                                    <p className="text-xs font-medium leading-relaxed text-amber-800">
-                                        {t.customRuleNotice}
-                                    </p>
+                                    <p className="text-xs leading-relaxed font-medium text-amber-800">{t.customRuleNotice}</p>
                                     <div className="pt-1">
                                         <button
                                             type="button"
@@ -227,21 +224,22 @@ export function SessionCompletionRuleModal({
                             {/* Section 1: Cổng nộp Mindmap cấp buổi */}
                             <div className="flex flex-col gap-3 rounded-2xl border border-pink-200 bg-pink-50/40 p-4.5">
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 text-pink-950 font-bold text-sm">
-                                        <Map className="size-4 text-pink-600 shrink-0" />
+                                    <div className="flex items-center gap-2 text-sm font-bold text-pink-950">
+                                        <Map className="size-4 shrink-0 text-pink-600" />
                                         <span>{t.mindmapSectionTitle}</span>
                                     </div>
                                     {mindmapSubmissionBlock ? (
                                         <span
-                                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${mindmapSubmissionBlock.isRequired
-                                                    ? "bg-red-50 text-red-700 border border-red-200"
-                                                    : "bg-slate-100 text-slate-600 border border-slate-200"
-                                                }`}
+                                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                                                mindmapSubmissionBlock.isRequired
+                                                    ? "border border-red-200 bg-red-50 text-red-700"
+                                                    : "border border-slate-200 bg-slate-100 text-slate-600"
+                                            }`}
                                         >
                                             {mindmapSubmissionBlock.isRequired ? t.mindmapRequiredBadge : t.mindmapOptionalBadge}
                                         </span>
                                     ) : (
-                                        <span className="rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 text-[10px] font-bold">
+                                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
                                             {t.mindmapNotCreatedBadge}
                                         </span>
                                     )}
@@ -249,30 +247,24 @@ export function SessionCompletionRuleModal({
 
                                 {mindmapSubmissionBlock ? (
                                     <div className="flex items-center justify-between gap-3 pt-1">
-                                        <p className="text-xs font-medium text-slate-600">
-                                            {t.mindmapNoticeActive}
-                                        </p>
-                                        <label className="flex items-center gap-2 cursor-pointer shrink-0 text-xs font-bold text-slate-700 hover:text-slate-900">
+                                        <p className="text-xs font-medium text-slate-600">{t.mindmapNoticeActive}</p>
+                                        <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900">
                                             <input
                                                 type="checkbox"
                                                 checked={mindmapSubmissionBlock.isRequired}
-                                                onChange={() =>
-                                                    handleToggleBlockRequired(mindmapSubmissionBlock.id, mindmapSubmissionBlock.isRequired)
-                                                }
-                                                className="accent-wine size-4 cursor-pointer rounded"
+                                                onChange={() => handleToggleBlockRequired(mindmapSubmissionBlock.id, mindmapSubmissionBlock.isRequired)}
+                                                className="size-4 cursor-pointer rounded accent-wine"
                                             />
                                             <span>{t.required}</span>
                                         </label>
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-between gap-3 pt-1">
-                                        <p className="text-xs font-medium text-slate-500">
-                                            {t.mindmapNoticeInactive}
-                                        </p>
+                                        <p className="text-xs font-medium text-slate-500">{t.mindmapNoticeInactive}</p>
                                         <button
                                             type="button"
                                             onClick={handleCreateMindmapSubmissionBlock}
-                                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-pink-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-pink-700 shrink-0"
+                                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-pink-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-pink-700"
                                         >
                                             <Plus className="size-3.5" />
                                             <span>{t.mindmapEnableBtn}</span>
@@ -284,14 +276,14 @@ export function SessionCompletionRuleModal({
                             {/* Section 2: Học liệu Bài tập thực hành cấp buổi */}
                             <div className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/40 p-4.5">
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 text-blue-950 font-bold text-sm">
-                                        <Layers className="size-4 text-blue-600 shrink-0" />
+                                    <div className="flex items-center gap-2 text-sm font-bold text-blue-950">
+                                        <Layers className="size-4 shrink-0 text-blue-600" />
                                         <span>{t.practiceSectionTitle}</span>
                                     </div>
                                 </div>
 
                                 {practiceBlocks.length === 0 ? (
-                                    <p className="text-xs text-slate-500 italic py-1">{t.noPracticeEmpty}</p>
+                                    <p className="py-1 text-xs text-slate-500 italic">{t.noPracticeEmpty}</p>
                                 ) : (
                                     <div className="flex flex-col gap-2 pt-1">
                                         {practiceBlocks.map((b) => (
@@ -302,7 +294,7 @@ export function SessionCompletionRuleModal({
                                                 <div className="flex items-center gap-2.5">
                                                     <span className="font-extrabold text-slate-900">{b.title}</span>
                                                     {b.isRequired ? (
-                                                        <span className="rounded-md bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">
+                                                        <span className="rounded-md border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600">
                                                             {t.practiceRequiredBadge}
                                                         </span>
                                                     ) : (
@@ -312,12 +304,12 @@ export function SessionCompletionRuleModal({
                                                     )}
                                                 </div>
 
-                                                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 hover:text-slate-900">
+                                                <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-700 hover:text-slate-900">
                                                     <input
                                                         type="checkbox"
                                                         checked={b.isRequired}
                                                         onChange={() => handleToggleBlockRequired(b.id, b.isRequired)}
-                                                        className="accent-wine size-4 cursor-pointer rounded"
+                                                        className="size-4 cursor-pointer rounded accent-wine"
                                                     />
                                                     <span>{t.required}</span>
                                                 </label>
@@ -330,14 +322,14 @@ export function SessionCompletionRuleModal({
                             {/* Section 3: Cấu hình điều kiện từng bài học (Lesson) */}
                             <div className="flex flex-col gap-3 rounded-2xl border border-purple-200 bg-purple-50/40 p-4.5">
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2 text-purple-950 font-bold text-sm">
-                                        <BookOpen className="size-4 text-purple-600 shrink-0" />
+                                    <div className="flex items-center gap-2 text-sm font-bold text-purple-950">
+                                        <BookOpen className="size-4 shrink-0 text-purple-600" />
                                         <span>{t.lessonSectionTitle}</span>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => setIsLessonSelectModalOpen(true)}
-                                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-extrabold text-white shadow-xs transition hover:bg-purple-700 shrink-0"
+                                        className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-extrabold text-white shadow-xs transition hover:bg-purple-700"
                                     >
                                         <span>{t.configureLessonRuleBtn}</span>
                                         <ChevronRight className="size-3.5" />
@@ -348,7 +340,7 @@ export function SessionCompletionRuleModal({
                     )}
 
                     {/* Footer */}
-                    <div className="mt-2 flex w-full shrink-0 items-center gap-3 border-t border-slate-100 pt-4 bg-white">
+                    <div className="mt-2 flex w-full shrink-0 items-center gap-3 border-t border-slate-100 bg-white pt-4">
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}

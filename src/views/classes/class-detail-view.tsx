@@ -352,7 +352,13 @@ export function ClassDetailView({ classId }: ClassDetailViewProps) {
                                         onClick={() => {
                                             if (card.id === "group") {
                                                 setActiveTab("groups");
-                                            } else if (card.id === "schedule" || card.id === "learning" || card.id === "homework" || card.id === "leaves") {
+                                            } else if (
+                                                card.id === "schedule" ||
+                                                card.id === "learning" ||
+                                                card.id === "homework" ||
+                                                card.id === "leaves" ||
+                                                card.id === "resources"
+                                            ) {
                                                 router.push(`/classes/${classId}/${card.id}` as Route);
                                             } else if (card.id === "quizziz") {
                                                 router.push(`/classes/${classId}/quiz` as Route);

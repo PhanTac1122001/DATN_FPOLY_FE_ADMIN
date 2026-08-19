@@ -32,7 +32,7 @@ export function QuizziSetClientView() {
     }
 
     return (
-        <AdminLayout title={UI_TEXT.quizziSetsPage.title} subtitle={UI_TEXT.quizziSetsPage.subtitle}>
+        <AdminLayout title={UI_TEXT.quizziSetsPage.title} subtitle={UI_TEXT.quizziSetsPage.subtitle} disableScroll={true}>
             <QuizziSetListView />
         </AdminLayout>
     );

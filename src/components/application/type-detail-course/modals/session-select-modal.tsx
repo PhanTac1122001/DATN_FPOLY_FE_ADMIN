@@ -25,8 +25,8 @@ export function SessionSelectModal({ isOpen, onOpenChange, sessions, onSelectSes
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={onOpenChange}>
-            <CustomModal.Content className="w-full max-w-3xl overflow-hidden !rounded-[24px]">
-                <Dialog className="flex max-h-[85vh] flex-col outline-none">
+            <CustomModal.Content className="w-full max-w-4xl overflow-hidden !rounded-[24px]">
+                <Dialog className="flex max-h-[90vh] flex-col outline-none">
                     {/* Header */}
                     <div className="relative flex flex-col border-b border-slate-100 px-6 pt-6 pb-4">
                         <div className="flex items-center gap-2">
@@ -47,20 +47,12 @@ export function SessionSelectModal({ isOpen, onOpenChange, sessions, onSelectSes
                         </button>
                     </div>
 
-                    <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-6">
+                    <div className="flex flex-1 flex-col gap-4 overflow-hidden p-6">
                         {/* Search Bar */}
-                        <div className="relative">
-                            <Input
-                                placeholder={UI_TEXT.sessionSelectModal.placeholder}
-                                value={searchQuery}
-                                onChange={(val) => setSearchQuery(val)}
-                                className="pl-10"
-                            />
-                            <Search className="pointer-events-none absolute top-3 left-3.5 size-4 text-slate-400" />
-                        </div>
+                        <Input icon={Search} placeholder={UI_TEXT.sessionSelectModal.placeholder} value={searchQuery} onChange={(val) => setSearchQuery(val)} />
 
                         {/* Sessions Table */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50">
+                        <div className="custom-scrollbar flex-1 overflow-y-auto rounded-2xl border border-slate-100 bg-slate-50/50">
                             {filteredSessions.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-slate-400">
                                     <Layers className="size-8 opacity-40" />
@@ -69,7 +61,7 @@ export function SessionSelectModal({ isOpen, onOpenChange, sessions, onSelectSes
                             ) : (
                                 <table className="w-full border-collapse text-left text-sm">
                                     <thead>
-                                        <tr className="border-b border-slate-200/80 bg-slate-100/70 text-xs font-extrabold tracking-wider text-slate-600 uppercase">
+                                        <tr className="sticky top-0 z-10 border-b border-slate-200/80 bg-slate-100 text-xs font-extrabold tracking-wider text-slate-600 uppercase shadow-xs">
                                             <th className="w-16 px-4.5 py-3.5 text-center">{UI_TEXT.sessionSelectModal.thStt}</th>
                                             <th className="px-4.5 py-3.5">{UI_TEXT.sessionSelectModal.thSessionName}</th>
                                             <th className="w-40 px-4.5 py-3.5">{UI_TEXT.sessionSelectModal.thType}</th>
@@ -89,7 +81,7 @@ export function SessionSelectModal({ isOpen, onOpenChange, sessions, onSelectSes
                                                 </td>
                                                 <td className="px-4.5 py-3.5 font-medium text-slate-500">
                                                     {session.type ? (
-                                                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                                                        <span className="inline-flex items-center rounded-lg border border-indigo-100 bg-indigo-50/80 px-2.5 py-1 text-xs font-bold text-indigo-600">
                                                             {session.type}
                                                         </span>
                                                     ) : (

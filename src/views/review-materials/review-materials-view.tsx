@@ -339,7 +339,7 @@ export function ReviewMaterialsView() {
     }
 
     return (
-        <AdminLayout title={UI_TEXT.reviewMaterials.title} subtitle={UI_TEXT.reviewMaterials.subtitle}>
+        <AdminLayout title={UI_TEXT.reviewMaterials.title} subtitle={UI_TEXT.reviewMaterials.subtitle} disableScroll={true}>
             <div className="flex min-h-0 w-full flex-1 flex-col gap-6">
                 {/* Tabs Navigation */}
                 <div className="flex gap-6 border-b border-slate-200">
@@ -449,7 +449,7 @@ export function ReviewMaterialsView() {
                 {/* Main Unified Table Card with Integrated Filters Header */}
                 <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
                     {/* Filters Header inside Card */}
-                    <div className="border-b border-slate-100 bg-slate-50/40 p-5">
+                    <div className="shrink-0 border-b border-slate-100 bg-slate-50/40 p-5">
                         <div className="flex flex-col gap-4">
                             {/* Dependent Selects Row */}
                             <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-3">
@@ -570,7 +570,7 @@ export function ReviewMaterialsView() {
                     </div>
 
                     {/* Table Data Container */}
-                    <div className="w-full flex-1 overflow-x-auto">
+                    <div className="custom-scrollbar w-full flex-1 overflow-auto">
                         {isLoading ? (
                             <div className="flex items-center justify-center p-12 text-sm font-semibold text-slate-500">
                                 <Loader2 className="mr-2 size-6 animate-spin text-wine" />
@@ -584,7 +584,7 @@ export function ReviewMaterialsView() {
                             <table className="w-full border-collapse text-left text-sm text-slate-700">
                                 <thead>
                                     {activeTab === "homework" ? (
-                                        <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                        <tr className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                             <th className="w-12 px-6 py-4 text-center">
                                                 <input
                                                     type="checkbox"
@@ -601,7 +601,7 @@ export function ReviewMaterialsView() {
                                             <th className="w-[160px] px-6 py-4 text-center font-bold">{UI_TEXT.reviewMaterials.thAction}</th>
                                         </tr>
                                     ) : (
-                                        <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
+                                        <tr className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                                             <th className="w-12 px-6 py-4 text-center">
                                                 <input
                                                     type="checkbox"
@@ -848,7 +848,7 @@ export function ReviewMaterialsView() {
                             limit={pageSize}
                             onPageChange={(p) => setCurrentPage(p)}
                             onLimitChange={() => {}}
-                            className="border-t border-slate-100 p-4"
+                            className="shrink-0 border-t border-slate-100 p-4"
                         />
                     )}
                 </div>

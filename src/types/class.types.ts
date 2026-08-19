@@ -259,3 +259,7 @@ export interface UncompletedElearningModalProps {
     courseId: string;
     isLocked?: boolean;
 }
+
+export interface ClassResourcesViewProps {
+    classId: string;
+}

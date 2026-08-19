@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import Cookies from "js-cookie";
-import { Clock, Play, Square, Target } from "lucide-react";
+import { Clock, Play, Plus, Square, Target } from "lucide-react";
 import { Socket, io } from "socket.io-client";
 import { Breadcrumb } from "@/components/application/breadcrumb";
+import { CreateQuizziSetModal } from "@/components/application/modals/create-quizzi-set-modal";
 import { QuizDashboardModal } from "@/components/application/modals/quiz-dashboard-modal";
 import { QuizReviewModal } from "@/components/application/modals/quiz-review-modal";
 import { StudentQuizDetailModal } from "@/components/application/modals/student-quiz-detail-modal";
@@ -13,6 +14,7 @@ import { Select } from "@/components/base/select/select";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { APP_CONFIG } from "@/constants/app.constants";
 import { DEFAULT_QUIZ_DURATION_MINUTES, MILLISECONDS_PER_SECOND, PAD_TWO_DIGITS, SECONDS_PER_MINUTE } from "@/constants/options.constants";
+import { CREATE_NEW_QUIZ_ACTION } from "@/constants/quiz.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { StudentQuizResultItem, getActiveQuizSession, getQuizSessionHistory, startQuizSession, stopQuizSession } from "@/services/class-quiz-session.service";
 import { getClassDetail } from "@/services/class.service";
@@ -49,8 +51,27 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
     const [isReviewOpen, setIsReviewOpen] = useState(false);
     const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+    const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false);
     const [sessionQuiz, setSessionQuiz] = useState<SessionQuizItem | null>(null);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+
+    const handleQuizCreatedSuccess = (createdQuiz?: SessionQuizItem) => {
+        setIsCreateQuizOpen(false);
+        if (selectedSubjectId && selectedSessionId) {
+            void getSessionQuizzes({
+                subjectId: selectedSubjectId,
+                sessionId: selectedSessionId,
+            }).then((data) => {
+                const updatedList = data.items || [];
+                setQuizList(updatedList);
+                if (createdQuiz?.id) {
+                    setSelectedQuizId(createdQuiz.id);
+                } else if (updatedList.length > 0) {
+                    setSelectedQuizId(updatedList[updatedList.length - 1].id);
+                }
+            });
+        }
+    };
 
     const selectedStudentResult = results.find((r) => (r.id || r._id || r.studentId) === selectedStudentId) || null;
 
@@ -449,7 +470,7 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 <Breadcrumb
                     items={[
                         { label: UI_TEXT.classes.title, href: "/classes" },
-                        { label: classData?.name ? `${classData.name} (${classData.classCode})` : classId, href: `/classes/${classId}` },
+                        { label: classData?.name || classId, href: `/classes/${classId}` },
                         { label: UI_TEXT.classQuizResultPage.title },
                     ]}
                 />
@@ -499,19 +520,61 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
 
                             {/* Select Quiz */}
                             <div className="w-full">
+                                <div className="mb-1 flex items-center justify-between">
+                                    <label className="text-xs font-semibold text-slate-700">{UI_TEXT.classQuizResultPage.selectQuizLabel}</label>
+                                    {selectedSessionId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCreateQuizOpen(true)}
+                                            className="flex cursor-pointer items-center gap-1 text-xs font-bold text-indigo-600 transition hover:text-indigo-700 hover:underline"
+                                        >
+                                            <Plus className="size-3.5" />
+                                            {UI_TEXT.classQuizResultPage.createNewQuizBtn}
+                                        </button>
+                                    )}
+                                </div>
                                 <Select
-                                    label={UI_TEXT.classQuizResultPage.selectQuizLabel}
                                     placeholder={UI_TEXT.classQuizResultPage.selectQuizLabel}
                                     isClearable={false}
-                                    isDisabled={!selectedSessionId || quizList.length === 0}
+                                    isDisabled={!selectedSessionId}
                                     selectedKey={selectedQuizId || undefined}
-                                    onSelectionChange={(key) => setSelectedQuizId(String(key || ""))}
-                                    items={quizList.map((q) => ({
-                                        id: q.id,
-                                        label: `${q.title} (${q.questions?.length || 0} ${UI_TEXT.classQuizResultPage.questionsCountSuffix})`,
-                                    }))}
+                                    onSelectionChange={(key) => {
+                                        const strKey = String(key || "");
+                                        if (strKey === CREATE_NEW_QUIZ_ACTION) {
+                                            setIsCreateQuizOpen(true);
+                                        } else {
+                                            setSelectedQuizId(strKey);
+                                        }
+                                    }}
+                                    items={
+                                        quizList.length > 0
+                                            ? [
+                                                  ...quizList.map((q) => ({
+                                                      id: q.id,
+                                                      label: `${q.title} - ${q.questions?.length || 0} ${UI_TEXT.classQuizResultPage.questionsCountSuffix}`,
+                                                  })),
+                                                  {
+                                                      id: CREATE_NEW_QUIZ_ACTION,
+                                                      label: UI_TEXT.classQuizResultPage.createNewQuizOption,
+                                                  },
+                                              ]
+                                            : [
+                                                  {
+                                                      id: CREATE_NEW_QUIZ_ACTION,
+                                                      label: UI_TEXT.classQuizResultPage.noQuizCreateNewOption,
+                                                  },
+                                              ]
+                                    }
                                 >
-                                    {(item) => <Select.Item id={item.id} label={item.label} />}
+                                    {(item) => (
+                                        <Select.Item
+                                            id={item.id}
+                                            label={item.label}
+                                            className={
+                                                item.id === CREATE_NEW_QUIZ_ACTION ? "bg-indigo-50/60 !font-bold !text-indigo-600 hover:bg-indigo-100/80" : ""
+                                            }
+                                        />
+                                    )}
                                 </Select>
                             </div>
                         </div>
@@ -580,23 +643,24 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                 )}
 
                                 {history.length > 0 && (
-                                    <div className="flex items-center gap-1.5 rounded-lg border border-purple-100 bg-purple-50/80 px-2.5 py-1 text-xs font-semibold text-purple-800">
-                                        <span>{UI_TEXT.classQuizResult.attemptSelectLabel}</span>
-                                        <select
-                                            value={selectedHistorySessionId || activeSession?.id || (activeSession as { _id?: string })?._id || ""}
-                                            onChange={(e) => {
-                                                const sid = e.target.value;
+                                    <div className="w-[270px] shrink-0">
+                                        <Select
+                                            size="sm"
+                                            isClearable={false}
+                                            triggerClassName="!bg-purple-50/80 !border-purple-100 !text-purple-800 !rounded-lg !px-2.5 !py-0.5 *:!py-0.5 !h-[26px] !min-h-0 !text-xs font-semibold hover:!bg-purple-100/80 flex items-center"
+                                            selectedKey={selectedHistorySessionId || activeSession?.id || (activeSession as { _id?: string })?._id || undefined}
+                                            onSelectionChange={(key) => {
+                                                const sid = String(key || "");
                                                 setSelectedHistorySessionId(sid);
                                                 void fetchSessionState(sid);
                                             }}
-                                            className="cursor-pointer bg-transparent font-bold text-purple-900 outline-none"
+                                            items={history.map((h) => ({
+                                                id: h.id || h._id || "",
+                                                label: `${UI_TEXT.classQuizResult.attemptSelectLabel} ${UI_TEXT.classQuizResult.attemptPrefix} ${h.attempt || 1} - ${h.status === QuizSessionStatusEnum.ACTIVE ? UI_TEXT.classQuizResult.statusActive : UI_TEXT.classQuizResult.statusClosed}`,
+                                            }))}
                                         >
-                                            {history.map((h) => (
-                                                <option key={h.id || h._id} value={h.id || h._id}>
-                                                    {`${UI_TEXT.classQuizResult.attemptPrefix} ${h.attempt || 1} (${h.status === QuizSessionStatusEnum.ACTIVE ? UI_TEXT.classQuizResult.statusActive : UI_TEXT.classQuizResult.statusClosed})`}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            {(item) => <Select.Item id={item.id} label={item.label} className="!text-xs !font-bold text-purple-900" />}
+                                        </Select>
                                     </div>
                                 )}
                             </div>
@@ -615,7 +679,7 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                                 <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs">
                                     <Clock className="size-4 text-slate-500" />
                                     <span>
-                                        {UI_TEXT.classQuizResultPage.selectQuizLabel}{" "}
+                                        {UI_TEXT.classQuizResultPage.durationPrefix}{" "}
                                         <strong className="font-mono text-sm text-slate-900">{formatTimeLeft(durationMinutes * SECONDS_PER_MINUTE)}</strong>
                                     </span>
                                 </div>
@@ -755,6 +819,8 @@ export function ClassQuizResultView({ classId }: { classId: string }) {
                 activeQuiz={effectiveQuiz}
                 isClosed={activeSession?.status === QuizSessionStatusEnum.CLOSED}
             />
+
+            <CreateQuizziSetModal isOpen={isCreateQuizOpen} onClose={() => setIsCreateQuizOpen(false)} onSuccess={handleQuizCreatedSuccess} />
         </AdminLayout>
     );
 }

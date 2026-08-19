@@ -1,24 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-    AlertCircle,
-    ArrowLeft,
-    Calendar,
-    Check,
-    CheckCircle2,
-    Clock,
-    ExternalLink,
-    Eye,
-    FileCheck,
-    FileText,
-    ImageIcon,
-    Search,
-    X,
-    XCircle,
-} from "lucide-react";
-import Link from "next/link";
+import { AlertCircle, Calendar, Check, CheckCircle2, Clock, ExternalLink, Eye, FileCheck, FileText, ImageIcon, X, XCircle } from "lucide-react";
 import { Breadcrumb } from "@/components/application/breadcrumb";
+import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { ALL_FILTER } from "@/constants/application.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { approveLeaveRequest, getClassLeaveRequests, rejectLeaveRequest } from "@/services/leave-request.service";
@@ -158,9 +143,9 @@ export function ClassLeavesView({ classId }: ClassLeavesViewProps) {
     };
 
     return (
-        <div className="flex w-full flex-1 flex-col gap-6 p-6">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 overflow-hidden">
             {/* Top Breadcrumb & Header */}
-            <div className="flex flex-col gap-3">
+            <div className="flex shrink-0 flex-col gap-3">
                 <Breadcrumb
                     items={[
                         { label: UI_TEXT.classes.breadcrumbRoot, href: "/classes" },
@@ -168,24 +153,10 @@ export function ClassLeavesView({ classId }: ClassLeavesViewProps) {
                         { label: UI_TEXT.classLeaves.headerTitle },
                     ]}
                 />
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <Link
-                                href={`/classes/${classId}`}
-                                className="flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:border-wine hover:text-wine"
-                            >
-                                <ArrowLeft className="size-4" />
-                            </Link>
-                            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">{UI_TEXT.classLeaves.headerTitle}</h1>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">{UI_TEXT.classLeaves.headerSubtitle}</p>
-                    </div>
-                </div>
             </div>
 
             {/* Summary Stat Cards */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+            <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-4">
                 <button
                     type="button"
                     onClick={() => setStatusFilter(ALL_FILTER)}
@@ -258,55 +229,26 @@ export function ClassLeavesView({ classId }: ClassLeavesViewProps) {
             </div>
 
             {/* Filter Controls & Search */}
-            <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-xs sm:flex-row">
-                <div className="relative w-full sm:w-80">
-                    <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder={UI_TEXT.classLeaves.filterSearchPlaceholder}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pr-4 pl-10 text-xs font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-wine focus:bg-white focus:ring-1 focus:ring-wine"
-                    />
-                </div>
-
-                <div className="flex items-center gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/80 p-1">
-                    {[
-                        { id: ALL_FILTER, label: UI_TEXT.classLeaves.filterAll },
-                        { id: LeaveRequestStatusEnum.PENDING, label: UI_TEXT.classLeaves.badgePending },
-                        { id: LeaveRequestStatusEnum.APPROVED, label: UI_TEXT.classLeaves.badgeApproved },
-                        { id: LeaveRequestStatusEnum.REJECTED, label: UI_TEXT.classLeaves.badgeRejected },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setStatusFilter(tab.id)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                                statusFilter === tab.id ? "bg-white text-wine shadow-xs" : "text-slate-500 hover:text-slate-900"
-                            }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+            <div className="flex shrink-0 flex-col items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-xs sm:flex-row">
+                <SearchFilters search={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder={UI_TEXT.classLeaves.filterSearchPlaceholder} />
             </div>
 
             {/* Table / Content List */}
-            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xs">
                 {loading ? (
-                    <div className="flex h-64 flex-col items-center justify-center gap-3">
+                    <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-3">
                         <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
                         <p className="text-xs font-semibold text-slate-500">{UI_TEXT.classDetail.loading}</p>
                     </div>
                 ) : items.length === 0 ? (
-                    <div className="flex h-64 flex-col items-center justify-center gap-3 text-slate-400">
+                    <div className="flex h-full min-h-[300px] flex-col items-center justify-center gap-3 text-slate-400">
                         <FileText className="size-12 stroke-[1.5]" />
                         <p className="text-sm font-semibold">{UI_TEXT.classLeaves.emptyLeaves}</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
+                    <div className="flex-1 overflow-auto">
                         <table className="w-full text-left text-xs">
-                            <thead className="border-b border-slate-100 bg-slate-50/50 font-bold tracking-wider text-slate-500 uppercase">
+                            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50 font-bold tracking-wider text-slate-500 uppercase">
                                 <tr>
                                     <th className="px-6 py-3.5">{UI_TEXT.classLeaves.thStudent}</th>
                                     <th className="px-6 py-3.5">{UI_TEXT.classLeaves.fieldDate}</th>

@@ -5,11 +5,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Controller, useForm } from "react-hook-form";
+import { DatePicker } from "@/components/application/date-picker/date-picker";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
-import { STUDENT_STATUS_OPTIONS, StudentLocationEnum } from "@/constants/student.constants";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, STUDENT_STATUS_OPTIONS, StudentLocationEnum } from "@/constants/student.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { createStudent, updateStudent } from "@/services/student.service";
 import { toast } from "@/services/toast.service";
@@ -131,7 +132,7 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
 
     return (
         <CustomModal.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <CustomModal.Content className="w-full max-w-xl overflow-hidden !rounded-[24px]">
+            <CustomModal.Content className="w-full max-w-2xl overflow-hidden !rounded-[24px]">
                 <Dialog className="flex max-h-[90vh] flex-col overflow-hidden rounded-[24px] bg-white shadow-2xl outline-none">
                     {/* Fixed Modal Header */}
                     <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-white px-6 pt-6 pb-4">
@@ -229,19 +230,20 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                                     control={control}
                                     rules={{ required: UI_TEXT.studentFormModal.errDobRequired }}
                                     render={({ field, fieldState }) => (
-                                        <Input
-                                            type="date"
-                                            label={
-                                                <span>
-                                                    {UI_TEXT.studentFormModal.dobLabel}{" "}
-                                                    <span className="font-bold text-red-500">{UI_TEXT.studentFormModal.asterisk}</span>
-                                                </span>
-                                            }
-                                            value={field.value}
-                                            onChange={field.onChange}
-                                            isInvalid={!!fieldState.error}
-                                            hint={fieldState.error?.message}
-                                        />
+                                        <div className="flex flex-col gap-1">
+                                            <DatePicker
+                                                label={
+                                                    <span>
+                                                        {UI_TEXT.studentFormModal.dobLabel}{" "}
+                                                        <span className="font-bold text-red-500">{UI_TEXT.studentFormModal.asterisk}</span>
+                                                    </span>
+                                                }
+                                                placeholder={UI_TEXT.common.datePlaceholder}
+                                                value={field.value || ""}
+                                                onChange={(val) => field.onChange(val ? String(val) : "")}
+                                            />
+                                            {fieldState.error && <span className="text-xs font-medium text-red-500">{fieldState.error.message}</span>}
+                                        </div>
                                     )}
                                 />
                                 <Controller
@@ -346,7 +348,15 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                                 <Controller
                                     name="password"
                                     control={control}
-                                    render={({ field }) => (
+                                    rules={{
+                                        validate: (val) => {
+                                            if (val && (val.length < MIN_PASSWORD_LENGTH || val.length > MAX_PASSWORD_LENGTH)) {
+                                                return UI_TEXT.studentFormModal.validationPasswordLength;
+                                            }
+                                            return true;
+                                        },
+                                    }}
+                                    render={({ field, fieldState }) => (
                                         <Input
                                             type="password"
                                             label={
@@ -361,6 +371,8 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                                             }
                                             value={field.value}
                                             onChange={field.onChange}
+                                            isInvalid={!!fieldState.error}
+                                            hint={fieldState.error?.message}
                                         />
                                     )}
                                 />
@@ -391,11 +403,11 @@ export function StudentFormModal({ isOpen, onClose, student, systems }: { isOpen
                                         name="lockedUntil"
                                         control={control}
                                         render={({ field }) => (
-                                            <Input
-                                                type="date"
+                                            <DatePicker
                                                 label={UI_TEXT.studentFormModal.labelLockAccountUntil}
-                                                value={field.value}
-                                                onChange={field.onChange}
+                                                placeholder={UI_TEXT.common.datePlaceholder}
+                                                value={field.value || ""}
+                                                onChange={(val) => field.onChange(val ? String(val) : "")}
                                             />
                                         )}
                                     />

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function ClassLeavesPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     return (
-        <AdminLayout title={UI_TEXT.classLeaves.headerTitle} subtitle={UI_TEXT.classLeaves.headerSubtitle} disableScroll={false}>
+        <AdminLayout title={UI_TEXT.classLeaves.headerTitle} subtitle={UI_TEXT.classLeaves.headerSubtitle} disableScroll={true}>
             <ClassLeavesView classId={id} />
         </AdminLayout>
     );

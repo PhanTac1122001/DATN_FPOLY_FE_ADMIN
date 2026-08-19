@@ -369,7 +369,7 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="flex flex-col gap-1">
                                         <label className="text-xs font-semibold text-slate-600">{UI_TEXT.createQuizziSetModal.selectSystemLabel}</label>
-                                        <Select
+                                        <Select.ComboBox
                                             aria-label={UI_TEXT.createQuizziSetModal.selectSystemLabel}
                                             selectedKey={selectedSystemId || null}
                                             onSelectionChange={(key) => setSelectedSystemId((key as string) || "")}
@@ -381,13 +381,13 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                             placeholder={UI_TEXT.createQuizziSetModal.selectSystemDefault}
                                             isClearable={false}
                                         >
-                                            {(item) => <Select.Item id={item.id} label={item.label} />}
-                                        </Select>
+                                            {(item) => <Select.Item key={item.id} id={item.id} label={item.label} textValue={item.label} />}
+                                        </Select.ComboBox>
                                     </div>
 
                                     <div className="flex flex-col gap-1">
                                         <label className="text-xs font-semibold text-slate-600">{UI_TEXT.createQuizziSetModal.selectCourseLabel}</label>
-                                        <Select
+                                        <Select.ComboBox
                                             aria-label={UI_TEXT.createQuizziSetModal.selectCourseLabel}
                                             selectedKey={selectedCourseId || null}
                                             onSelectionChange={(key) => setSelectedCourseId((key as string) || "")}
@@ -400,8 +400,8 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                             isDisabled={!selectedSystemId}
                                             isClearable={false}
                                         >
-                                            {(item) => <Select.Item id={item.id} label={item.label} />}
-                                        </Select>
+                                            {(item) => <Select.Item key={item.id} id={item.id} label={item.label} textValue={item.label} />}
+                                        </Select.ComboBox>
                                     </div>
                                 </div>
 
@@ -551,7 +551,7 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.questionTypeLabel}</label>
-                                                <Select
+                                                <Select.ComboBox
                                                     aria-label={UI_TEXT.createQuizziSetModal.questionTypeLabel}
                                                     selectedKey={q.type}
                                                     onSelectionChange={(key) => handleQuestionChange(qIndex, "type", key as QuestionTypeEnum)}
@@ -562,8 +562,8 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                                     size="sm"
                                                     isClearable={false}
                                                 >
-                                                    {(item) => <Select.Item id={item.id} label={item.label} />}
-                                                </Select>
+                                                    {(item) => <Select.Item key={item.id} id={item.id} label={item.label} textValue={item.label} />}
+                                                </Select.ComboBox>
                                             </div>
 
                                             <div className="flex flex-col gap-1">
@@ -579,7 +579,7 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
 
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.categoryLabel}</label>
-                                                <Select
+                                                <Select.ComboBox
                                                     aria-label={UI_TEXT.createQuizziSetModal.categoryLabel}
                                                     selectedKey={q.category ?? QuestionCategoryEnum.NONE}
                                                     onSelectionChange={(key) => handleQuestionChange(qIndex, "category", key as QuestionCategoryEnum)}
@@ -591,13 +591,13 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                                     size="sm"
                                                     isClearable={false}
                                                 >
-                                                    {(item) => <Select.Item id={item.id} label={item.label} />}
-                                                </Select>
+                                                    {(item) => <Select.Item key={item.id} id={item.id} label={item.label} textValue={item.label} />}
+                                                </Select.ComboBox>
                                             </div>
 
                                             <div className="flex flex-col gap-1">
                                                 <label className="text-[11px] font-bold text-slate-600">{UI_TEXT.createQuizziSetModal.difficultyLabel}</label>
-                                                <Select
+                                                <Select.ComboBox
                                                     aria-label={UI_TEXT.createQuizziSetModal.difficultyLabel}
                                                     selectedKey={q.difficulty ?? QuestionDifficultyEnum.EASY}
                                                     onSelectionChange={(key) => handleQuestionChange(qIndex, "difficulty", key as QuestionDifficultyEnum)}
@@ -609,8 +609,8 @@ export function CreateQuizziSetModal({ isOpen, onClose, onSuccess, editQuiz }: C
                                                     size="sm"
                                                     isClearable={false}
                                                 >
-                                                    {(item) => <Select.Item id={item.id} label={item.label} />}
-                                                </Select>
+                                                    {(item) => <Select.Item key={item.id} id={item.id} label={item.label} textValue={item.label} />}
+                                                </Select.ComboBox>
                                             </div>
                                         </div>
 

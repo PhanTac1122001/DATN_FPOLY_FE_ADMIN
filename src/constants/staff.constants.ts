@@ -25,3 +25,6 @@ export const STAFF_FILTER_FIELDS = [
         ],
     },
 ];
+
+export const MIN_PASSWORD_LENGTH = 6;
+export const MAX_PASSWORD_LENGTH = 30;

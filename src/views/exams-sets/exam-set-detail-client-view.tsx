@@ -33,7 +33,7 @@ export function ExamSetDetailClientView({ id }: ExamSetDetailClientViewProps) {
     }
 
     return (
-        <AdminLayout title={UI_TEXT.examsSetsEl.title} subtitle={UI_TEXT.examsSetsEl.subtitle}>
+        <AdminLayout title={UI_TEXT.examsSetsEl.title} subtitle={UI_TEXT.examsSetsEl.subtitle} disableScroll={true}>
             <ExamSetDetailView id={id} />
         </AdminLayout>
     );

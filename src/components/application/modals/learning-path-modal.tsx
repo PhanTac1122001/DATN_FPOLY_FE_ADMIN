@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, BookOpen, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, BookOpen, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
+import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { Button } from "@/components/base/buttons/button";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { LearningPathSourceEnum } from "@/constants/student.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -21,7 +23,8 @@ import type { LearningPathItem, Student } from "@/types/student.types";
 export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolean; onClose: () => void; student: Student | null }) {
     const queryClient = useQueryClient();
     const [selectedCourseId, setSelectedCourseId] = useState("");
-    const [isRequired, setIsRequired] = useState(true);
+    const [isRequired] = useState(true);
+    const [deletingCourse, setDeletingCourse] = useState<{ id: string; title: string } | null>(null);
 
     const { data: learningPath = [], isLoading } = useQuery({
         queryKey: ["student-learning-path", student?.id],
@@ -69,6 +72,11 @@ export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolea
         },
     });
 
+    const courseOptions = courses.map((crs) => ({
+        id: crs.id,
+        label: crs.courseCode ? `[${crs.courseCode}] ${crs.name}` : crs.name,
+    }));
+
     if (!student) return null;
 
     return (
@@ -106,40 +114,28 @@ export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolea
 
                     <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
                         {/* Assign Form */}
-                        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <div className="flex items-end gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                             <div className="flex min-w-[240px] flex-1 flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase">{UI_TEXT.learningPathModal.assignNewCourseLabel}</label>
-                                <select
-                                    value={selectedCourseId}
-                                    onChange={(e) => setSelectedCourseId(e.target.value)}
-                                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-wine focus:outline-none"
+                                <Select
+                                    label={UI_TEXT.learningPathModal.assignNewCourseLabel}
+                                    placeholder={UI_TEXT.learningPathModal.selectCoursePlaceholder}
+                                    items={courseOptions}
+                                    selectedKey={selectedCourseId || null}
+                                    onSelectionChange={(key) => setSelectedCourseId(key ? String(key) : "")}
                                 >
-                                    <option value="">{UI_TEXT.learningPathModal.selectCoursePlaceholder}</option>
-                                    {courses.map((crs) => (
-                                        <option key={crs.id} value={crs.id}>
-                                            {crs.courseCode ? `[${crs.courseCode}] ` : ""}
-                                            {crs.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex h-9 items-center gap-2 px-1">
-                                <input
-                                    type="checkbox"
-                                    checked={isRequired}
-                                    onChange={(e) => setIsRequired(e.target.checked)}
-                                    id="req-chk"
-                                    className="size-4 cursor-pointer rounded text-wine focus:ring-wine"
-                                />
-                                <label htmlFor="req-chk" className="cursor-pointer text-xs font-bold text-slate-700">
-                                    {UI_TEXT.learningPathModal.isRequiredLabel}
-                                </label>
+                                    {(item) => (
+                                        <Select.Item key={item.id} id={item.id}>
+                                            {item.label}
+                                        </Select.Item>
+                                    )}
+                                </Select>
                             </div>
                             <Button
+                                size="md"
                                 onClick={() => assignMutation.mutate()}
                                 isLoading={assignMutation.isPending}
                                 isDisabled={!selectedCourseId}
-                                className="gap-1 border-none bg-wine px-4 py-2 text-xs font-bold text-white hover:bg-wine-deep"
+                                className="border-none bg-wine px-5 text-sm font-extrabold text-white shadow-md hover:bg-wine-deep"
                                 iconLeading={<Plus className="size-4" />}
                             >
                                 {UI_TEXT.learningPathModal.assignToPathBtn}
@@ -216,11 +212,7 @@ export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolea
                                                         </td>
                                                         <td className="px-4 py-3 text-center">
                                                             <button
-                                                                onClick={() => {
-                                                                    if (confirm(`Bạn có chắc muốn gỡ môn "${courseTitle}" khỏi lộ trình học?`)) {
-                                                                        unassignMutation.mutate(item.courseId);
-                                                                    }
-                                                                }}
+                                                                onClick={() => setDeletingCourse({ id: item.courseId, title: courseTitle })}
                                                                 className="rounded p-1 text-red-500 transition hover:bg-red-50"
                                                                 title={UI_TEXT.learningPathModal.toastDeleteSuccessDesc}
                                                             >
@@ -238,6 +230,35 @@ export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolea
                     </div>
                 </Dialog>
             </CustomModal.Content>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!deletingCourse}
+                onClose={() => setDeletingCourse(null)}
+                onConfirm={() => {
+                    if (deletingCourse) {
+                        unassignMutation.mutate(deletingCourse.id);
+                        setDeletingCourse(null);
+                    }
+                }}
+                title={UI_TEXT.learningPathModal.confirmUnassignTitle}
+                message={
+                    <span>
+                        {UI_TEXT.learningPathModal.confirmUnassignPrefix}
+                        <strong className="font-bold text-wine">{deletingCourse?.title}</strong>
+                        {UI_TEXT.learningPathModal.confirmUnassignSuffix}
+                    </span>
+                }
+                confirmText={unassignMutation.isPending ? UI_TEXT.learningPathModal.unassignPending : UI_TEXT.learningPathModal.btnUnassign}
+                cancelText={UI_TEXT.common.cancel}
+                variant="danger"
+                isLoading={unassignMutation.isPending}
+                icon={
+                    <div className="flex size-10 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                        <AlertTriangle className="size-5" />
+                    </div>
+                }
+            />
         </CustomModal.Root>
     );
 }

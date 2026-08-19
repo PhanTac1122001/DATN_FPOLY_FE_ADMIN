@@ -1,5 +1,6 @@
 import { ClassTypeEnum } from "@/types/class.types";
 import { FilterFieldType } from "@/types/filter.types";
+import { HomeworkStatusEnum } from "@/types/homework.types";
 import { UI_TEXT } from "./ui-text.constants";
 
 export const CLASS_TYPE_LABELS: Record<string, string> = {
@@ -18,6 +19,21 @@ export const CLASS_FILTER_FIELDS = [
             { id: ClassTypeEnum.FULLTIME, label: UI_TEXT.classes.classTypeFulltime },
             { id: ClassTypeEnum.PARTTIME, label: UI_TEXT.classes.classTypeParttime },
             { id: ClassTypeEnum.ONLINE, label: UI_TEXT.classes.classTypeOnline },
+        ],
+    },
+];
+
+export const UNGRADED_FILTER_KEY = "UNGRADED";
+
+export const HOMEWORK_REVIEW_FILTER_FIELDS = [
+    {
+        key: "status",
+        label: UI_TEXT.homeworkReview.thStatus,
+        type: FilterFieldType.ENUM,
+        options: [
+            { id: HomeworkStatusEnum.COMPLETED, label: UI_TEXT.classHomeworkReview.filterCompleted },
+            { id: HomeworkStatusEnum.NOT_COMPLETED, label: UI_TEXT.classHomeworkReview.filterNotCompleted },
+            { id: UNGRADED_FILTER_KEY, label: UI_TEXT.homeworkReview.tableHeaderUngraded },
         ],
     },
 ];

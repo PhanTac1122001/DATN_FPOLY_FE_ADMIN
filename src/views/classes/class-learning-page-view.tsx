@@ -35,7 +35,7 @@ export function ClassLearningPageView({ classId }: ClassLearningPageViewProps) {
                     items={[
                         { label: UI_TEXT.classes.title, href: "/classes" },
                         {
-                            label: classInfo?.name ? `${classInfo.name} (${classInfo.classCode})` : "Chi tiết lớp",
+                            label: classInfo?.name || "Chi tiết lớp",
                             href: `/classes/${classId}`,
                         },
                         { label: UI_TEXT.staff.classLearning.title },

@@ -5,17 +5,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { deleteStudentFromClass, enrollStudentInClass, getClassesList, getStudentClasses, updateStudentClass } from "@/services/student.service";
+import { deleteStudentFromClass, enrollStudentInClass, getClassesList, getStudentClasses } from "@/services/student.service";
 import { toast } from "@/services/toast.service";
+import { StudentClassStatusEnum } from "@/types/class.types";
 import type { Student } from "@/types/student.types";
 
 export function ClassEnrollmentsModal({ isOpen, onClose, student }: { isOpen: boolean; onClose: () => void; student: Student | null }) {
     const queryClient = useQueryClient();
     const [classId, setClassId] = useState("");
-    const [status, setStatus] = useState("STUDYING");
-    const [isActive, setIsActive] = useState(true);
 
     const { data: enrollments = [], isLoading } = useQuery({
         queryKey: ["student-enrollments", student?.id],
@@ -34,8 +34,8 @@ export function ClassEnrollmentsModal({ isOpen, onClose, student }: { isOpen: bo
             enrollStudentInClass({
                 studentId: student!.id,
                 classId,
-                status,
-                isActive,
+                status: StudentClassStatusEnum.STUDYING,
+                isActive: true,
             }),
         onSuccess: () => {
             toast.success(UI_TEXT.classEnrollmentsModal.toastSuccessTitle, UI_TEXT.classEnrollmentsModal.toastEnrollSuccess);
@@ -44,17 +44,6 @@ export function ClassEnrollmentsModal({ isOpen, onClose, student }: { isOpen: bo
         },
         onError: (e: Error) => {
             toast.error(UI_TEXT.classEnrollmentsModal.toastErrorTitle, e.message || UI_TEXT.classEnrollmentsModal.toastEnrollError);
-        },
-    });
-
-    const updateMutation = useMutation({
-        mutationFn: ({ id, active, st }: { id: string; active: boolean; st: string }) => updateStudentClass(id, { isActive: active, status: st }),
-        onSuccess: () => {
-            toast.success(UI_TEXT.classEnrollmentsModal.toastSuccessTitle, UI_TEXT.classEnrollmentsModal.toastUpdateSuccess);
-            queryClient.invalidateQueries({ queryKey: ["student-enrollments", student?.id] });
-        },
-        onError: () => {
-            toast.error(UI_TEXT.classEnrollmentsModal.toastErrorTitle, UI_TEXT.classEnrollmentsModal.toastUpdateError);
         },
     });
 
@@ -68,6 +57,11 @@ export function ClassEnrollmentsModal({ isOpen, onClose, student }: { isOpen: bo
             toast.error(UI_TEXT.classEnrollmentsModal.toastErrorTitle, UI_TEXT.classEnrollmentsModal.toastDeleteError);
         },
     });
+
+    const classOptions = classes.map((cls) => ({
+        id: cls.id,
+        label: cls.className || cls.name || cls.classCode || cls.code || cls.id,
+    }));
 
     if (!student) return null;
 
@@ -93,48 +87,27 @@ export function ClassEnrollmentsModal({ isOpen, onClose, student }: { isOpen: bo
 
                     <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
                         {/* New enrollment Form */}
-                        <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <div className="flex items-end gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                             <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase">{UI_TEXT.classEnrollmentsModal.selectClassLabel}</label>
-                                <select
-                                    value={classId}
-                                    onChange={(e) => setClassId(e.target.value)}
-                                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none"
+                                <Select
+                                    label={UI_TEXT.classEnrollmentsModal.selectClassLabel}
+                                    placeholder={UI_TEXT.classEnrollmentsModal.selectClassPlaceholder}
+                                    items={classOptions}
+                                    selectedKey={classId || null}
+                                    onSelectionChange={(key) => setClassId(key ? String(key) : "")}
                                 >
-                                    <option value="">{UI_TEXT.classEnrollmentsModal.selectClassPlaceholder}</option>
-                                    {classes.map((cls) => {
-                                        const displayName = cls.className || cls.name || cls.classCode || cls.code || cls.id;
-                                        return (
-                                            <option key={cls.id} value={cls.id}>
-                                                {displayName}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-                            </div>
-                            <div className="flex w-32 flex-col gap-1.5">
-                                <label className="text-xs font-bold text-slate-500 uppercase">{UI_TEXT.classEnrollmentsModal.statusLabel}</label>
-                                <select
-                                    value={status}
-                                    onChange={(e) => setStatus(e.target.value)}
-                                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm focus:outline-none"
-                                >
-                                    <option value="STUDYING">{UI_TEXT.classEnrollmentsModal.statusStudying}</option>
-                                    <option value="RESERVED">{UI_TEXT.classEnrollmentsModal.statusReserved}</option>
-                                    <option value="DROPOFF">{UI_TEXT.classEnrollmentsModal.statusDropoff}</option>
-                                </select>
-                            </div>
-                            <div className="flex h-9 items-center gap-2">
-                                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} id="active-chk" />
-                                <label htmlFor="active-chk" className="cursor-pointer text-xs font-bold text-slate-600">
-                                    {UI_TEXT.classEnrollmentsModal.activeLabel}
-                                </label>
+                                    {(item) => (
+                                        <Select.Item key={item.id} id={item.id}>
+                                            {item.label}
+                                        </Select.Item>
+                                    )}
+                                </Select>
                             </div>
                             <Button
                                 onClick={() => enrollMutation.mutate()}
                                 isLoading={enrollMutation.isPending}
                                 isDisabled={!classId}
-                                className="gap-1 border-none bg-wine py-1.5 text-white"
+                                className="h-9 gap-1 border-none bg-wine text-white hover:bg-wine-deep"
                                 iconLeading={<Plus className="size-4" />}
                             >
                                 {UI_TEXT.classEnrollmentsModal.enrollBtn}
@@ -183,20 +156,6 @@ export function ClassEnrollmentsModal({ isOpen, onClose, student }: { isOpen: bo
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <select
-                                                        value={en.status}
-                                                        onChange={(e) => updateMutation.mutate({ id: en.id, active: en.isActive, st: e.target.value })}
-                                                        className="rounded border border-slate-200 bg-white px-2 py-1 text-xs"
-                                                    >
-                                                        <option value="STUDYING">{UI_TEXT.classEnrollmentsModal.statusStudying}</option>
-                                                        <option value="RESERVED">{UI_TEXT.classEnrollmentsModal.statusReserved}</option>
-                                                        <option value="DROPOFF">{UI_TEXT.classEnrollmentsModal.statusDropoff}</option>
-                                                    </select>
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={en.isActive}
-                                                        onChange={(e) => updateMutation.mutate({ id: en.id, active: e.target.checked, st: en.status })}
-                                                    />
                                                     <button onClick={() => deleteMutation.mutate(en.id)} className="rounded p-1.5 text-red-500 hover:bg-red-50">
                                                         <Trash2 className="size-4" />
                                                     </button>

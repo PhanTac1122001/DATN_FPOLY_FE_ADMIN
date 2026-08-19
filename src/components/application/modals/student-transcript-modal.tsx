@@ -6,6 +6,7 @@ import { Award, CheckCircle2, ChevronDown, ChevronRight, Eye, FileText, PlusCirc
 import { Heading } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { getClassesList, getCourseGradeDetail, getStudentTranscript, retakeCourse } from "@/services/student.service";
@@ -74,6 +75,11 @@ export function StudentTranscriptModal({ isOpen, onClose, student }: { isOpen: b
             toast.error(UI_TEXT.studentTranscriptModal.toastErrorTitle, e.message || UI_TEXT.studentTranscriptModal.toastRetakeError);
         },
     });
+
+    const classOptions = classes.map((cls) => ({
+        id: cls.id,
+        label: cls.className || cls.name || cls.classCode || cls.code || cls.id,
+    }));
 
     if (!student) return null;
 
@@ -270,39 +276,43 @@ export function StudentTranscriptModal({ isOpen, onClose, student }: { isOpen: b
                                 {isLoadingDetail ? (
                                     <div className="py-4 text-center text-xs text-slate-400">{UI_TEXT.studentTranscriptModal.loadingDetail}</div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full rounded-xl border border-slate-200 bg-white text-left text-xs">
+                                    <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
+                                        <table className="w-full border-collapse text-left text-sm">
                                             <thead>
-                                                <tr className="bg-slate-100 text-[10px] font-bold text-slate-600 uppercase">
-                                                    <th className="p-2">{UI_TEXT.studentTranscriptModal.thAttempt}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thAttendance}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thHomework}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thQuizzi}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thProject}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thRetakeProject}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thTotalScore}</th>
-                                                    <th className="p-2 text-center">{UI_TEXT.studentTranscriptModal.thResult}</th>
+                                                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase">
+                                                    <th className="px-4 py-3">{UI_TEXT.studentTranscriptModal.thAttempt}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thAttendance}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thHomework}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thQuizzi}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thProject}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thRetakeProject}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thTotalScore}</th>
+                                                    <th className="px-4 py-3 text-center">{UI_TEXT.studentTranscriptModal.thResult}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {courseDetail.map((rec: Record<string, unknown>, i: number) => (
-                                                    <tr key={(rec.id as string) || i} className="border-t border-slate-100">
-                                                        <td className="p-2 font-bold text-slate-800">
+                                                    <tr key={(rec.id as string) || i} className="border-b border-slate-100 text-xs hover:bg-slate-50/50">
+                                                        <td className="px-4 py-3 font-bold text-slate-800">
                                                             {UI_TEXT.studentTranscriptModal.attemptPrefix} {(rec.count as number) || i + 1}
                                                         </td>
-                                                        <td className="p-2 text-center">{(rec.attendance as React.ReactNode) ?? "-"}</td>
-                                                        <td className="p-2 text-center">{(rec.homework as React.ReactNode) ?? "-"}</td>
-                                                        <td className="p-2 text-center">{(rec.quizzi as React.ReactNode) ?? "-"}</td>
-                                                        <td className="p-2 text-center">{(rec.project as React.ReactNode) ?? "-"}</td>
-                                                        <td className="p-2 text-center">{(rec.retakeProject as React.ReactNode) ?? "-"}</td>
-                                                        <td className="p-2 text-center font-black text-slate-900">
+                                                        <td className="px-4 py-3 text-center">{(rec.attendance as React.ReactNode) ?? "-"}</td>
+                                                        <td className="px-4 py-3 text-center">{(rec.homework as React.ReactNode) ?? "-"}</td>
+                                                        <td className="px-4 py-3 text-center">{(rec.quizzi as React.ReactNode) ?? "-"}</td>
+                                                        <td className="px-4 py-3 text-center">{(rec.project as React.ReactNode) ?? "-"}</td>
+                                                        <td className="px-4 py-3 text-center">{(rec.retakeProject as React.ReactNode) ?? "-"}</td>
+                                                        <td className="px-4 py-3 text-center font-black text-slate-900">
                                                             {(rec.scoreWithBonus as React.ReactNode) ?? (rec.totalScore as React.ReactNode) ?? "-"}
                                                         </td>
-                                                        <td className="p-2 text-center">
+                                                        <td className="px-4 py-3 text-center">
                                                             {rec.pass ? (
-                                                                <span className="font-bold text-green-700">{UI_TEXT.studentTranscriptModal.passText}</span>
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-800">
+                                                                    <CheckCircle2 className="size-3" /> {UI_TEXT.studentTranscriptModal.passText}
+                                                                </span>
                                                             ) : (
-                                                                <span className="font-bold text-red-600">{UI_TEXT.studentTranscriptModal.failText}</span>
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
+                                                                    <XCircle className="size-3" /> {UI_TEXT.studentTranscriptModal.failText}
+                                                                </span>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -324,22 +334,20 @@ export function StudentTranscriptModal({ isOpen, onClose, student }: { isOpen: b
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                                    <div className="col-span-2 flex flex-col gap-1">
-                                        <label className="text-[10px] font-bold text-slate-600 uppercase">
-                                            {UI_TEXT.studentTranscriptModal.classSectionLabel}
-                                        </label>
-                                        <select
-                                            value={retakeClassId}
-                                            onChange={(e) => setRetakeClassId(e.target.value)}
-                                            className="rounded-lg border border-slate-200 bg-white p-2 text-xs"
+                                    <div className="col-span-2">
+                                        <Select
+                                            label={UI_TEXT.studentTranscriptModal.classSectionLabel}
+                                            placeholder={UI_TEXT.studentTranscriptModal.selectClassSectionPlaceholder}
+                                            items={classOptions}
+                                            selectedKey={retakeClassId || null}
+                                            onSelectionChange={(key) => setRetakeClassId(key ? String(key) : "")}
                                         >
-                                            <option value="">{UI_TEXT.studentTranscriptModal.selectClassSectionPlaceholder}</option>
-                                            {classes.map((cls) => (
-                                                <option key={cls.id} value={cls.id}>
-                                                    {cls.className}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            {(item) => (
+                                                <Select.Item key={item.id} id={item.id}>
+                                                    {item.label}
+                                                </Select.Item>
+                                            )}
+                                        </Select>
                                     </div>
                                     <Input
                                         label={UI_TEXT.studentTranscriptModal.attendanceScoreLabel}
