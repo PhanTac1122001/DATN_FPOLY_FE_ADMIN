@@ -1,4 +1,4 @@
-export type CourseRpointTabType = "linear" | "tiers" | "bonus";
+export type CourseRpointTabType = "linear" | "tiers" | "bonus" | "eligibility";
 
 export interface AddRpointBonusModalProps {
     isOpen: boolean;
@@ -51,12 +51,28 @@ export interface RpointTier {
     score: number;
 }
 
+export interface EligibilityRule {
+    rpointMin: number;
+    attendanceRateMin: number;
+    homeworkRateMin: number;
+    elearningLateMax: number;
+}
+
 export interface RpointFormula {
     attendance: { max: number; deductionPerPercent: number };
     assignment: { max: number; deductionPerPercent: number };
     preparation: { max: number; tiers: RpointTier[] };
     compliance: { max: number; tiers: RpointTier[] };
     bonus: { cap: number };
+    eligibility: EligibilityRule;
+}
+
+export type RpointFormulaSource = "class" | "course" | "default";
+
+export interface EffectiveFormulaResponse {
+    formula: RpointFormula;
+    source?: RpointFormulaSource;
+    isDefault: boolean;
 }
 
 export interface RpointPreviewInputs {
@@ -84,5 +100,6 @@ export interface CourseRpointConfigModalProps {
     onOpenChange: (open: boolean) => void;
     courseId: string;
     courseTitle: string;
+    // Khi có classId: cấu hình công thức RIÊNG cho môn ở lớp này (override cấp môn).
+    classId?: string;
 }
-
