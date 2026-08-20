@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Award, Calendar, Check, CheckCircle2, ChevronRight, FileText, Folder, HelpCircle, Pencil, Plus, Target, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Award, Calendar, Check, CheckCircle2, ChevronRight, Download, FileText, Folder, HelpCircle, Pencil, Plus, Target, Trash2, Upload } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { EssayQuestionModal } from "@/components/application/modals/essay-question-modal";
 import { QuestionModal } from "@/components/application/modals/question-modal";
 import { EXAM_SETS_MOCK } from "@/constants/exam-set-mock.constants";
+import { QUIZ_IMPORT_ACCEPT } from "@/constants/quiz.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import { getQuizById, updateQuiz } from "@/services/quiz.service";
+import { downloadQuizExcelTemplate, getQuizById, importQuizExcel, updateQuiz } from "@/services/quiz.service";
 import { toast } from "@/services/toast.service";
 import type { EssayQuestionMock, ExamSetDetailViewProps, ExamSetMock, QuestionMock } from "@/types/exam-set.types";
 import { type QuizBackendEntity, mapBackendQuizToExamSet, mapUiQuestionsToBackendDtos } from "@/types/quiz.types";
 import { cx } from "@/utils/cx";
+import { mapImportedQuestionsToUiQuestions } from "@/utils/quiz.utils";
 
 export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
     const [selectedSet, setSelectedSet] = useState<ExamSetMock | null>(null);
@@ -23,6 +25,8 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
     const [questions, setQuestions] = useState<QuestionMock[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState<QuestionMock | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [essayQuestions, setEssayQuestions] = useState<EssayQuestionMock[]>([]);
     const [isEssayModalOpen, setIsEssayModalOpen] = useState(false);
@@ -113,6 +117,53 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
 
         if (rawQuiz) {
             await syncQuestionsToBackend(updated);
+        }
+    };
+
+    const handleDownloadTemplate = async () => {
+        try {
+            await downloadQuizExcelTemplate();
+            toast.success(UI_TEXT.examsSetsEl.toastDownloadTitle, UI_TEXT.examsSetsEl.toastDownloadSuccess);
+        } catch {
+            toast.error(UI_TEXT.examsSetsEl.toastDownloadTitle, UI_TEXT.examsSetsEl.toastDownloadError);
+        }
+    };
+
+    const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsImporting(true);
+            const res = await importQuizExcel(file);
+            const parsed = res.questions || [];
+            const rowErrors = res.errors || [];
+
+            if (parsed.length > 0) {
+                const mapped = mapImportedQuestionsToUiQuestions(parsed, `imported-${questions.length}`);
+                const updated = [...questions, ...mapped];
+                setQuestions(updated);
+                if (rawQuiz) {
+                    await syncQuestionsToBackend(updated);
+                }
+                const suffix = rowErrors.length > 0 ? UI_TEXT.examsSetsEl.toastImportPartialSuffix : UI_TEXT.examsSetsEl.toastImportSuccessSuffix;
+                toast.success(UI_TEXT.examsSetsEl.toastImportTitle, `${UI_TEXT.examsSetsEl.toastImportSuccessPrefix}${parsed.length}${suffix}`);
+            } else {
+                toast.error(UI_TEXT.examsSetsEl.toastImportTitle, UI_TEXT.examsSetsEl.toastImportEmpty);
+            }
+
+            if (rowErrors.length > 0) {
+                toast.warning(
+                    UI_TEXT.examsSetsEl.toastImportTitle,
+                    `${UI_TEXT.examsSetsEl.importErrorsHeaderPrefix}${rowErrors.length}${UI_TEXT.examsSetsEl.importErrorsHeaderSuffix}`,
+                );
+            }
+        } catch (error: unknown) {
+            const errObj = error as { message?: string };
+            toast.error(UI_TEXT.examsSetsEl.toastImportTitle, errObj?.message || UI_TEXT.examsSetsEl.toastImportErrorDefault);
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
@@ -282,14 +333,34 @@ export function ExamSetDetailView({ id }: ExamSetDetailViewProps) {
                         {/* Section Header */}
                         <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                             <h3 className="text-[14.5px] font-bold text-slate-800">{UI_TEXT.examsSetsEl.questionsHeader}</h3>
-                            <button
-                                type="button"
-                                onClick={handleCreateQuestion}
-                                className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
-                            >
-                                <Plus className="size-4.5" />
-                                <span>{UI_TEXT.examsSetsEl.btnCreateQuestion}</span>
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <input ref={fileInputRef} type="file" accept={QUIZ_IMPORT_ACCEPT} onChange={handleImportExcel} className="hidden" />
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadTemplate}
+                                    className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-4 py-2.5 text-[13px] font-bold text-purple-700 transition hover:bg-purple-100"
+                                >
+                                    <Download className="size-4" />
+                                    <span>{UI_TEXT.examsSetsEl.downloadTemplateBtn}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isImporting}
+                                    className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-4 py-2.5 text-[13px] font-bold text-purple-700 transition hover:bg-purple-100 disabled:opacity-50"
+                                >
+                                    <Upload className="size-4" />
+                                    <span>{isImporting ? UI_TEXT.examsSetsEl.importingText : UI_TEXT.examsSetsEl.importExcelBtn}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCreateQuestion}
+                                    className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-sm font-bold text-white shadow-xs transition hover:bg-wine/90 active:scale-95"
+                                >
+                                    <Plus className="size-4.5" />
+                                    <span>{UI_TEXT.examsSetsEl.btnCreateQuestion}</span>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Questions list */}

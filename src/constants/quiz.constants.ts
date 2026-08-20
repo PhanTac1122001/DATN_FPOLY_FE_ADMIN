@@ -4,3 +4,4 @@ export const DEFAULT_QUESTION_POINTS = 10;
 export const CREATE_NEW_QUIZ_ACTION = "CREATE_NEW_QUIZ";
 export const QUIZ_IMPORT_ACCEPT = ".xlsx, .xls";
 export const QUIZ_TEMPLATE_FILENAME = "quiz_import_template.xlsx";
+export const CHAR_CODE_CAPITAL_A = 65;
