@@ -8,6 +8,8 @@ export const HTTP_STATUS_UNAUTHORIZED = 401;
 export const HTTP_STATUS_FORBIDDEN = 403;
 /** HTTP status: Conflict (e.g. duplicate resource) */
 export const HTTP_STATUS_CONFLICT = 409;
+/** HTTP status: Unprocessable Entity (nội dung đã lưu còn lỗi, không xử lý được) */
+export const HTTP_STATUS_UNPROCESSABLE_ENTITY = 422;
 /** HTTP status: Too Many Requests */
 export const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
 /** HTTP status: Internal Server Error */

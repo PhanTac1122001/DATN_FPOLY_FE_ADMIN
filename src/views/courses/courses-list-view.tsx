@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, CalendarPlus, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { Award, CalendarPlus, Eye, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import type { Route } from "next";
 import Link from "next/link";
 import { AssignCourseToSemesterModal } from "@/components/application/modals/assign-course-to-semester-modal";
+import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { CourseFormModal } from "@/components/application/modals/course-form-modal";
 import { CourseRpointConfigModal } from "@/components/application/modals/course-rpoint-config-modal";
 import { DeleteCourseModal } from "@/components/application/modals/delete-course-modal";
+import { PublishReportModal } from "@/components/application/modals/publish-report-modal";
 import { TablePagination } from "@/components/application/pagination/table-pagination";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
+import { HTTP_STATUS_UNPROCESSABLE_ENTITY } from "@/constants/http.constants";
 import { DEFAULT_OPTIONS_LIMIT } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { HttpError } from "@/lib/http-client";
 import { createCourse, deleteCourse, getCoursesList, updateCourse } from "@/services/course.service";
+import { publishService } from "@/services/publish.service";
 import { toast } from "@/services/toast.service";
 import type { CourseItem, CreateCoursePayload } from "@/types/course.types";
+import type { PublishIssue, PublishReportEntity } from "@/types/publish.types";
 
 export function CoursesListView() {
     const queryClient = useQueryClient();
@@ -30,6 +36,10 @@ export function CoursesListView() {
     const [courseToDelete, setCourseToDelete] = useState<CourseItem | null>(null);
     const [rpointCourse, setRpointCourse] = useState<CourseItem | null>(null);
     const [assignSemesterCourse, setAssignSemesterCourse] = useState<CourseItem | null>(null);
+    const [publishCourse, setPublishCourse] = useState<CourseItem | null>(null);
+    const [publishReport, setPublishReport] = useState<PublishReportEntity | null>(null);
+    const [isPublishReportOpen, setIsPublishReportOpen] = useState(false);
+    const [isPublishSuccess, setIsPublishSuccess] = useState(false);
 
     const { data: courses = [], isLoading } = useQuery({
         queryKey: ["courses", search],
@@ -66,6 +76,30 @@ export function CoursesListView() {
         },
         onError: (error: Error) => {
             toast.error(UI_TEXT.common.errorTitle, error.message || UI_TEXT.coursesList.toastDeleteError);
+        },
+    });
+
+    const publishMutation = useMutation({
+        mutationFn: (courseId: string) => publishService.publishCourse(courseId),
+        onSuccess: (report) => {
+            setPublishReport(report ?? { errors: [], warnings: [] });
+            setIsPublishSuccess(true);
+            setIsPublishReportOpen(true);
+        },
+        onError: (error: unknown) => {
+            // BE ném 422 khi học liệu đã lưu còn lỗi; filter lift `errors`/`warnings`
+            // ra top-level (exception-filter.ts). Mọi lỗi khác chỉ báo toast.
+            if (error instanceof HttpError && error.status === HTTP_STATUS_UNPROCESSABLE_ENTITY) {
+                const payload = error.payload as { errors?: PublishIssue[]; warnings?: PublishIssue[] } | undefined;
+                setPublishReport({ errors: payload?.errors ?? [], warnings: payload?.warnings ?? [] });
+                setIsPublishSuccess(false);
+                setIsPublishReportOpen(true);
+            } else {
+                toast.error(UI_TEXT.common.errorTitle, UI_TEXT.coursesPage.publishToastErrorDesc);
+            }
+        },
+        onSettled: () => {
+            setPublishCourse(null);
         },
     });
 
@@ -170,6 +204,14 @@ export function CoursesListView() {
                                                 </Link>
                                                 <button
                                                     type="button"
+                                                    onClick={() => setPublishCourse(item)}
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-sky-50 text-sky-600 transition duration-200 hover:bg-sky-600 hover:text-white"
+                                                    title={UI_TEXT.coursesPage.publishTooltip}
+                                                >
+                                                    <Send className="size-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() => setAssignSemesterCourse(item)}
                                                     className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-purple-50 text-purple-600 transition duration-200 hover:bg-purple-600 hover:text-white"
                                                     title={UI_TEXT.coursesPage.assignSemesterTooltip}
@@ -247,6 +289,29 @@ export function CoursesListView() {
             />
 
             <DeleteCourseModal isOpen={isDeleteOpen} onOpenChange={setIsDeleteOpen} course={courseToDelete} onConfirm={handleConfirmDelete} />
+
+            <ConfirmModal
+                isOpen={!!publishCourse}
+                onClose={() => {
+                    if (!publishMutation.isPending) setPublishCourse(null);
+                }}
+                onConfirm={() => {
+                    if (publishCourse) publishMutation.mutate(publishCourse.id);
+                }}
+                title={UI_TEXT.coursesPage.publishConfirmTitle}
+                message={UI_TEXT.coursesPage.publishConfirmMessage}
+                confirmText={UI_TEXT.coursesPage.publishConfirmBtn}
+                cancelText={UI_TEXT.coursesPage.publishCancelBtn}
+                isLoading={publishMutation.isPending}
+            />
+
+            <PublishReportModal
+                isOpen={isPublishReportOpen}
+                onOpenChange={setIsPublishReportOpen}
+                report={publishReport}
+                isPublishSuccess={isPublishSuccess}
+                title={isPublishSuccess ? UI_TEXT.publishReportModal.defaultTitle : UI_TEXT.publishReportModal.publishFailedTitle}
+            />
         </div>
     );
 }
