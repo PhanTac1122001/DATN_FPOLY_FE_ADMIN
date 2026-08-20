@@ -44,6 +44,19 @@ export interface CreateQuizPayload {
     questions: QuizQuestionDto[];
 }
 
+export interface QuizImportRowError {
+    row: number;
+    message: string;
+}
+
+export interface QuizImportExcelResponse {
+    success: boolean;
+    totalImported: number;
+    totalErrors: number;
+    questions: QuizQuestionDto[];
+    errors: QuizImportRowError[];
+}
+
 export interface UpdateQuizPayload {
     title?: string;
     description?: string;

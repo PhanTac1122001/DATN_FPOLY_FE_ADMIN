@@ -31,6 +31,8 @@ export const API_ENDPOINTS = {
     QUIZ: {
         BASE: `${API_PREFIX}/staff/quizzes`,
         BY_ID: (id: string) => `${API_PREFIX}/staff/quizzes/${id}`,
+        IMPORT_EXCEL: `${API_PREFIX}/staff/quizzes/import-excel`,
+        EXCEL_TEMPLATE: `${API_PREFIX}/staff/quizzes/excel-template`,
     },
     SESSION_QUIZ: {
         BASE: `${API_PREFIX}/staff/session-quizzes`,
