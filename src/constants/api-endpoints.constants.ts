@@ -40,6 +40,15 @@ export const API_ENDPOINTS = {
         IMPORT_EXCEL: `${API_PREFIX}/staff/session-quizzes/import-excel`,
         EXCEL_TEMPLATE: `${API_PREFIX}/staff/session-quizzes/excel-template`,
     },
+    FLASHCARD_DECK: {
+        BASE: `${API_PREFIX}/staff/flashcard-decks`,
+        BY_ID: (id: string) => `${API_PREFIX}/staff/flashcard-decks/${id}`,
+        CARDS: (id: string) => `${API_PREFIX}/staff/flashcard-decks/${id}/cards`,
+        CARD_BY_ID: (id: string, cardId: string) => `${API_PREFIX}/staff/flashcard-decks/${id}/cards/${cardId}`,
+        REORDER: (id: string) => `${API_PREFIX}/staff/flashcard-decks/${id}/cards/reorder`,
+        IMPORT_EXCEL: `${API_PREFIX}/staff/flashcard-decks/import-excel`,
+        EXCEL_TEMPLATE: `${API_PREFIX}/staff/flashcard-decks/excel-template`,
+    },
     CHATBOT: {
         PROCESS_DOCUMENTS: `${CHATBOT_PREFIX}/admin/process-documents`,
         PROCESS_DOCUMENTS_EXTRACT: `${CHATBOT_PREFIX}/admin/process-documents/extract`,

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { BookText, FileText, HelpCircle, Layers, Play, Tag, Trash2 } from "lucide-react";
+import { BookText, FileText, HelpCircle, Layers, Play, Sparkles, Tag, Trash2 } from "lucide-react";
+import { FlashcardDeckModal } from "@/components/application/modals/flashcard-deck-modal";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { getFlashcardDeckById } from "@/services/flashcard.service";
 import { sessionTypeService } from "@/services/session-type.service";
 import type { SessionFormProps, SessionTypeOption } from "@/types/courseware.types";
+import { FlashcardDeckStatusEnum, type FlashcardDeckSummary } from "@/types/flashcard.types";
 import { SessionTypeEnum } from "@/types/material.types";
 
 const defaultMaxAiAttempts = 3;
@@ -20,8 +23,34 @@ export function SessionForm({
     onOpenManageTypes,
     onOpenCompletionRule: _onOpenCompletionRule,
     typesReloadToken = 0,
+    sessionId,
+    courseId,
 }: SessionFormProps) {
     const formRef = useRef<HTMLFormElement>(null);
+
+    const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
+    const [flashcardDeck, setFlashcardDeck] = useState<FlashcardDeckSummary | null>(null);
+
+    useEffect(() => {
+        const deckId = fields.flashcardDeckId;
+        if (!deckId) {
+            setFlashcardDeck(null);
+            return;
+        }
+
+        let active = true;
+        getFlashcardDeckById(deckId)
+            .then((deck) => {
+                if (active) setFlashcardDeck(deck);
+            })
+            .catch((err) => {
+                console.warn("Could not load flashcard deck summary:", err);
+                if (active) setFlashcardDeck(null);
+            });
+        return () => {
+            active = false;
+        };
+    }, [fields.flashcardDeckId]);
 
     const [availableTypes, setAvailableTypes] = useState<SessionTypeOption[]>([
         { id: SessionTypeEnum.LY_THUYET, label: UI_TEXT.addSessionModal.sessionTypeTheory, code: SessionTypeEnum.LY_THUYET },
@@ -298,10 +327,58 @@ export function SessionForm({
                                     className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium focus:border-wine focus:outline-none"
                                 />
                             </div>
+
+                            {/* Flashcard */}
+                            <div className="col-span-2 flex flex-col gap-1.5">
+                                <label className="text-sm font-medium text-slate-500">{UI_TEXT.sessionForm.flashcardLabel}</label>
+                                <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="flex size-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                                            <Sparkles className="size-4.5" />
+                                        </span>
+                                        {fields.flashcardDeckId && flashcardDeck ? (
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-slate-800">{flashcardDeck.name}</span>
+                                                <span className="text-xs font-medium text-slate-500">
+                                                    {UI_TEXT.sessionForm.flashcardCardCountPrefix}
+                                                    {flashcardDeck.cardCount}
+                                                    {" • "}
+                                                    {flashcardDeck.status === FlashcardDeckStatusEnum.PUBLISHED
+                                                        ? UI_TEXT.sessionForm.flashcardStatusPublished
+                                                        : UI_TEXT.sessionForm.flashcardStatusDraft}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs font-medium text-slate-400">{UI_TEXT.sessionForm.flashcardEmpty}</span>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFlashcardModalOpen(true)}
+                                        disabled={mode === "create"}
+                                        className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-purple-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <Sparkles className="size-3.5" />
+                                        <span>{UI_TEXT.sessionForm.flashcardManageBtn}</span>
+                                    </button>
+                                </div>
+                                {mode === "create" && <p className="text-xs font-medium text-amber-600">{UI_TEXT.sessionForm.flashcardCreateModeHint}</p>}
+                            </div>
                         </div>
                     </div>
                 </div>
             </form>
+
+            {mode === "edit" && (
+                <FlashcardDeckModal
+                    isOpen={isFlashcardModalOpen}
+                    onClose={() => setIsFlashcardModalOpen(false)}
+                    sessionId={sessionId}
+                    deckId={fields.flashcardDeckId}
+                    courseId={courseId}
+                    onChanged={(deckId) => setFields((prev) => ({ ...prev, flashcardDeckId: deckId }))}
+                />
+            )}
         </div>
     );
 }

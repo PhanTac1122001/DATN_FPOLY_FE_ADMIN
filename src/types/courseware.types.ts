@@ -29,6 +29,7 @@ export interface SessionFields {
     isShowMindmap: boolean;
     description: string;
     maxAiGradeAttempts?: number;
+    flashcardDeckId?: string;
 }
 
 export interface AddSessionModalProps {
@@ -155,6 +156,10 @@ export interface SessionFormProps {
     onOpenCompletionRule?: () => void;
     /** Bump to reload session type options after manage-types changes */
     typesReloadToken?: number;
+    /** Existing session id (edit mode) — required for flashcard Excel import */
+    sessionId?: string;
+    /** Owning course id — passed to the flashcard deck modal */
+    courseId?: string;
 }
 
 export interface SessionPracticeEditorProps {
