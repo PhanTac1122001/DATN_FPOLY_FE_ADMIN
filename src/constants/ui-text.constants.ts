@@ -2953,6 +2953,31 @@ export const UI_TEXT = {
     },
     typeDetailCourse: {
         completionConditions: "Điều kiện hoàn thành",
+        helpButtonLabel: "Hướng dẫn",
+        tooltipCompletionConditions: "Thiết lập điều kiện học viên phải đạt để được tính hoàn thành buổi học.",
+        tooltipMaxAiGrade: "Giới hạn số lần AI được chấm lại bài của học viên.",
+        tooltipDragSession: "Kéo để đổi thứ tự buổi học.",
+    },
+    guidedTour: {
+        common: {
+            next: "Tiếp",
+            prev: "Trước",
+            done: "Xong",
+        },
+        typeDetailCourse: {
+            step1Title: "Khu vực dựng khóa học",
+            step1Desc: "Bên trái là cấu trúc khóa học, bên phải là nơi cấu hình chi tiết cho từng phần.",
+            step2Title: "Cấu trúc khóa học",
+            step2Desc: "Danh sách các buổi học. Bạn có thể kéo-thả để đổi thứ tự.",
+            step3Title: "Thêm buổi học",
+            step3Desc: "Bấm vào đây để thêm một buổi học mới vào khóa học.",
+            step4Title: "Vùng cấu hình",
+            step4Desc: "Chọn một buổi hoặc bài học ở bên trái để cấu hình video, tài liệu đọc hoặc quiz tại đây.",
+            step5Title: "Điều kiện hoàn thành",
+            step5Desc: "Thiết lập điều kiện học viên phải đạt để được tính hoàn thành.",
+            step6Title: "Lưu thay đổi",
+            step6Desc: "Nhớ bấm Lưu sau khi chỉnh sửa. Hệ thống sẽ cảnh báo nếu bạn rời trang khi chưa lưu.",
+        },
     },
     sessionTypeModal: {
         toastCreateSuccess: "Tạo danh mục môn học thành công",

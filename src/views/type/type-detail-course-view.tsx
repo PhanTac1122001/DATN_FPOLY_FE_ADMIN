@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Play, Plus, Save, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CircleHelp, FileText, Play, Plus, Save, ShieldAlert } from "lucide-react";
 import type { Route } from "next";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { SessionTypeModal } from "@/components/application/modals/session-type-modal";
@@ -14,8 +14,11 @@ import { LessonCompletionRuleModal } from "@/components/application/type-detail-
 import { SessionCompletionRuleModal } from "@/components/application/type-detail-course/modals/session-completion-rule-modal";
 import { SessionSelectItem, SessionSelectModal } from "@/components/application/type-detail-course/modals/session-select-modal";
 import { Button } from "@/components/base/buttons/button";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
+import { typeDetailCourseTourSteps } from "@/constants/type-detail-course-tour.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
+import { useGuidedTour } from "@/hooks/use-guided-tour";
 import { getCourseById } from "@/services/course.service";
 import { createSession, deleteSession, getQuizzesList, getSessionsByCourse, updateSession } from "@/services/material.service";
 import { toast } from "@/services/toast.service";
@@ -28,6 +31,7 @@ const defaultMaxAiGradeAttempts = 3;
 export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps) {
     const router = useAppRouter();
     const queryClient = useQueryClient();
+    const { start: startTour } = useGuidedTour(typeDetailCourseTourSteps);
 
     const [selectedLessonId, setSelectedLessonId] = useState("");
     const [selectedTab, setSelectedTab] = useState<"video" | "reading" | "quiz">("video");
@@ -390,6 +394,14 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     </button>
                     <div className="flex items-center gap-2">
                         <h1 className="text-lg font-black tracking-tight text-slate-800">{courseDisplayName}</h1>
+                        <Tooltip title={UI_TEXT.typeDetailCourse.helpButtonLabel} placement="bottom">
+                            <TooltipTrigger
+                                onPress={startTour}
+                                className="flex size-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-wine"
+                            >
+                                <CircleHelp className="size-5" />
+                            </TooltipTrigger>
+                        </Tooltip>
                     </div>
                 </div>
 
@@ -397,6 +409,8 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     {sortedSessions.length > 0 && (
                         <button
                             type="button"
+                            data-tour="completion-conditions"
+                            title={UI_TEXT.typeDetailCourse.tooltipCompletionConditions}
                             onClick={() => {
                                 setIsSessionSelectModalOpen(true);
                             }}
@@ -407,6 +421,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                         </button>
                     )}
                     <Button
+                        data-tour="save"
                         onClick={async () => {
                             if (isAddingSession || editingSession) {
                                 if (sessionSaveRef.current) {
@@ -428,9 +443,9 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
             </div>
 
             {/* Main Content Workspace (Flex layout: Left Panel flush with top header, Right Panel padded) */}
-            <div className="flex min-h-0 flex-1 overflow-hidden">
+            <div data-tour="workspace" className="flex min-h-0 flex-1 overflow-hidden">
                 {/* Left Panel: Cấu trúc khóa học */}
-                <div className="flex h-full w-[340px] shrink-0 flex-col overflow-hidden bg-white p-4 min-[1440px]:w-[380px]">
+                <div data-tour="course-structure" className="flex h-full w-[340px] shrink-0 flex-col overflow-hidden bg-white p-4 min-[1440px]:w-[380px]">
                     {/* Scrollable list of sessions */}
                     <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
                         {sessions.length === 0 ? (
@@ -535,6 +550,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                     {/* Bottom Add Session Button (Full-width button matching Lưu thay đổi color) */}
                     <div className="mt-2 shrink-0 border-t border-slate-100 pt-3">
                         <button
+                            data-tour="add-session"
                             onClick={handleStartAddSession}
                             className="hover:bg-wine-hover flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-4 py-3 text-xs font-black text-white shadow-xs transition duration-150 active:scale-[0.98]"
                         >
@@ -545,7 +561,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 </div>
 
                 {/* Right Panel: Cấu hình bài học / Thêm & Sửa chương */}
-                <div className="h-full flex-1 overflow-hidden bg-slate-50 p-5">
+                <div data-tour="config-panel" className="h-full flex-1 overflow-hidden bg-slate-50 p-5">
                     {isAddingSession ? (
                         <SessionForm
                             mode="create"
