@@ -58,6 +58,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         isShowMindmap: false,
         description: "",
         maxAiGradeAttempts: 3,
+        flashcardDeckId: undefined,
     };
 
     const [newSessionFields, setNewSessionFields] = useState<SessionFields>(initialSessionFields);
@@ -95,6 +96,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         isShowMindmap: !!fields.isShowMindmap,
         description: (fields.description || "").trim(),
         maxAiGradeAttempts: fields.maxAiGradeAttempts && Number(fields.maxAiGradeAttempts) >= 1 ? Number(fields.maxAiGradeAttempts) : defaultMaxAiGradeAttempts,
+        flashcardDeckId: fields.flashcardDeckId || undefined,
     });
 
     const isSessionDirty = isAddingSession
@@ -244,6 +246,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 isShowMindmap: ses.isShowMindmap ?? false,
                 description: ses.description || "",
                 maxAiGradeAttempts: ses.maxAiGradeAttempts ?? defaultMaxAiGradeAttempts,
+                flashcardDeckId: ses.flashcardDeckId,
             };
             setEditSessionFields(fields);
             setSavedSessionFields(fields);
@@ -525,6 +528,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                     isShowMindmap: !!session.isShowMindmap,
                                                     description: session.description || "",
                                                     maxAiGradeAttempts: session.maxAiGradeAttempts ?? defaultMaxAiGradeAttempts,
+                                                    flashcardDeckId: session.flashcardDeckId,
                                                 };
                                                 setEditingSession(session);
                                                 setEditSessionFields(fields);
@@ -572,6 +576,7 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             isDirty={isSessionDirty}
                             onOpenManageTypes={() => setIsSessionTypeModalOpen(true)}
                             typesReloadToken={sessionTypesReloadToken}
+                            courseId={courseId}
                             onRegisterSave={(fn) => {
                                 sessionSaveRef.current = fn;
                             }}
@@ -585,6 +590,8 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                             isDirty={isSessionDirty}
                             onOpenManageTypes={() => setIsSessionTypeModalOpen(true)}
                             typesReloadToken={sessionTypesReloadToken}
+                            sessionId={editingSession.id}
+                            courseId={courseId}
                             onOpenCompletionRule={() => {
                                 setRuleTargetSession(null);
                                 setIsCompletionRuleModalOpen(true);

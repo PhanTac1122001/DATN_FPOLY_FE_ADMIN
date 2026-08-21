@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { BookText, FileText, HelpCircle, Play, X } from "lucide-react";
+import { BookText, FileText, HelpCircle, Play, Sparkles, X } from "lucide-react";
+import { FlashcardDeckModal } from "@/components/application/modals/flashcard-deck-modal";
 import { Button } from "@/components/base/buttons/button";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { SessionKindEnum } from "@/constants/class.constants";
@@ -17,6 +18,7 @@ export function EditSessionModal({ isOpen, onOpenChange, editingSession, setEdit
         { id: SessionTypeEnum.KIEM_TRA, label: UI_TEXT.addSessionModal.sessionTypeQuiz, code: SessionTypeEnum.KIEM_TRA },
     ]);
     const [typesFromApi, setTypesFromApi] = useState(false);
+    const [isFlashcardModalOpen, setIsFlashcardModalOpen] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -211,6 +213,37 @@ export function EditSessionModal({ isOpen, onOpenChange, editingSession, setEdit
                                                 className="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold focus:border-wine focus:outline-none"
                                             />
                                         </div>
+
+                                        {/* Flashcard */}
+                                        <div className="col-span-2 flex flex-col gap-1.5">
+                                            <label className="text-xs font-medium text-slate-500 uppercase">{UI_TEXT.sessionForm.flashcardLabel}</label>
+                                            <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50/50 p-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className="flex size-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                                                        <Sparkles className="size-4" />
+                                                    </span>
+                                                    {editingSession.flashcardDeckId && editingSession.flashcardDeck ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-xs font-bold text-slate-800">{editingSession.flashcardDeck.name}</span>
+                                                            <span className="text-[11px] font-medium text-slate-500">
+                                                                {UI_TEXT.sessionForm.flashcardCardCountPrefix}
+                                                                {editingSession.flashcardDeck.cardCount}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[11px] font-medium text-slate-400">{UI_TEXT.sessionForm.flashcardEmpty}</span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsFlashcardModalOpen(true)}
+                                                    className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-purple-700"
+                                                >
+                                                    <Sparkles className="size-3.5" />
+                                                    <span>{UI_TEXT.sessionForm.flashcardManageBtn}</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -235,6 +268,17 @@ export function EditSessionModal({ isOpen, onOpenChange, editingSession, setEdit
                     </form>
                 </Dialog>
             </CustomModal.Content>
+
+            {editingSession && (
+                <FlashcardDeckModal
+                    isOpen={isFlashcardModalOpen}
+                    onClose={() => setIsFlashcardModalOpen(false)}
+                    sessionId={editingSession.id}
+                    deckId={editingSession.flashcardDeckId}
+                    courseId={editingSession.courseId}
+                    onChanged={(deckId) => setEditingSession((prev) => (prev ? { ...prev, flashcardDeckId: deckId } : null))}
+                />
+            )}
         </CustomModal.Root>
     );
 }

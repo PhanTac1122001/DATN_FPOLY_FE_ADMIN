@@ -120,6 +120,12 @@ export interface Session {
     practices?: SessionPractice[];
     completionLogic?: SessionCompletionLogic;
     maxAiGradeAttempts?: number;
+    flashcardDeckId?: string;
+    flashcardDeck?: {
+        id: string;
+        name: string;
+        cardCount: number;
+    } | null;
 }
 
 export interface Course {
