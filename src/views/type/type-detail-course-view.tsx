@@ -407,19 +407,18 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
 
                 <div className="flex items-center gap-3">
                     {sortedSessions.length > 0 && (
-                        <Tooltip title={UI_TEXT.typeDetailCourse.tooltipCompletionConditions} placement="bottom">
-                            <button
-                                type="button"
-                                data-tour="completion-conditions"
-                                onClick={() => {
-                                    setIsSessionSelectModalOpen(true);
-                                }}
-                                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-brand-300 px-4 py-2 text-xs font-bold text-brand-800 shadow-xs transition hover:bg-brand-50"
-                            >
-                                <ShieldAlert className="size-4 text-brand-600" />
-                                <span>{UI_TEXT.typeDetailCourse.completionConditions}</span>
-                            </button>
-                        </Tooltip>
+                        <button
+                            type="button"
+                            data-tour="completion-conditions"
+                            title={UI_TEXT.typeDetailCourse.tooltipCompletionConditions}
+                            onClick={() => {
+                                setIsSessionSelectModalOpen(true);
+                            }}
+                            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-brand-300 px-4 py-2 text-xs font-bold text-brand-800 shadow-xs transition hover:bg-brand-50"
+                        >
+                            <ShieldAlert className="size-4 text-brand-600" />
+                            <span>{UI_TEXT.typeDetailCourse.completionConditions}</span>
+                        </button>
                     )}
                     <Button
                         data-tour="save"
