@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { BookText, FileText, HelpCircle, Layers, Play, Tag, Trash2 } from "lucide-react";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { sessionTypeService } from "@/services/session-type.service";
 import type { SessionFormProps, SessionTypeOption } from "@/types/courseware.types";
@@ -117,7 +118,14 @@ export function SessionForm({
                             </div>
 
                             <div className="col-span-4 flex flex-col gap-1.5">
-                                <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.maxAiGradeAttemptsLabel}</label>
+                                <label className="flex items-center gap-1 text-sm font-medium text-slate-500">
+                                    {UI_TEXT.courseDetail.maxAiGradeAttemptsLabel}
+                                    <Tooltip title={UI_TEXT.typeDetailCourse.tooltipMaxAiGrade} placement="top">
+                                        <TooltipTrigger isDisabled={false} className="cursor-pointer text-slate-400 transition hover:text-slate-600">
+                                            <HelpCircle className="size-3.5" />
+                                        </TooltipTrigger>
+                                    </Tooltip>
+                                </label>
                                 <input
                                     type="number"
                                     min={1}
