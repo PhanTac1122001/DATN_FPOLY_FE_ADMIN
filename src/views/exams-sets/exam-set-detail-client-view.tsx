@@ -20,7 +20,7 @@ export function ExamSetDetailClientView({ id }: ExamSetDetailClientViewProps) {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-cream">
+            <div className="flex items-center justify-center bg-cream">
                 <div className="flex flex-col items-center gap-4">
                     <div className="size-8 animate-spin rounded-full border-4 border-slate-200 border-t-wine" />
                 </div>
@@ -33,7 +33,7 @@ export function ExamSetDetailClientView({ id }: ExamSetDetailClientViewProps) {
     }
 
     return (
-        <AdminLayout title={UI_TEXT.examsSetsEl.title} subtitle={UI_TEXT.examsSetsEl.subtitle} disableScroll={true}>
+        <AdminLayout title={UI_TEXT.examsSetsEl.title} subtitle={UI_TEXT.examsSetsEl.subtitle}>
             <ExamSetDetailView id={id} />
         </AdminLayout>
     );

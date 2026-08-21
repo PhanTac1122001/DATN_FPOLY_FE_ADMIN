@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { AlertTriangle, Eye, Plus } from "lucide-react";
+import { AlertTriangle, Pencil, Plus } from "lucide-react";
 import { SystemModal } from "@/components/application/modals/system-modal";
 import { TablePagination } from "@/components/application/pagination/table-pagination";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
@@ -118,10 +118,10 @@ export function SystemsView() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleOpenEdit(system)}
-                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-sky-50 text-sky-600 transition hover:bg-sky-600 hover:text-white"
+                                                    className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-emerald-50 text-emerald-600 transition duration-200 hover:bg-emerald-600 hover:text-white"
                                                     title={UI_TEXT.trainingSystem.viewDetails}
                                                 >
-                                                    <Eye className="size-4" />
+                                                    <Pencil className="size-4" />
                                                 </button>
                                             </div>
                                         </td>

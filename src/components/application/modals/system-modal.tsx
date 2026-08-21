@@ -346,29 +346,31 @@ export function SystemModal({ isOpen, onClose, system }: SystemModalProps) {
                                     />
                                 </div>
 
-                                <div className="mt-2 flex shrink-0 items-center justify-between">
-                                    <span className="text-sm font-bold text-slate-700">{UI_TEXT.trainingSystem.labelMajorsAndSemesters}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => appendSpecialize({ name: "", semesters: [] })}
-                                        className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-blue-600 transition hover:text-blue-700"
-                                    >
-                                        <Plus className="size-4" />
-                                        <span>{UI_TEXT.trainingSystem.btnAddMajor}</span>
-                                    </button>
-                                </div>
+                                <div className="flex flex-col gap-2.5">
+                                    <div className="flex shrink-0 items-center justify-between">
+                                        <span className="text-sm font-bold text-slate-700">{UI_TEXT.trainingSystem.labelMajorsAndSemesters}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => appendSpecialize({ name: "", semesters: [] })}
+                                            className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-blue-600 transition hover:text-blue-700"
+                                        >
+                                            <Plus className="size-4" />
+                                            <span>{UI_TEXT.trainingSystem.btnAddMajor}</span>
+                                        </button>
+                                    </div>
 
-                                <div className="flex flex-col gap-4">
-                                    {specializeFields.map((field, specIndex) => (
-                                        <SpecializeCard
-                                            key={field.id}
-                                            specIndex={specIndex}
-                                            control={control}
-                                            errors={errors}
-                                            clearErrors={clearErrors}
-                                            removeSpecialize={removeSpecialize}
-                                        />
-                                    ))}
+                                    <div className="flex flex-col gap-3">
+                                        {specializeFields.map((field, specIndex) => (
+                                            <SpecializeCard
+                                                key={field.id}
+                                                specIndex={specIndex}
+                                                control={control}
+                                                errors={errors}
+                                                clearErrors={clearErrors}
+                                                removeSpecialize={removeSpecialize}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

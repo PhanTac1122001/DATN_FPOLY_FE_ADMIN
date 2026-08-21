@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/layout/admin/admin-layout";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAppRouter } from "@/hooks/use-app-router";
 import { useAuth } from "@/hooks/use-auth";
+import { RoleEnum } from "@/types/staff.types";
 import { StaffListView } from "./staff-list-view";
 
 export function StaffListClientView() {
@@ -12,8 +13,16 @@ export function StaffListClientView() {
     const router = useAppRouter();
 
     useEffect(() => {
-        if (!isLoading && !user) {
-            router.replace("/login");
+        if (!isLoading) {
+            if (!user) {
+                router.replace("/login");
+            } else {
+                const userRoles = user.roles || (user.role ? [user.role] : []);
+                const hasAccess = userRoles.includes(RoleEnum.ADMIN) || userRoles.includes(RoleEnum.MANAGER);
+                if (!hasAccess) {
+                    router.replace("/");
+                }
+            }
         }
     }, [user, isLoading, router]);
 
@@ -28,6 +37,12 @@ export function StaffListClientView() {
     }
 
     if (!user) {
+        return null;
+    }
+
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    const hasAccess = userRoles.includes(RoleEnum.ADMIN) || userRoles.includes(RoleEnum.MANAGER);
+    if (!hasAccess) {
         return null;
     }
 

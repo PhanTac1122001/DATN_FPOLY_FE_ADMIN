@@ -36,3 +36,31 @@ export function wrapText(text: string, maxLength: number) {
 export const sanitizeHtml = (text: string): string => {
     return text.replace(/<[^>]*>?/gm, "");
 };
+
+const defaultMaxCleanTextLength = 140;
+
+export function extractCleanTextFromHtml(html: string, maxLength = defaultMaxCleanTextLength): string {
+    if (!html) return "";
+    const plain = html
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<\/p>/gi, " ")
+        .replace(/<\/h[1-6]>/gi, " ")
+        .replace(/<\/li>/gi, " ")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/\*\*/g, "")
+        .replace(/__/g, "")
+        .replace(/~~/g, "")
+        .replace(/`/g, "")
+        .replace(/(^|\s)#+\s+/g, "$1")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (plain.length <= maxLength) return plain;
+    return `${plain.slice(0, maxLength).trim()}…`;
+}

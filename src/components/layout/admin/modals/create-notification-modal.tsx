@@ -19,6 +19,7 @@ import type { ClassEntity } from "@/types/class.types";
 import type { CreateNotificationModalProps, NotificationCategory } from "@/types/notification.types";
 import type { Student } from "@/types/student.types";
 import type { System } from "@/types/system.types";
+import { extractCleanTextFromHtml } from "@/utils/string.utils";
 
 export function CreateNotificationModal({ isOpen, onClose, onSuccess, notification }: CreateNotificationModalProps) {
     const [categories, setCategories] = useState<NotificationCategory[]>([]);
@@ -139,7 +140,7 @@ export function CreateNotificationModal({ isOpen, onClose, onSuccess, notificati
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        if (!title.trim() || !message.trim() || !categoryCode) {
+        if (!title.trim() || (!message.trim() && !bodyText.trim()) || !categoryCode) {
             setError(UI_TEXT.notifications.errRequired);
             return;
         }
@@ -189,6 +190,7 @@ export function CreateNotificationModal({ isOpen, onClose, onSuccess, notificati
         }
 
         const body = bodyText.trim() ? [bodyText.trim()] : undefined;
+        const resolvedMessage = message.trim() || extractCleanTextFromHtml(bodyText.trim()) || title.trim();
 
         try {
             setSubmitting(true);
@@ -196,7 +198,7 @@ export function CreateNotificationModal({ isOpen, onClose, onSuccess, notificati
                 await notificationService.updateStaffNotification(notification.id, {
                     categoryCode,
                     title: title.trim(),
-                    message: message.trim(),
+                    message: resolvedMessage,
                     body,
                     isPinned,
                     studentIds: requiresStudents ? resolvedStudentIds : undefined,
@@ -206,7 +208,7 @@ export function CreateNotificationModal({ isOpen, onClose, onSuccess, notificati
                 await notificationService.createStaffNotification({
                     categoryCode,
                     title: title.trim(),
-                    message: message.trim(),
+                    message: resolvedMessage,
                     body,
                     isPinned,
                     studentIds: requiresStudents ? resolvedStudentIds : undefined,
@@ -484,7 +486,7 @@ export function CreateNotificationModal({ isOpen, onClose, onSuccess, notificati
 
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-sm font-semibold text-slate-700">
-                                    {UI_TEXT.notifications.messageLabel} <span className="font-bold text-red-500">{"*"}</span>
+                                    {UI_TEXT.notifications.messageLabel} {!bodyText.trim() && <span className="font-bold text-red-500">{"*"}</span>}
                                 </label>
                                 <textarea
                                     value={message}

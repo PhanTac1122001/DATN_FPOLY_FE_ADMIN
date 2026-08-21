@@ -171,9 +171,14 @@ export function AssignCourseModal({ isOpen, onOpenChange, systemName, onAssign }
                             {UI_TEXT.trainingSystem.assignCourseModal.selectedSuffix}
                         </span>
                         <div className="flex items-center gap-3">
-                            <Button type="button" color="secondary-gray" size="md" onClick={() => onOpenChange(false)} isDisabled={isAssigning}>
+                            <button
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                                disabled={isAssigning}
+                                className="cursor-pointer justify-center rounded-full border border-slate-200 bg-white px-5 py-2 text-center text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
                                 {UI_TEXT.trainingSystem.assignCourseModal.btnCancel}
-                            </Button>
+                            </button>
                             <Button
                                 color="primary"
                                 size="md"

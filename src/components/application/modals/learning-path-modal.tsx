@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, AlertTriangle, BookOpen, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, BookOpen, Plus, Trash2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { Button } from "@/components/base/buttons/button";
@@ -10,13 +10,7 @@ import { Select } from "@/components/base/select/select";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { LearningPathSourceEnum } from "@/constants/student.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
-import {
-    assignLearningPathCourse,
-    getStaffCoursesList,
-    getStudentLearningPath,
-    resyncLearningPath,
-    unassignLearningPathCourse,
-} from "@/services/student.service";
+import { assignLearningPathCourse, getStaffCoursesList, getStudentLearningPath, unassignLearningPathCourse } from "@/services/student.service";
 import { toast } from "@/services/toast.service";
 import type { LearningPathItem, Student } from "@/types/student.types";
 
@@ -61,17 +55,6 @@ export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolea
         },
     });
 
-    const resyncMutation = useMutation({
-        mutationFn: () => resyncLearningPath(student!.id),
-        onSuccess: () => {
-            toast.success(UI_TEXT.learningPathModal.toastResyncSuccessTitle, UI_TEXT.learningPathModal.toastResyncSuccessDesc);
-            queryClient.invalidateQueries({ queryKey: ["student-learning-path", student?.id] });
-        },
-        onError: (e: Error) => {
-            toast.error(UI_TEXT.learningPathModal.toastResyncErrorTitle, e.message || UI_TEXT.learningPathModal.toastResyncErrorDesc);
-        },
-    });
-
     const courseOptions = courses.map((crs) => ({
         id: crs.id,
         label: crs.courseCode ? `[${crs.courseCode}] ${crs.name}` : crs.name,
@@ -97,15 +80,6 @@ export function LearningPathModal({ isOpen, onClose, student }: { isOpen: boolea
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button
-                                color="secondary"
-                                onClick={() => resyncMutation.mutate()}
-                                isLoading={resyncMutation.isPending}
-                                className="gap-1.5 border-none bg-slate-100 text-xs text-slate-700 hover:bg-slate-200"
-                                iconLeading={<RefreshCw className="size-3.5 text-slate-500" />}
-                            >
-                                {UI_TEXT.learningPathModal.resyncBtn}
-                            </Button>
                             <button onClick={onClose} className="cursor-pointer rounded-lg p-1 transition hover:bg-slate-100">
                                 <X className="size-5 text-slate-400" />
                             </button>

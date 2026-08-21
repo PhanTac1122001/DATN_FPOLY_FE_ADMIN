@@ -17,6 +17,13 @@ export enum ApplicationStatusEnum {
     REJECTED = "REJECTED",
 }
 
+export enum SlaStatusFilterEnum {
+    ALL = "ALL",
+    OVERDUE = "OVERDUE",
+    WARNING = "WARNING",
+    OK = "OK",
+}
+
 export enum ExamTypeEnum {
     RE_TAKE = "RE_TAKE",
     SUPPLEMENTARY = "SUPPLEMENTARY",
@@ -86,6 +93,8 @@ export interface FilterApplicationQuery {
     courseId?: string;
     status?: ApplicationStatusEnum | "ALL";
     search?: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 export interface CreateApplicationDto {

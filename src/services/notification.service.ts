@@ -32,6 +32,25 @@ export const notificationService = {
         return { items: [], totalItems: 0, limit: defaultLimit, offset: 0 };
     },
 
+    listReceivedNotifications: async (params?: { limit?: number; offset?: number }): Promise<PaginatedNotificationsResponse> => {
+        const query = new URLSearchParams();
+        if (params?.limit !== undefined) query.set("limit", String(params.limit));
+        if (params?.offset !== undefined) query.set("offset", String(params.offset));
+        const queryString = query.toString() ? `?${query.toString()}` : "";
+
+        const response = await httpClient<any>(`/staff/notifications/received${queryString}`, { method: HttpMethod.GET });
+        const raw = response?.data ?? response;
+        if (raw && typeof raw === "object") {
+            return {
+                items: Array.isArray(raw.items) ? raw.items : Array.isArray(raw) ? raw : [],
+                totalItems: typeof raw.totalItems === "number" ? raw.totalItems : raw.items?.length || 0,
+                limit: raw.limit || params?.limit || defaultLimit,
+                offset: raw.offset || params?.offset || 0,
+            };
+        }
+        return { items: [], totalItems: 0, limit: defaultLimit, offset: 0 };
+    },
+
     createStaffNotification: async (dto: CreateStaffNotificationDto): Promise<LmsNotificationEntity> => {
         const response = await httpClient<any>("/staff/notifications", {
             method: HttpMethod.POST,

@@ -1,18 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Eye, FileText, FolderOpen, RotateCcw, XCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Calendar, CheckCircle2, Eye, FileText, FolderOpen, RotateCcw, Timer, XCircle } from "lucide-react";
 import { ApplicationDetailModal } from "@/components/application/modals/application-detail-modal";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Select } from "@/components/base/select/select";
 import { AdminLayout } from "@/components/layout/admin/admin-layout";
+import { DEFAULT_SLA_HOURS, SLA_TICK_INTERVAL_MS } from "@/constants/sla.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { useAuth } from "@/hooks/use-auth";
 import { applicationApprovalService } from "@/services/application-approval.service";
 import { getCoursesList } from "@/services/course.service";
 import { toast } from "@/services/toast.service";
-import { type ApplicationItem, type ApplicationStats, ApplicationStatusEnum, ApplicationTypeEnum, ExamTypeEnum } from "@/types/application-approval.types";
+import {
+    type ApplicationItem,
+    type ApplicationStats,
+    ApplicationStatusEnum,
+    ApplicationTypeEnum,
+    ExamTypeEnum,
+    SlaStatusFilterEnum,
+} from "@/types/application-approval.types";
 import { cx } from "@/utils/cx";
+import { calculateWorkingSLA } from "@/utils/sla.utils";
 
 export function ApplicationApprovalsView() {
     const { isLoading: isAuthLoading } = useAuth();
@@ -25,6 +34,18 @@ export function ApplicationApprovalsView() {
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [selectedSemester, setSelectedSemester] = useState<string>("");
     const [selectedCourse, setSelectedCourse] = useState<string>("");
+    const [selectedSlaFilter, setSelectedSlaFilter] = useState<SlaStatusFilterEnum>(SlaStatusFilterEnum.ALL);
+    const [startDate, setStartDate] = useState<string>("");
+    const [endDate, setEndDate] = useState<string>("");
+
+    // Live SLA countdown tick (updates every 60s)
+    const [, setSlaTick] = useState<number>(0);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setSlaTick((t) => t + 1);
+        }, SLA_TICK_INTERVAL_MS);
+        return () => clearInterval(interval);
+    }, []);
 
     // Data & Stats states
     const [applications, setApplications] = useState<ApplicationItem[]>([]);
@@ -54,6 +75,8 @@ export function ApplicationApprovalsView() {
                     search: searchQuery,
                     semesterId: selectedSemester || undefined,
                     courseId: selectedCourse || undefined,
+                    startDate: startDate || undefined,
+                    endDate: endDate || undefined,
                 }),
                 applicationApprovalService.getStats(),
             ]);
@@ -64,7 +87,7 @@ export function ApplicationApprovalsView() {
         } finally {
             setIsLoading(false);
         }
-    }, [activeTab, selectedStatus, searchQuery, selectedSemester, selectedCourse]);
+    }, [activeTab, selectedStatus, searchQuery, selectedSemester, selectedCourse, startDate, endDate]);
 
     useEffect(() => {
         fetchData();
@@ -85,12 +108,43 @@ export function ApplicationApprovalsView() {
             ? coursesList
             : Array.from(new Set(applications.map((item) => item.courseName).filter(Boolean))).map((name) => ({ id: name!, label: name! }));
 
+    // SLA Stats calculation
+    const slaStats = useMemo(() => {
+        let overdue = 0;
+        let warning = 0;
+        let ok = 0;
+        applications.forEach((item) => {
+            if (item.status === ApplicationStatusEnum.PENDING) {
+                const sla = calculateWorkingSLA(item.submittedAt);
+                if (sla.isOverdue) overdue++;
+                else if (sla.isWarning) warning++;
+                else ok++;
+            }
+        });
+        return { overdue, warning, ok };
+    }, [applications]);
+
+    // Filter by SLA status
+    const filteredApplications = useMemo(() => {
+        if (selectedSlaFilter === SlaStatusFilterEnum.ALL) return applications;
+        return applications.filter((item) => {
+            const sla = calculateWorkingSLA(item.submittedAt, DEFAULT_SLA_HOURS, item.processedAt);
+            if (selectedSlaFilter === SlaStatusFilterEnum.OVERDUE) return sla.isOverdue;
+            if (selectedSlaFilter === SlaStatusFilterEnum.WARNING) return sla.isWarning;
+            if (selectedSlaFilter === SlaStatusFilterEnum.OK) return !sla.isOverdue && !sla.isWarning;
+            return true;
+        });
+    }, [applications, selectedSlaFilter]);
+
     const handleResetFilters = () => {
         setActiveTab(ApplicationTypeEnum.ALL);
         setSelectedStatus(ApplicationStatusEnum.ALL);
         setSearchQuery("");
         setSelectedSemester("");
         setSelectedCourse("");
+        setSelectedSlaFilter(SlaStatusFilterEnum.ALL);
+        setStartDate("");
+        setEndDate("");
         setCurrentPage(1);
     };
 
@@ -115,11 +169,11 @@ export function ApplicationApprovalsView() {
     };
 
     // Pagination calculation
-    const totalItems = applications.length;
+    const totalItems = filteredApplications.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const validCurrentPage = Math.min(currentPage, totalPages);
     const startIdx = (validCurrentPage - 1) * pageSize;
-    const paginatedList = applications.slice(startIdx, startIdx + pageSize);
+    const paginatedList = filteredApplications.slice(startIdx, startIdx + pageSize);
 
     if (isAuthLoading) {
         return (
@@ -133,7 +187,7 @@ export function ApplicationApprovalsView() {
         <AdminLayout title={UI_TEXT.applicationApprovals.title} subtitle={UI_TEXT.applicationApprovals.subtitle} disableScroll={true}>
             <div className="flex min-h-0 w-full flex-1 flex-col gap-6">
                 {/* Soft Tinted Stats Grid */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <div
                         onClick={() => setSelectedStatus(ApplicationStatusEnum.ALL)}
                         className={cx(
@@ -197,6 +251,44 @@ export function ApplicationApprovalsView() {
                         <div className="text-[11px] font-bold tracking-wider text-rose-700 uppercase">{UI_TEXT.applicationApprovals.statsRejected}</div>
                         <div className="mt-1.5 text-3xl leading-none font-extrabold text-rose-900">{stats.rejectedCount}</div>
                         <div className="mt-1.5 text-xs font-medium text-rose-600/90">{UI_TEXT.applicationApprovals.statsRejectedDesc}</div>
+                    </div>
+
+                    <div
+                        onClick={() =>
+                            setSelectedSlaFilter((prev) => (prev === SlaStatusFilterEnum.OVERDUE ? SlaStatusFilterEnum.ALL : SlaStatusFilterEnum.OVERDUE))
+                        }
+                        className={cx(
+                            "relative cursor-pointer overflow-hidden rounded-2xl border p-4.5 transition-all duration-200",
+                            selectedSlaFilter === SlaStatusFilterEnum.OVERDUE
+                                ? "border-purple-400 bg-purple-100/80 shadow-xs ring-2 ring-purple-400/30"
+                                : "border-purple-200/70 bg-purple-50/70 hover:border-purple-300 hover:bg-purple-100/50",
+                        )}
+                    >
+                        <div className="absolute top-4 right-4 flex size-7 items-center justify-center rounded-full bg-purple-100/90 text-purple-600">
+                            <Timer className="size-4 text-purple-600" />
+                        </div>
+                        <div className="mt-1.5 flex items-baseline gap-2">
+                            <span className="text-3xl leading-none font-extrabold text-purple-900">{slaStats.overdue}</span>
+                            {slaStats.warning > 0 && (
+                                <span className="text-xs font-bold text-amber-700">
+                                    {"("}
+                                    {slaStats.warning} {UI_TEXT.applicationApprovals.upcomingSuffix}
+                                </span>
+                            )}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-purple-600/90">
+                            {slaStats.overdue > 0 ? (
+                                <>
+                                    <AlertTriangle className="size-3.5 shrink-0 text-amber-600" />
+                                    <span>{UI_TEXT.applicationApprovals.hasOverdue}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
+                                    <span>{UI_TEXT.applicationApprovals.onTime}</span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -263,6 +355,36 @@ export function ApplicationApprovalsView() {
                                     </Select.ComboBox>
                                 </div>
 
+                                {/* Date Range Picker */}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 px-3 py-1.5 text-xs transition focus-within:border-wine focus-within:bg-white focus-within:ring-1 focus-within:ring-wine">
+                                        <Calendar className="size-3.5 shrink-0 text-slate-400" />
+                                        <span className="font-semibold whitespace-nowrap text-slate-500">{UI_TEXT.applicationApprovals.fromLabel}</span>
+                                        <input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={(e) => {
+                                                setStartDate(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
+                                            className="cursor-pointer bg-transparent text-xs font-medium text-slate-800 outline-none"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50/70 px-3 py-1.5 text-xs transition focus-within:border-wine focus-within:bg-white focus-within:ring-1 focus-within:ring-wine">
+                                        <Calendar className="size-3.5 shrink-0 text-slate-400" />
+                                        <span className="font-semibold whitespace-nowrap text-slate-500">{UI_TEXT.applicationApprovals.toLabel}</span>
+                                        <input
+                                            type="date"
+                                            value={endDate}
+                                            onChange={(e) => {
+                                                setEndDate(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
+                                            className="cursor-pointer bg-transparent text-xs font-medium text-slate-800 outline-none"
+                                        />
+                                    </div>
+                                </div>
+
                                 <button
                                     type="button"
                                     onClick={handleResetFilters}
@@ -293,6 +415,7 @@ export function ApplicationApprovalsView() {
                                         <th className="px-5 py-3.5 font-bold whitespace-nowrap">{UI_TEXT.applicationApprovals.thType}</th>
                                         <th className="px-5 py-3.5 font-bold whitespace-nowrap">{UI_TEXT.applicationApprovals.thCourseSemester}</th>
                                         <th className="px-5 py-3.5 font-bold whitespace-nowrap">{UI_TEXT.applicationApprovals.thSubmittedAt}</th>
+                                        <th className="px-5 py-3.5 font-bold whitespace-nowrap">{UI_TEXT.applicationApprovals.responseDuration}</th>
                                         <th className="px-5 py-3.5 text-center font-bold whitespace-nowrap">{UI_TEXT.applicationApprovals.thStatus}</th>
                                         <th className="w-[140px] px-5 py-3.5 text-center font-bold whitespace-nowrap">
                                             {UI_TEXT.applicationApprovals.thAction}
@@ -356,6 +479,52 @@ export function ApplicationApprovalsView() {
                                                         <span className="truncate">{item.attachmentName}</span>
                                                     </a>
                                                 )}
+                                            </td>
+                                            <td className="px-5 py-3.5 whitespace-nowrap">
+                                                {(() => {
+                                                    const sla = calculateWorkingSLA(item.submittedAt, DEFAULT_SLA_HOURS, item.processedAt);
+                                                    if (item.status === ApplicationStatusEnum.PENDING) {
+                                                        return (
+                                                            <div className="flex flex-col items-start gap-0.5">
+                                                                <span
+                                                                    className={cx(
+                                                                        "inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] shadow-2xs",
+                                                                        sla.statusClass,
+                                                                    )}
+                                                                    title={`${UI_TEXT.applicationApprovals.deadlineLabel} ${sla.formattedDeadline}`}
+                                                                >
+                                                                    <sla.badgeIcon className="size-3.5 shrink-0" />
+                                                                    <span>{sla.statusLabel}</span>
+                                                                </span>
+                                                                <span className="text-[10px] font-medium text-slate-400">
+                                                                    {UI_TEXT.applicationApprovals.deadlineLabel} {sla.formattedDeadline}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <span
+                                                            className={cx(
+                                                                "inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold",
+                                                                sla.isOverdue
+                                                                    ? "border border-rose-200 bg-rose-50 text-rose-700"
+                                                                    : "border border-emerald-200 bg-emerald-50 text-emerald-700",
+                                                            )}
+                                                        >
+                                                            {sla.isOverdue ? (
+                                                                <>
+                                                                    <XCircle className="size-3.5 shrink-0" />
+                                                                    <span>{UI_TEXT.applicationApprovals.overdueStatus}</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CheckCircle2 className="size-3.5 shrink-0" />
+                                                                    <span>{UI_TEXT.applicationApprovals.passedStatus}</span>
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-5 py-3.5 text-center whitespace-nowrap">
                                                 {item.status === ApplicationStatusEnum.APPROVED ? (

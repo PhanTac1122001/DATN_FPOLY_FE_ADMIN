@@ -8,6 +8,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { diemItems, dtItems, elearningItems } from "@/constants/admin-sidebar.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { useAuth } from "@/hooks/use-auth";
 import { useLogout } from "@/hooks/use-logout";
 import { cx } from "@/utils/cx";
 import { isGroupActive, isRouteActive } from "@/utils/route.utils";
@@ -35,14 +36,26 @@ const pathSegmentsLimit = 3;
 
 export function AdminSidebar() {
     const pathname = usePathname();
+    const { user } = useAuth();
     const { logout, isLoggingOut } = useLogout();
+
+    const userRoles = user?.roles || (user?.role ? [user.role] : []);
+    const hasRoleAccess = (allowedRoles?: string[]) => {
+        if (!allowedRoles || allowedRoles.length === 0) return true;
+        if (!user) return false;
+        return allowedRoles.some((role) => userRoles.includes(role));
+    };
+
+    const visibleDtItems = dtItems.filter((item) => hasRoleAccess(item.roles));
+    const visibleElearningItems = elearningItems.filter((item) => hasRoleAccess(item.roles));
+    const visibleDiemItems = diemItems.filter((item) => hasRoleAccess(item.roles));
 
     const isCourseDetailPage =
         pathname.startsWith("/elearning/") || (pathname.startsWith("/type/") && pathname.split("/").filter(Boolean).length >= pathSegmentsLimit);
 
-    const isDtActive = isGroupActive(pathname, dtItems);
-    const isElearningActive = isGroupActive(pathname, elearningItems) || pathname.startsWith("/elearning");
-    const isDiemActive = isGroupActive(pathname, diemItems);
+    const isDtActive = isGroupActive(pathname, visibleDtItems);
+    const isElearningActive = isGroupActive(pathname, visibleElearningItems) || pathname.startsWith("/elearning");
+    const isDiemActive = isGroupActive(pathname, visibleDiemItems);
     const isChatbotActive = pathname.startsWith("/chatbot");
 
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
@@ -109,7 +122,7 @@ export function AdminSidebar() {
                             openGroups.dt ? "mt-1 max-h-[900px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
                         )}
                     >
-                        {dtItems.map((item) => (
+                        {visibleDtItems.map((item) => (
                             <SidebarLink key={item.path} href={item.path} label={item.label} icon={item.icon} />
                         ))}
                     </div>
@@ -139,14 +152,14 @@ export function AdminSidebar() {
                             openGroups.elearning ? "mt-1 max-h-[300px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
                         )}
                     >
-                        {elearningItems.map((item) => (
+                        {visibleElearningItems.map((item) => (
                             <SidebarLink key={item.path} href={item.path} label={item.label} icon={item.icon} />
                         ))}
                     </div>
                 </div>
 
                 {/* Collapsible Group: Quản lý điểm thi (nếu có sub-items) */}
-                {diemItems.length > 0 && (
+                {visibleDiemItems.length > 0 && (
                     <div className="menu-collapsible-group mt-1">
                         <button
                             onClick={() => toggleGroup("diem")}
@@ -170,7 +183,7 @@ export function AdminSidebar() {
                                 openGroups.diem ? "mt-1 max-h-[300px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
                             )}
                         >
-                            {diemItems.map((item) => (
+                            {visibleDiemItems.map((item) => (
                                 <SidebarLink key={item.path} href={item.path} label={item.label} icon={item.icon} />
                             ))}
                         </div>

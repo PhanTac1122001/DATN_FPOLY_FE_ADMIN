@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { CheckCircle2, Download, FileText, User, X, XCircle } from "lucide-react";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
+import { DEFAULT_SLA_HOURS } from "@/constants/sla.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { toast } from "@/services/toast.service";
 import { type ApplicationDetailModalProps, ApplicationStatusEnum, ExamTypeEnum } from "@/types/application-approval.types";
 import { cx } from "@/utils/cx";
+import { calculateWorkingSLA } from "@/utils/sla.utils";
 
 export function ApplicationDetailModal({ item, isOpen, onClose, onApprove, onReject }: ApplicationDetailModalProps) {
     const [rejectReason, setRejectReason] = useState<string>("");
@@ -14,6 +16,8 @@ export function ApplicationDetailModal({ item, isOpen, onClose, onApprove, onRej
     const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
 
     if (!isOpen || !item) return null;
+
+    const sla = calculateWorkingSLA(item.submittedAt, DEFAULT_SLA_HOURS, item.processedAt);
 
     const handleApprove = async () => {
         setIsActionLoading(true);
@@ -92,7 +96,7 @@ export function ApplicationDetailModal({ item, isOpen, onClose, onApprove, onRej
                                     ) : item.status === ApplicationStatusEnum.REJECTED ? (
                                         <XCircle className="size-5 text-rose-600" />
                                     ) : (
-                                        <span className="size-2.5 animate-pulse rounded-full bg-amber-500" />
+                                        <span className="size-2.5 rounded-full bg-amber-500" />
                                     )}
                                     <span>
                                         {UI_TEXT.applicationApprovals.thStatus}
@@ -107,6 +111,24 @@ export function ApplicationDetailModal({ item, isOpen, onClose, onApprove, onRej
                                     </span>
                                 </div>
                                 <span className="text-[11px] font-normal text-slate-500">{new Date(item.submittedAt).toLocaleDateString("vi-VN")}</span>
+                            </div>
+
+                            {/* SLA Working Hours Countdown Banner */}
+                            <div className={cx("flex items-center justify-between rounded-2xl border p-4 text-xs font-semibold shadow-2xs", sla.statusClass)}>
+                                <div className="flex items-center gap-2.5">
+                                    <sla.badgeIcon className="size-5 shrink-0" />
+                                    <div>
+                                        <div className="font-extrabold">{sla.statusLabel}</div>
+                                        <div className="mt-0.5 text-[11px] font-medium opacity-90">
+                                            {UI_TEXT.applicationApprovals.slaDeadlinePrefix} {sla.formattedDeadline}
+                                        </div>
+                                    </div>
+                                </div>
+                                {item.status === ApplicationStatusEnum.PENDING && (
+                                    <span className="rounded-xl border border-slate-200 bg-white/90 px-3 py-1 text-[11px] font-bold text-slate-800 shadow-2xs">
+                                        {UI_TEXT.applicationApprovals.slaStandard24h}
+                                    </span>
+                                )}
                             </div>
 
                             {/* Student Info Card */}

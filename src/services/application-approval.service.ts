@@ -16,6 +16,8 @@ export const applicationApprovalService = {
             if (query.type && query.type !== "ALL") params.append("type", query.type);
             if (query.status && query.status !== "ALL") params.append("status", query.status);
             if (query.search) params.append("search", query.search);
+            if (query.startDate) params.append("startDate", query.startDate);
+            if (query.endDate) params.append("endDate", query.endDate);
 
             const res = await httpClient<any>(`${API_ENDPOINTS.APPLICATION_REQUESTS.BASE}?${params.toString()}`, {
                 method: HttpMethod.GET,
@@ -116,7 +118,11 @@ function mapBackendToApplicationItem(raw: any): ApplicationItem {
         attachmentUrl: raw?.attachmentUrl,
         status: (raw?.status as ApplicationStatusEnum) || "PENDING",
         submittedAt: raw?.createdAt ? new Date(raw.createdAt).toISOString() : new Date().toISOString(),
-        processedAt: raw?.reviewedAt ? new Date(raw.reviewedAt).toISOString() : undefined,
+        processedAt: raw?.reviewedAt
+            ? new Date(raw.reviewedAt).toISOString()
+            : raw?.updatedAt && raw?.status !== "PENDING"
+              ? new Date(raw.updatedAt).toISOString()
+              : undefined,
         processedBy: raw?.reviewerName || (raw?.reviewerId ? "Admin Đào tạo" : undefined),
         rejectReason: raw?.rejectReason,
     };

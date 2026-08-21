@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bell, Eye, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Bell, Eye, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { notificationService } from "@/services/notification.service";
 import type { LmsNotificationEntity } from "@/types/notification.types";
@@ -26,7 +26,7 @@ export function NotificationBell() {
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            const data = await notificationService.listStaffNotifications({ limit: 10, offset: 0 });
+            const data = await notificationService.listReceivedNotifications({ limit: 10, offset: 0 });
             setNotifications(data?.items || []);
             setTotalCount(data?.totalItems || 0);
         } catch {
@@ -117,16 +117,6 @@ export function NotificationBell() {
                                 title={UI_TEXT.notifications.reload}
                             >
                                 <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setIsCreateOpen(true);
-                                    setIsOpen(false);
-                                }}
-                                className="flex cursor-pointer items-center gap-1 rounded-lg bg-wine-bright px-2.5 py-1 text-[11px] font-bold text-white shadow-xs transition-colors hover:bg-wine"
-                            >
-                                <Plus className="size-3" />
-                                <span>{UI_TEXT.notifications.createButton}</span>
                             </button>
                         </div>
                     </div>

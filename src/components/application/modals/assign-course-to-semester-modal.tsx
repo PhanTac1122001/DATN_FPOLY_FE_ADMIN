@@ -241,16 +241,14 @@ export function AssignCourseToSemesterModal({ isOpen, onOpenChange, course, onSu
 
                     {/* Footer */}
                     <div className="flex w-full shrink-0 items-center gap-3 rounded-b-[24px] border-t border-slate-100 bg-slate-50/60 p-4">
-                        <Button
+                        <button
                             type="button"
-                            color="secondary-gray"
-                            size="md"
                             onClick={() => onOpenChange(false)}
-                            isDisabled={isSaving}
-                            className="w-1/3 justify-center text-center font-bold"
+                            disabled={isSaving}
+                            className="w-1/3 cursor-pointer justify-center rounded-full border border-slate-200 bg-white py-2.5 text-center text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {modalText.btnCancel}
-                        </Button>
+                        </button>
                         <Button
                             color="primary"
                             size="md"

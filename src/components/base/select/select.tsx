@@ -37,9 +37,11 @@ const SelectValue = ({
     const state = useContext(SelectStateContext);
     const selectedKey = state?.selectedKey ?? null;
     const selectedItem =
-        items && selectedKey !== null
-            ? items.find((item) => String(item.id) === String(selectedKey)) || null
-            : (state?.selectedItem?.value as SelectItemType | null);
+        selectedKey === null || selectedKey === undefined || selectedKey === ""
+            ? null
+            : items
+              ? items.find((item) => String(item.id) === String(selectedKey)) || null
+              : (state?.selectedItem?.value as SelectItemType | null);
 
     const Icon = selectedItem?.icon || placeholderIcon;
     return (

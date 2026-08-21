@@ -86,13 +86,20 @@ function handleAuthFailure() {
         if (path === "/login" || path === "/login/otp") {
             return;
         }
+
+        const hasAccessToken = Cookies.get(APP_CONFIG.ACCESS_TOKEN_KEY);
+        const hasRefreshToken = Cookies.get(APP_CONFIG.REFRESH_TOKEN_KEY);
+        const hadToken = Boolean(hasAccessToken || hasRefreshToken);
+
         Cookies.remove(APP_CONFIG.ACCESS_TOKEN_KEY, { path: "/" });
         Cookies.remove(APP_CONFIG.ACCESS_TOKEN_KEY);
         Cookies.remove(APP_CONFIG.REFRESH_TOKEN_KEY, { path: "/" });
         Cookies.remove(APP_CONFIG.REFRESH_TOKEN_KEY);
 
-        // Signal that the session has expired
-        Cookies.set("session_expired", "1", { path: "/" });
+        // Signal that the session has expired only if the user was previously logged in
+        if (hadToken) {
+            Cookies.set("session_expired", "1", { path: "/" });
+        }
 
         window.location.href = "/login";
     }

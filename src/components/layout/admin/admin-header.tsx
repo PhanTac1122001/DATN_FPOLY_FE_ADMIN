@@ -24,7 +24,7 @@ export function AdminHeader({ title = "", subtitle = "" }: { title?: string; sub
     }, []);
 
     return (
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-slate-200 bg-cream/86 px-8 py-4 backdrop-blur-[12px]">
+        <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-cream/86 px-8 py-4 backdrop-blur-[12px]">
             <div className="min-w-0">
                 <h1 className="font-display text-[20px] leading-normal font-extrabold tracking-tight text-ink">{title || UI_TEXT.common.appName}</h1>
                 {subtitle && <p className="mt-0.5 text-[12px] font-medium text-muted">{subtitle}</p>}

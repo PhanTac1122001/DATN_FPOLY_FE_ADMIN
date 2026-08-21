@@ -26,17 +26,21 @@ export function AdminLayout({
     }
 
     return (
-        <div id="lms-shell" className={`flex bg-cream text-ink ${disableScroll ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+        <div id="lms-shell" className="flex h-screen w-screen overflow-hidden bg-cream text-ink">
             {/* Sidebar Left */}
             <AdminSidebar />
 
             {/* Main Content Area Right */}
-            <main className={`flex min-w-0 flex-1 flex-col bg-cream ${disableScroll ? "h-screen overflow-hidden pb-0" : "pb-10"}`}>
+            <main className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-cream">
                 {/* Header Top */}
                 <AdminHeader title={title} subtitle={subtitle} />
 
                 {/* View Wrapper Content */}
-                <div className={`flex w-full flex-1 flex-col px-8 pt-6 ${disableScroll ? "min-h-0 overflow-hidden pb-6" : ""}`}>{children}</div>
+                <div
+                    className={`flex w-full flex-1 flex-col px-8 pt-6 ${disableScroll ? "min-h-0 overflow-hidden pb-6" : "custom-scrollbar-gray min-h-0 overflow-y-auto pb-10"}`}
+                >
+                    {children}
+                </div>
             </main>
         </div>
     );
