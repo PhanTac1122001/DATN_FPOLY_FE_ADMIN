@@ -1,0 +1,58 @@
+/* Style cho driver.js guided tour — map sang token của app.
+   Đặt màu tập trung ở đây để component/TSX không chứa hex. */
+.driver-popover {
+    --gt-bg: #ffffff;
+    --gt-text: #1e293b; /* slate-800 */
+    --gt-accent: #7b2d3b; /* wine */
+    border-radius: 16px;
+    background: var(--gt-bg);
+    color: var(--gt-text);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+    padding: 16px 18px;
+    max-width: 320px;
+}
+
+.driver-popover-title {
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--gt-text);
+    margin-bottom: 4px;
+}
+
+.driver-popover-description {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #475569; /* slate-600 */
+}
+
+.driver-popover-progress-text {
+    font-size: 12px;
+    color: #94a3b8; /* slate-400 */
+}
+
+.driver-popover-navigation-btns button.driver-popover-next-btn,
+.driver-popover-navigation-btns button.driver-popover-done-btn {
+    background: var(--gt-accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-weight: 700;
+    font-size: 12px;
+    text-shadow: none;
+}
+
+.driver-popover-navigation-btns button.driver-popover-prev-btn {
+    background: #f1f5f9; /* slate-100 */
+    color: #475569;
+    border: none;
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-weight: 700;
+    font-size: 12px;
+    text-shadow: none;
+}
+
+.driver-popover-close-btn {
+    color: #94a3b8;
+}
