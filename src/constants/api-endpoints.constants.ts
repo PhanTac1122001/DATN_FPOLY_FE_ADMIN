@@ -25,7 +25,7 @@ export const API_ENDPOINTS = {
     },
     HEALTH: `${API_PREFIX}/health`,
     UPLOAD: {
-        IMAGE: `${API_PREFIX}/upload/image`,
+        IMAGE: `${API_PREFIX}/storages/upload-image`,
         FILE: `${API_PREFIX}/upload/file`,
     },
     QUIZ: {

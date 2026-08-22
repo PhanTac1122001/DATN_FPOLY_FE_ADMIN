@@ -2,26 +2,31 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Award, Info, RotateCcw, Save, Trash2, X } from "lucide-react";
+import { AlertCircle, Award, Calculator, Info, RotateCcw, Save, Trash2, X } from "lucide-react";
 import { Heading } from "react-aria-components";
 import { Input } from "@/components/base/input/input";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { FULL_PERCENT, ROUND_FACTOR } from "@/constants/options.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
+import { useAuth } from "@/hooks/use-auth";
 import {
     deleteClassRpointFormula,
     deleteCourseRpointFormula,
     getClassRpointFormula,
     getCourseRpointFormula,
+    recomputeClassRPoints,
     setClassRpointFormula,
     setCourseRpointFormula,
 } from "@/services/auto-rpoint.service";
 import { toast } from "@/services/toast.service";
+import { RoleCode } from "@/types/api-types";
 import type { CourseRpointConfigModalProps, CourseRpointTabType, EligibilityRule, RpointFormula, RpointFormulaSource, RpointTier } from "@/types/rpoint.types";
 import { cloneRpointFormula } from "@/utils/rpoint-formula.utils";
 
 export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, courseTitle, classId }: CourseRpointConfigModalProps) {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const isAdmin = user?.role === RoleCode.ADMIN || (user?.roles ?? []).includes(RoleCode.ADMIN);
     const [formula, setFormula] = useState<RpointFormula | null>(null);
     const [isDefault, setIsDefault] = useState(true);
     const [source, setSource] = useState<RpointFormulaSource | undefined>(undefined);
@@ -146,6 +151,23 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
         },
         onError: (err: Error) => {
             toast.error(t.toastSaveErrorTitle, err.message || t.toastResetErrorDesc);
+        },
+    });
+
+    const recomputeMutation = useMutation({
+        mutationFn: () => recomputeClassRPoints(classId!, courseId),
+        onSuccess: (res) => {
+            toast.success(
+                t.toastRecomputeTitle,
+                t.toastRecomputeDesc.replace("{affected}", String(res?.affected ?? 0)).replace("{skipped}", String(res?.skipped ?? 0)),
+            );
+            queryClient.invalidateQueries({ queryKey: ["class-rpoints-map"] });
+            queryClient.invalidateQueries({ queryKey: ["course-class-statistics"] });
+            queryClient.invalidateQueries({ queryKey: ["student-rpoint-detail"] });
+            queryClient.invalidateQueries({ queryKey: ["class-detail"] });
+        },
+        onError: (err: Error) => {
+            toast.error(t.toastRecomputeErrorTitle, err.message || t.toastRecomputeErrorDesc);
         },
     });
 
@@ -654,18 +676,36 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                         )}
                     </div>
 
+                    {!isAdmin && (
+                        <div className="flex shrink-0 items-center gap-2 border-t border-amber-100 bg-amber-50/60 px-6 py-2.5 text-xs font-medium text-amber-800">
+                            <AlertCircle className="size-4 shrink-0" />
+                            <span>{t.adminOnlyNote}</span>
+                        </div>
+                    )}
+
                     {/* Footer Actions */}
                     <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                         <div className="flex gap-2">
                             <button
                                 type="button"
-                                disabled={resetMutation.isPending || (classId ? source !== "class" : isDefault)}
+                                disabled={!isAdmin || resetMutation.isPending || (classId ? source !== "class" : isDefault)}
                                 onClick={() => resetMutation.mutate()}
                                 className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <RotateCcw className="size-4 shrink-0" />
                                 <span>{classId ? t.resetClassBtn : t.resetSystemBtn}</span>
                             </button>
+                            {classId && isAdmin && (
+                                <button
+                                    type="button"
+                                    disabled={recomputeMutation.isPending}
+                                    onClick={() => recomputeMutation.mutate()}
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-wine/30 bg-wine/5 px-4 py-2.5 text-xs font-bold text-wine transition hover:bg-wine/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <Calculator className="size-4 shrink-0" />
+                                    <span>{recomputeMutation.isPending ? t.recomputing : t.recomputeClassBtn}</span>
+                                </button>
+                            )}
                         </div>
                         <div className="flex gap-2">
                             <button
@@ -677,7 +717,7 @@ export function CourseRpointConfigModal({ isOpen, onOpenChange, courseId, course
                             </button>
                             <button
                                 type="button"
-                                disabled={!formula || !isValid || saveMutation.isPending}
+                                disabled={!isAdmin || !formula || !isValid || saveMutation.isPending}
                                 onClick={() => saveMutation.mutate()}
                                 className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-wine px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-wine-deep disabled:cursor-not-allowed disabled:opacity-50"
                             >

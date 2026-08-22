@@ -45,3 +45,11 @@ next-env.d.ts
 # jscpd reports
 report/
 
+# deploy artifacts (qldt.zip từng lên tới 1.7GB — đừng để lọt vào lịch sử git)
+deploy/
+deploy.zip
+qldt.zip
+
+# local tooling config (đường dẫn theo từng máy)
+.claude/
+

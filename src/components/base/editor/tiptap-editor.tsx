@@ -11,7 +11,8 @@ import Underline from "@tiptap/extension-underline";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "tiptap-markdown";
-import { uploadImage } from "@/services/image-upload.service";
+import { UI_TEXT } from "@/constants/ui-text.constants";
+import { useEditorImageUpload } from "@/hooks/use-editor-image-upload";
 // Import type for internal use
 import type { TiptapEditorProps } from "@/types/base-components.types";
 import { cx } from "@/utils/cx";
@@ -25,6 +26,7 @@ export type { TiptapEditorProps } from "@/types/base-components.types";
 export function TiptapEditor({ value, onChange, placeholder, readOnly, hideToolbar, className, editorClassName, onImageUpload, onBlur }: TiptapEditorProps) {
     const [, forceUpdate] = useReducer((x) => x + 1, 0);
     const hasFocusedWithinRef = useRef(false);
+    const { uploadingCount, uploadFile, handlePaste, handleDrop } = useEditorImageUpload(onImageUpload);
 
     const editor = useEditor({
         extensions: [
@@ -68,6 +70,8 @@ export function TiptapEditor({ value, onChange, placeholder, readOnly, hideToolb
                     editorClassName,
                 ),
             },
+            handlePaste,
+            handleDrop,
         },
         onUpdate: ({ editor }) => {
             const markdown = (editor.storage as unknown as { markdown: { getMarkdown: () => string } }).markdown.getMarkdown();
@@ -99,14 +103,6 @@ export function TiptapEditor({ value, onChange, placeholder, readOnly, hideToolb
         }
     }, [readOnly, editor]);
 
-    // Use provided handler or default to project's upload service
-    const handleImageUpload =
-        onImageUpload ??
-        (async (file: File) => {
-            const { url } = await uploadImage(file);
-            return url;
-        });
-
     const handleContainerBlur = (e: FocusEvent<HTMLDivElement>) => {
         if (!onBlur) return;
         if (!hasFocusedWithinRef.current) return;
@@ -135,9 +131,14 @@ export function TiptapEditor({ value, onChange, placeholder, readOnly, hideToolb
                 </>
             ) : (
                 <>
-                    {!hideToolbar && <Toolbar editor={editor} onImageUpload={handleImageUpload} />}
+                    {!hideToolbar && <Toolbar editor={editor} onImageUpload={uploadFile} />}
                     <TableBubbleMenu editor={editor} />
                     <EditorContent editor={editor} />
+                    {uploadingCount > 0 && (
+                        <div className="pointer-events-none absolute right-3 bottom-3 rounded-full bg-slate-900/80 px-3 py-1 text-xs font-semibold text-white">
+                            {UI_TEXT.common.richEditor.uploadingImage}
+                        </div>
+                    )}
                 </>
             )}
         </div>

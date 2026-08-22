@@ -9,8 +9,7 @@ export interface UploadImageOptions {
     fileName?: string;
 }
 
-export interface UploadUrlResponseDto {
-    url: string;
-    publicUrl: string;
-    key: string;
+/** API bọc response bằng TransformInterceptor thành {statusCode, data}. */
+export interface UploadImageEnvelope {
+    data?: UploadImageResponse;
 }

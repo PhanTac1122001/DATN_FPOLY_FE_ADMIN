@@ -73,8 +73,8 @@ export function Toolbar({ editor, onImageUpload }: ToolbarProps) {
                 if (url) {
                     editor.chain().focus().setImage({ src: url }).run();
                 }
-            } catch (error) {
-                console.error("Failed to upload image", error);
+            } catch {
+                // useEditorImageUpload đã hiện toast lỗi.
             } finally {
                 // Reset file input so the same file can be selected again if needed
                 if (fileInputRef.current) {

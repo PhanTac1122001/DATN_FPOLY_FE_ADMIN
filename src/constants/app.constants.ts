@@ -158,3 +158,17 @@ export const BREAKPOINTS = {
     XL: 1280,
     XXL: 1536,
 } as const;
+
+/**
+ * Giới hạn ảnh chèn trong rich-text editor. Phải khớp với validate phía API
+ * (`UploadService.uploadEditorImage`) — SVG cố tình bị loại vì rủi ro XSS.
+ */
+export const EDITOR_IMAGE = {
+    MAX_SIZE_BYTES: 10 * 1024 * 1024,
+    ACCEPTED_MIME_TYPES: ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"],
+    DATA_URI_PREFIX: "data:image/",
+    /** Tên node ảnh trong schema ProseMirror của TipTap. */
+    NODE_NAME: "image",
+    PASTED_FILE_BASE_NAME: "pasted-image",
+    FALLBACK_EXTENSION: "png",
+} as const;
