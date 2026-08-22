@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Download, Eye, HelpCircle, RotateCcw, Sparkles, Users, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Eye, HelpCircle, RotateCcw, Users, XCircle } from "lucide-react";
 import { Breadcrumb } from "@/components/application/breadcrumb";
 import { SearchFilters } from "@/components/application/search-filters/search-filters";
 import { Badge } from "@/components/base/badges/badges";
@@ -90,7 +90,6 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
 
     const activeSession = sessions.find((s: Record<string, unknown>) => String(s.id || s._id || "") === selectedSessionId) as
         Record<string, unknown> | undefined;
-    const maxAi = activeSession?.maxAiGradeAttempts != null ? Number(activeSession.maxAiGradeAttempts) : undefined;
 
     // Query Homework Completions (roster) for selected session & class
     const { data: completions = [], isLoading: isLoadingCompletions } = useQuery({
@@ -299,21 +298,6 @@ export function ClassHomeworkReviewView({ classId }: ClassHomeworkReviewViewProp
                         </div>
                     </div>
                 </div>
-
-                {/* Session AI Attempt Config Info */}
-                {selectedSessionId && (
-                    <div className="flex items-center gap-2 rounded-xl border border-purple-100 bg-purple-50/70 px-3.5 py-2 text-xs text-purple-900">
-                        <Sparkles className="size-4 shrink-0 text-purple-600" />
-                        <span>
-                            {UI_TEXT.classHomeworkReview.aiLimitConfigTitle}{" "}
-                            <strong className="font-extrabold text-purple-700">
-                                {maxAi != null
-                                    ? `${UI_TEXT.classHomeworkReview.maxAttemptsLabel} ${maxAi} ${UI_TEXT.classHomeworkReview.timesLabel}`
-                                    : UI_TEXT.classHomeworkReview.unlimitedLabel}
-                            </strong>
-                        </span>
-                    </div>
-                )}
             </div>
 
             {/* 4 KPI Summary Cards */}

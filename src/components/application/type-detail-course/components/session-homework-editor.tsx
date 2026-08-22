@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, ExternalLink, FileCode, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, FileCode, HelpCircle, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ConfirmModal } from "@/components/application/modals/confirm-modal";
 import { Button } from "@/components/base/buttons/button";
 import { TiptapEditor } from "@/components/base/editor";
+import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { CustomModal, Dialog } from "@/components/ui/custom-modal";
 import { HOMEWORK_DIFFICULTY_LEVELS } from "@/constants/ui-components.constants";
 import { UI_TEXT } from "@/constants/ui-text.constants";
@@ -14,6 +15,8 @@ import { toast } from "@/services/toast.service";
 import type { SessionHomeworkEditorProps } from "@/types/courseware.types";
 import { HomeworkDifficultyEnum, type HomeworkDifficultyLevel } from "@/types/group.types";
 import type { Homework } from "@/types/material.types";
+
+const defaultMaxAiAttempts = 3;
 
 export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
     const queryClient = useQueryClient();
@@ -35,6 +38,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
     const [gradingCriteria, setGradingCriteria] = useState("");
     const [sampleLink, setSampleLink] = useState("");
     const [position, setPosition] = useState<number | "">("");
+    const [maxAiGradeAttempts, setMaxAiGradeAttempts] = useState<number>(defaultMaxAiAttempts);
 
     const { data: homeworks = [], isLoading } = useQuery({
         queryKey: ["homeworks", session.id],
@@ -50,6 +54,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
         setTutorial("");
         setGradingCriteria("");
         setSampleLink("");
+        setMaxAiGradeAttempts(defaultMaxAiAttempts);
         const maxPos = homeworks.reduce((max, h) => Math.max(max, h.position || 0), 0);
         setPosition(maxPos + 1);
         setIsModalOpen(true);
@@ -64,6 +69,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
         setGradingCriteria(hw.gradingCriteria || "");
         setSampleLink(hw.sampleLink || "");
         setPosition(hw.position ?? 1);
+        setMaxAiGradeAttempts(hw.maxAiGradeAttempts ?? defaultMaxAiAttempts);
         setIsModalOpen(true);
     };
 
@@ -79,6 +85,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                 gradingCriteria: gradingCriteria.trim() || undefined,
                 sampleLink: sampleLink.trim() || undefined,
                 position: position === "" ? undefined : Number(position),
+                maxAiGradeAttempts: Number(maxAiGradeAttempts) >= 1 ? Number(maxAiGradeAttempts) : defaultMaxAiAttempts,
             };
 
             if (editingHomework) {
@@ -195,7 +202,9 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                             const hwId = hw.id || ((hw as unknown as Record<string, unknown>)._id as string) || String(index);
                             const isOpen = expandedHomeworkIds.includes(hwId);
                             const displayTitle = (hw.title || "").replace(/^\d+\.\s*/, "");
-                            const hwLevelConfig = HOMEWORK_DIFFICULTY_LEVELS.find((l) => l.id === hw.difficultyLevel) || HOMEWORK_DIFFICULTY_LEVELS.find((l) => l.id === HomeworkDifficultyEnum.MEDIUM);
+                            const hwLevelConfig =
+                                HOMEWORK_DIFFICULTY_LEVELS.find((l) => l.id === hw.difficultyLevel) ||
+                                HOMEWORK_DIFFICULTY_LEVELS.find((l) => l.id === HomeworkDifficultyEnum.MEDIUM);
                             return (
                                 <div
                                     key={hwId}
@@ -225,7 +234,9 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <h4 className="text-sm leading-snug font-black text-slate-900">{displayTitle}</h4>
                                                     {hwLevelConfig && (
-                                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${hwLevelConfig.badgeColor}`}>
+                                                        <span
+                                                            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${hwLevelConfig.badgeColor}`}
+                                                        >
                                                             {hwLevelConfig.label}
                                                         </span>
                                                     )}
@@ -373,7 +384,7 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                                                 onClick={() => setDifficultyLevel(lvl.id)}
                                                 className={`cursor-pointer rounded-full border px-3.5 py-1 text-xs font-bold transition-all ${
                                                     isSelected
-                                                        ? `${lvl.badgeColor} ring-2 ring-wine/20 shadow-sm`
+                                                        ? `${lvl.badgeColor} shadow-sm ring-2 ring-wine/20`
                                                         : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
                                                 }`}
                                             >
@@ -408,6 +419,26 @@ export function SessionHomeworkEditor({ session }: SessionHomeworkEditorProps) {
                                     className="w-full resize-none rounded-xl border border-blue-200 bg-blue-50/20 p-3 text-xs font-semibold focus:border-blue-500 focus:outline-none"
                                 />
                                 <span className="text-[10px] font-medium text-slate-400">{UI_TEXT.homeworkEditor.rubricNotice}</span>
+                            </div>
+
+                            {/* Max AI grade attempts */}
+                            <div className="flex flex-col gap-1">
+                                <label className="flex items-center gap-1 text-[11px] font-medium text-slate-700 uppercase">
+                                    {UI_TEXT.courseDetail.maxAiGradeAttemptsLabel}
+                                    <Tooltip title={UI_TEXT.typeDetailCourse.tooltipMaxAiGrade} placement="top">
+                                        <TooltipTrigger isDisabled={false} className="cursor-pointer text-slate-400 transition hover:text-slate-600">
+                                            <HelpCircle className="size-3.5" />
+                                        </TooltipTrigger>
+                                    </Tooltip>
+                                </label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={maxAiGradeAttempts}
+                                    onChange={(e) => setMaxAiGradeAttempts(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                    placeholder={UI_TEXT.courseDetail.maxAiGradeAttemptsPlaceholder}
+                                    className="w-32 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold focus:border-wine focus:outline-none"
+                                />
                             </div>
 
                             {/* Tutorial */}

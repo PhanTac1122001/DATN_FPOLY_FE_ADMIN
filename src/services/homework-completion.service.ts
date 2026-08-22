@@ -108,9 +108,7 @@ export async function approveAllCompletionFeedbackByStudent(studentId: string, c
     return res.data || res;
 }
 
-export async function getSessionsByCourseId(
-    courseId: string,
-): Promise<Array<{ id: string; name: string; position?: number; maxAiGradeAttempts?: number | null }>> {
+export async function getSessionsByCourseId(courseId: string): Promise<Array<{ id: string; name: string; position?: number }>> {
     const res = await httpClient<any>(`/staff/sessions/course/${courseId}`, {
         method: HttpMethod.GET,
     });

@@ -42,6 +42,7 @@ export interface Homework {
     expectedTime?: number;
     position?: number;
     difficultyLevel?: string;
+    maxAiGradeAttempts?: number; // Số lần AI chấm tối đa cho bài này (≥ 1)
     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
     status: 0 | 1 | 2; // 0: Pending, 1: Approved, 2: Rejected
 }
@@ -119,7 +120,6 @@ export interface Session {
     practice?: SessionPractice | null;
     practices?: SessionPractice[];
     completionLogic?: SessionCompletionLogic;
-    maxAiGradeAttempts?: number;
     flashcardDeckId?: string;
     flashcardDeck?: {
         id: string;

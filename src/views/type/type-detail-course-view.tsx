@@ -26,8 +26,6 @@ import type { SessionFields } from "@/types/courseware.types";
 import { type Lesson, type Session, SessionTypeEnum } from "@/types/material.types";
 import type { TypeDetailCourseViewProps } from "@/types/type.types";
 
-const defaultMaxAiGradeAttempts = 3;
-
 export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps) {
     const router = useAppRouter();
     const queryClient = useQueryClient();
@@ -57,7 +55,6 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         practiceEntranceQuiz: "",
         isShowMindmap: false,
         description: "",
-        maxAiGradeAttempts: 3,
         flashcardDeckId: undefined,
     };
 
@@ -95,7 +92,6 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
         practiceEntranceQuiz: (fields.practiceEntranceQuiz || "").trim(),
         isShowMindmap: !!fields.isShowMindmap,
         description: (fields.description || "").trim(),
-        maxAiGradeAttempts: fields.maxAiGradeAttempts && Number(fields.maxAiGradeAttempts) >= 1 ? Number(fields.maxAiGradeAttempts) : defaultMaxAiGradeAttempts,
         flashcardDeckId: fields.flashcardDeckId || undefined,
     });
 
@@ -245,7 +241,6 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                 practiceEntranceQuiz: ses.practiceEntranceQuiz || "",
                 isShowMindmap: ses.isShowMindmap ?? false,
                 description: ses.description || "",
-                maxAiGradeAttempts: ses.maxAiGradeAttempts ?? defaultMaxAiGradeAttempts,
                 flashcardDeckId: ses.flashcardDeckId,
             };
             setEditSessionFields(fields);
@@ -527,7 +522,6 @@ export function TypeDetailCourseView({ id, courseId }: TypeDetailCourseViewProps
                                                     practiceEntranceQuiz: session.practiceEntranceQuiz || "",
                                                     isShowMindmap: !!session.isShowMindmap,
                                                     description: session.description || "",
-                                                    maxAiGradeAttempts: session.maxAiGradeAttempts ?? defaultMaxAiGradeAttempts,
                                                     flashcardDeckId: session.flashcardDeckId,
                                                 };
                                                 setEditingSession(session);

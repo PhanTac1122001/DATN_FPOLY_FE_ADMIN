@@ -28,7 +28,6 @@ export interface SessionFields {
     practiceEntranceQuiz: string;
     isShowMindmap: boolean;
     description: string;
-    maxAiGradeAttempts?: number;
     flashcardDeckId?: string;
 }
 

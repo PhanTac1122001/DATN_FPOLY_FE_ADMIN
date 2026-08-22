@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { BookText, FileText, HelpCircle, Layers, Play, Sparkles, Tag, Trash2 } from "lucide-react";
 import { FlashcardDeckModal } from "@/components/application/modals/flashcard-deck-modal";
-import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { UI_TEXT } from "@/constants/ui-text.constants";
 import { getFlashcardDeckById } from "@/services/flashcard.service";
 import { sessionTypeService } from "@/services/session-type.service";
 import type { SessionFormProps, SessionTypeOption } from "@/types/courseware.types";
 import { FlashcardDeckStatusEnum, type FlashcardDeckSummary } from "@/types/flashcard.types";
 import { SessionTypeEnum } from "@/types/material.types";
-
-const defaultMaxAiAttempts = 3;
 
 export function SessionForm({
     mode,
@@ -133,7 +130,7 @@ export function SessionForm({
                 <div className="custom-scrollbar flex flex-1 flex-col gap-6 overflow-y-auto pr-2">
                     <div className="flex flex-col gap-4">
                         <div className="grid grid-cols-12 gap-4">
-                            <div className="col-span-8 flex flex-col gap-1.5">
+                            <div className="col-span-12 flex flex-col gap-1.5">
                                 <label className="text-sm font-medium text-slate-500">{UI_TEXT.courseDetail.sessionNameLabel}</label>
                                 <input
                                     type="text"
@@ -142,31 +139,6 @@ export function SessionForm({
                                     placeholder={UI_TEXT.courseDetail.sessionNamePlaceholder}
                                     className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium focus:border-wine focus:outline-none"
                                     autoFocus
-                                    required
-                                />
-                            </div>
-
-                            <div className="col-span-4 flex flex-col gap-1.5">
-                                <label className="flex items-center gap-1 text-sm font-medium text-slate-500">
-                                    {UI_TEXT.courseDetail.maxAiGradeAttemptsLabel}
-                                    <Tooltip title={UI_TEXT.typeDetailCourse.tooltipMaxAiGrade} placement="top">
-                                        <TooltipTrigger isDisabled={false} className="cursor-pointer text-slate-400 transition hover:text-slate-600">
-                                            <HelpCircle className="size-3.5" />
-                                        </TooltipTrigger>
-                                    </Tooltip>
-                                </label>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    value={fields.maxAiGradeAttempts ?? defaultMaxAiAttempts}
-                                    onChange={(e) =>
-                                        setFields((prev) => ({
-                                            ...prev,
-                                            maxAiGradeAttempts: Math.max(1, parseInt(e.target.value, 10) || 1),
-                                        }))
-                                    }
-                                    placeholder={UI_TEXT.courseDetail.maxAiGradeAttemptsPlaceholder}
-                                    className="w-full rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium focus:border-wine focus:outline-none"
                                     required
                                 />
                             </div>
