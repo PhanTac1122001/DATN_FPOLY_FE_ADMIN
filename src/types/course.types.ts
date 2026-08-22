@@ -27,6 +27,7 @@ export interface CourseGradingFormula {
     // Cấu hình bài thi cuối kỳ – ESSAY
     essayEssayWeight?: number; // % tự luận
     essayQuizWeight?: number; // % trắc nghiệm
+    essayOralWeight?: number; // % vấn đáp
 }
 
 /** BE scoringFormula shape (fractions, weights sum ≈ 1). */
@@ -41,7 +42,7 @@ export interface BackendScoringFormula {
     finalExam: {
         type: "PROJECT" | "ESSAY";
         project?: { product: number; knowledge: number; interview: number };
-        essay?: { written: number; multipleChoice: number };
+        essay?: { written: number; multipleChoice: number; oral?: number };
     };
 }
 
