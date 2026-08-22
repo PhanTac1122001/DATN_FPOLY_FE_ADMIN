@@ -26,6 +26,7 @@ const defaultUiGrading: CourseGradingFormula = {
     projectInterviewWeight: 20,
     essayEssayWeight: 70,
     essayQuizWeight: 30,
+    essayOralWeight: 0,
 };
 
 export function mapUiGradingToBackendFormula(grading: CourseGradingFormula): BackendScoringFormula {
@@ -54,6 +55,7 @@ export function mapUiGradingToBackendFormula(grading: CourseGradingFormula): Bac
         formula.finalExam.essay = {
             written: pctToFraction(grading.essayEssayWeight ?? 0),
             multipleChoice: pctToFraction(grading.essayQuizWeight ?? 0),
+            oral: pctToFraction(grading.essayOralWeight ?? 0),
         };
     }
 
@@ -82,5 +84,6 @@ export function mapBackendFormulaToUiGrading(formula: BackendScoringFormula | nu
         projectInterviewWeight: fractionToPct(formula.finalExam?.project?.interview ?? 0.2),
         essayEssayWeight: fractionToPct(formula.finalExam?.essay?.written ?? 0.7),
         essayQuizWeight: fractionToPct(formula.finalExam?.essay?.multipleChoice ?? 0.3),
+        essayOralWeight: fractionToPct(formula.finalExam?.essay?.oral ?? 0),
     };
 }

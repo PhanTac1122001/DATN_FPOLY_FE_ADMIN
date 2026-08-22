@@ -38,6 +38,7 @@ export const DEFAULT_GRADING_WEIGHTS = {
     PROJECT_INTERVIEW: 20,
     ESSAY_ESSAY: 70,
     ESSAY_QUIZ: 30,
+    ESSAY_ORAL: 0,
 } as const;
 
 export const SHIFT_OPTIONS_LIST = [

@@ -62,6 +62,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
 
     const [essayEssayWeight, setEssayEssayWeight] = useState<number>(DEFAULT_GRADING_WEIGHTS.ESSAY_ESSAY);
     const [essayQuizWeight, setEssayQuizWeight] = useState<number>(DEFAULT_GRADING_WEIGHTS.ESSAY_QUIZ);
+    const [essayOralWeight, setEssayOralWeight] = useState<number>(DEFAULT_GRADING_WEIGHTS.ESSAY_ORAL);
 
     const [passScore, setPassScore] = useState<number>(DEFAULT_PASS_SCORE);
 
@@ -91,6 +92,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             setProjectInterviewWeight(initialData.gradingFormula.projectInterviewWeight ?? DEFAULT_GRADING_WEIGHTS.PROJECT_INTERVIEW);
             setEssayEssayWeight(initialData.gradingFormula.essayEssayWeight ?? DEFAULT_GRADING_WEIGHTS.ESSAY_ESSAY);
             setEssayQuizWeight(initialData.gradingFormula.essayQuizWeight ?? DEFAULT_GRADING_WEIGHTS.ESSAY_QUIZ);
+            setEssayOralWeight(initialData.gradingFormula.essayOralWeight ?? DEFAULT_GRADING_WEIGHTS.ESSAY_ORAL);
             setPassScore(initialData.gradingFormula.passScore ?? DEFAULT_PASS_SCORE);
         } else {
             setCode("");
@@ -114,6 +116,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             setProjectInterviewWeight(DEFAULT_GRADING_WEIGHTS.PROJECT_INTERVIEW);
             setEssayEssayWeight(DEFAULT_GRADING_WEIGHTS.ESSAY_ESSAY);
             setEssayQuizWeight(DEFAULT_GRADING_WEIGHTS.ESSAY_QUIZ);
+            setEssayOralWeight(DEFAULT_GRADING_WEIGHTS.ESSAY_ORAL);
             setPassScore(DEFAULT_PASS_SCORE);
         }
     }, [initialData, isOpen]);
@@ -144,7 +147,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
     const generalTotal = Number(attendanceWeight) + Number(quizWeight) + Number(hackathonWeight) + Number(examWeight);
     const hackathonTotal = Number(hackathonQuizWeight) + Number(hackathonEssayWeight);
     const projectTotal = Number(projectProductWeight) + Number(projectKnowledgeWeight) + Number(projectInterviewWeight);
-    const essayTotal = Number(essayEssayWeight) + Number(essayQuizWeight);
+    const essayTotal = Number(essayEssayWeight) + Number(essayQuizWeight) + Number(essayOralWeight);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -164,7 +167,8 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
             isInvalidWeight(examWeight) ||
             (finalExamType === FinalExamTypeEnum.PROJECT &&
                 (isInvalidWeight(projectProductWeight) || isInvalidWeight(projectKnowledgeWeight) || isInvalidWeight(projectInterviewWeight))) ||
-            (finalExamType === FinalExamTypeEnum.ESSAY && (isInvalidWeight(essayEssayWeight) || isInvalidWeight(essayQuizWeight)));
+            (finalExamType === FinalExamTypeEnum.ESSAY &&
+                (isInvalidWeight(essayEssayWeight) || isInvalidWeight(essayQuizWeight) || isInvalidWeight(essayOralWeight)));
 
         if (isAnyWeightOutOfRange) {
             toast.error(UI_TEXT.common.errorTitle, UI_TEXT.courseFormModal.toastWeightOutOfRange);
@@ -231,6 +235,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                     projectInterviewWeight: Number(projectInterviewWeight),
                     essayEssayWeight: Number(essayEssayWeight),
                     essayQuizWeight: Number(essayQuizWeight),
+                    essayOralWeight: Number(essayOralWeight),
                     passScore: Number(passScore),
                 },
             });
@@ -568,7 +573,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                             </span>
                                         </div>
 
-                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                             <div className="flex flex-col gap-1">
                                                 <div
                                                     className={`flex items-center justify-between rounded-xl border px-4 py-2.5 transition-all ${
@@ -626,6 +631,34 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                                     </span>
                                                 )}
                                             </div>
+
+                                            <div className="flex flex-col gap-1">
+                                                <div
+                                                    className={`flex items-center justify-between rounded-xl border px-4 py-2.5 transition-all ${
+                                                        isInvalidWeight(essayOralWeight) ? "border-rose-400 bg-rose-50/30" : "border-slate-100 bg-slate-50/70"
+                                                    }`}
+                                                >
+                                                    <span className="text-xs font-semibold text-slate-700">{UI_TEXT.courseFormModal.essayOralWeightLabel}</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <input
+                                                            type="number"
+                                                            value={essayOralWeight}
+                                                            onChange={(e) => setEssayOralWeight(Number(e.target.value))}
+                                                            className={`w-16 rounded-lg border px-2 py-1 text-center text-sm font-bold shadow-2xs transition-all outline-none ${
+                                                                isInvalidWeight(essayOralWeight)
+                                                                    ? "border-rose-500 bg-white text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
+                                                                    : "border-slate-200 bg-white text-slate-800 focus:border-wine focus:ring-2 focus:ring-wine/20"
+                                                            }`}
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-400">{"%"}</span>
+                                                    </div>
+                                                </div>
+                                                {isInvalidWeight(essayOralWeight) && (
+                                                    <span className="pl-1 text-[11px] font-medium text-rose-500">
+                                                        {UI_TEXT.courseFormModal.weightRangeError}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -676,7 +709,7 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                                 <div
                                                     style={{ width: `${Math.min(FULL_WEIGHT_PERCENT, Math.max(0, examWeight))}%` }}
                                                     className="h-full rounded-r-full bg-wine transition-all duration-300"
-                                                    title={`Thi cuối kỳ: ${examWeight}% (${finalExamType}: ${finalExamType === FinalExamTypeEnum.PROJECT ? `${projectProductWeight}% SP + ${projectKnowledgeWeight}% KT + ${projectInterviewWeight}% PV` : `${essayEssayWeight}% TL + ${essayQuizWeight}% TN`})`}
+                                                    title={`Thi cuối kỳ: ${examWeight}% (${finalExamType}: ${finalExamType === FinalExamTypeEnum.PROJECT ? `${projectProductWeight}% SP + ${projectKnowledgeWeight}% KT + ${projectInterviewWeight}% PV` : `${essayEssayWeight}% TL + ${essayQuizWeight}% TN + ${essayOralWeight}% VĐ`})`}
                                                 />
                                             </div>
                                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-[11px] font-medium text-slate-600">
@@ -728,7 +761,8 @@ export function CourseFormModal({ isOpen, onOpenChange, initialData, onSubmit }:
                                                                   .replace("{interview}", String(projectInterviewWeight))
                                                             : UI_TEXT.courseFormModal.essaySummaryText
                                                                   .replace("{essay}", String(essayEssayWeight))
-                                                                  .replace("{quiz}", String(essayQuizWeight))}
+                                                                  .replace("{quiz}", String(essayQuizWeight))
+                                                                  .replace("{oral}", String(essayOralWeight))}
                                                     </span>
                                                 </span>
                                             </div>
