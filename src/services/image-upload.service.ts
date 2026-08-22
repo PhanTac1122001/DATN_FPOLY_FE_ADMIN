@@ -1,70 +1,28 @@
+import { API_ENDPOINTS } from "@/constants/api-endpoints.constants";
 import { httpClient } from "@/lib/http-client";
 import { HttpMethod } from "@/types/api-types";
-import { UploadImageOptions, UploadImageResponse, UploadUrlResponseDto } from "@/types/image-upload.types";
+import type { UploadImageEnvelope, UploadImageOptions, UploadImageResponse } from "@/types/image-upload.types";
 
 /**
- * Upload an image file to the server using Direct-to-S3 Presigned URL
- * @param file - The image file to upload
- * @param options - Upload options
- * @returns Upload response with image URL
+ * Upload ảnh lên S3 qua API (multipart). Server nén ảnh về webp rồi trả public URL.
  */
 export async function uploadImage(file: File, options?: UploadImageOptions): Promise<UploadImageResponse> {
-    try {
-        // 1. Request Presigned PUT URL & Public URL from Backend
-        const queryParams = new URLSearchParams();
-        queryParams.append("filename", options?.fileName || file.name);
-        queryParams.append("contentType", file.type || "application/octet-stream");
-        if (options?.folder) {
-            queryParams.append("folder", options.folder);
-        }
-
-        const {
-            url: presignedPutUrl,
-            publicUrl,
-            key,
-        } = await httpClient<UploadUrlResponseDto>(`/upload/image?${queryParams.toString()}`, {
-            method: HttpMethod.GET,
-        });
-
-        // 2. Upload directly to AWS S3 using native fetch
-        // Note: MUST not use httpClient here to avoid injecting 'Authorization' header which breaks S3 Signature
-        const uploadResponse = await fetch(presignedPutUrl, {
-            method: "PUT",
-            body: file,
-            headers: {
-                "Content-Type": file.type || "application/octet-stream",
-            },
-        });
-
-        if (!uploadResponse.ok) {
-            throw new Error(`S3 Upload failed with status ${uploadResponse.status}`);
-        }
-
-        // 3. Return the exact same response shape as before so other components don't break
-        return {
-            url: publicUrl,
-            fileName: options?.fileName || file.name,
-            filePath: key,
-        };
-    } catch (error) {
-        console.error("Error uploading image:", error);
-        throw error;
+    const formData = new FormData();
+    // Đổi tên file nếu caller yêu cầu — server dùng originalname để trả về fileName.
+    formData.append("file", file, options?.fileName || file.name);
+    if (options?.folder) {
+        formData.append("folder", options.folder);
     }
-}
-/**
- * Delete an image from the server
- * @param url - The URL of the image to delete
- */
-export async function deleteImage(url: string): Promise<void> {
-    if (!url) return;
 
-    try {
-        await httpClient(`/upload/image?url=${encodeURIComponent(url)}`, {
-            method: HttpMethod.DELETE,
-        });
-    } catch (error) {
-        console.error("Error deleting image:", error);
-        // We generally don't want to block the user flow if deletion fails,
-        // so we just log the error.
+    // Không set Content-Type: httpClient tự xoá nó cho FormData để browser gắn boundary.
+    const response = await httpClient<UploadImageResponse & UploadImageEnvelope>(API_ENDPOINTS.UPLOAD.IMAGE, {
+        method: HttpMethod.POST,
+        body: formData,
+    });
+
+    const result = response?.data ?? response;
+    if (!result?.url) {
+        throw new Error("Upload response missing url");
     }
+    return result;
 }

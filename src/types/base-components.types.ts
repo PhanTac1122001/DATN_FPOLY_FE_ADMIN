@@ -18,6 +18,7 @@ import type {
     RefObject,
     SelectHTMLAttributes,
 } from "react";
+import type { EditorView } from "@tiptap/pm/view";
 import type { Editor } from "@tiptap/react";
 import type { IconProps } from "iconsax-react";
 import type { Placement } from "react-aria";
@@ -314,6 +315,15 @@ export interface ToolbarButtonProps {
 export interface ToolbarProps {
     editor: Editor | null;
     onImageUpload?: (file: File) => Promise<string>;
+}
+
+export interface EditorImageUploadHandlers {
+    /** Số ảnh đang được tải lên, dùng để hiện chỉ báo trong khung editor. */
+    uploadingCount: number;
+    /** Upload 1 file rồi trả URL — dùng cho nút ảnh trên toolbar. */
+    uploadFile: (file: File) => Promise<string>;
+    handlePaste: (view: EditorView, event: ClipboardEvent) => boolean;
+    handleDrop: (view: EditorView, event: DragEvent, slice: unknown, moved: boolean) => boolean;
 }
 
 // ============================================

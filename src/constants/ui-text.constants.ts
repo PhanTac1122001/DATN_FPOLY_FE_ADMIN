@@ -391,6 +391,10 @@ export const UI_TEXT = {
             mergeCells: "Gộp ô",
             splitCells: "Tách ô",
             deleteTable: "Xóa bảng",
+            uploadingImage: "Đang tải ảnh lên…",
+            uploadImageFailed: "Tải ảnh lên thất bại, vui lòng thử lại",
+            invalidImageType: "Chỉ hỗ trợ ảnh JPG, PNG, WEBP hoặc GIF",
+            imageTooLarge: "Ảnh quá lớn, kích thước tối đa là 10MB",
         },
     },
     metadata: {
