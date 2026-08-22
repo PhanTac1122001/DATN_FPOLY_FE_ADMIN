@@ -58,6 +58,8 @@ export function VideoConfigTab({
     const maxOptionsCount = 6;
     const minOptionsCount = 2;
     const regexCapturedGroupIndex = 2;
+    const secondsPerMinute = 60;
+    const maxSecondsValue = 59;
 
     const getYoutubeId = (urlStr: string) => {
         if (!urlStr) return null;
@@ -172,6 +174,8 @@ export function VideoConfigTab({
 
     const hasVideo = !!url || !!file;
     const videoSrc = file ? URL.createObjectURL(file) : url;
+    const durationMinutes = Math.floor((Number(duration) || 0) / secondsPerMinute);
+    const durationSeconds = (Number(duration) || 0) % secondsPerMinute;
 
     return (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -205,7 +209,7 @@ export function VideoConfigTab({
                             <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                                 <span>{UI_TEXT.videoConfigTab.durationLabel}</span>
                                 <span className="font-extrabold text-slate-800">
-                                    {duration} {UI_TEXT.videoConfigTab.durationSuffix}
+                                    {durationMinutes} {UI_TEXT.videoConfigTab.timestampMinutesSuffix} {durationSeconds} {UI_TEXT.videoConfigTab.durationSuffix}
                                 </span>
                             </div>
                         </div>
@@ -302,6 +306,9 @@ export function VideoConfigTab({
                     <div className="flex flex-col gap-3">
                         {questions.map((q, idx) => {
                             const isExpanded = expandedQuestionIndices.includes(idx);
+                            const totalSeconds = Number(q.timeInVideo) || 0;
+                            const questionMinutes = Math.floor(totalSeconds / secondsPerMinute);
+                            const questionSeconds = totalSeconds % secondsPerMinute;
                             return (
                                 <div key={idx} className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/20 transition-all duration-200">
                                     {/* Header */}
@@ -321,8 +328,9 @@ export function VideoConfigTab({
                                             </span>
                                             <span className="truncate text-[10px] font-medium text-slate-400">
                                                 {UI_TEXT.videoConfigTab.timestampPrefix}
-                                                {q.timeInVideo}
-                                                {UI_TEXT.videoConfigTab.timestampSecondsSuffix} {q.content ? `- ${q.content}` : ""}
+                                                {questionMinutes} {UI_TEXT.videoConfigTab.timestampMinutesSuffix} {questionSeconds}{" "}
+                                                {UI_TEXT.videoConfigTab.timestampSecondsSuffix}
+                                                {")"} {q.content ? `- ${q.content}` : ""}
                                             </span>
                                         </div>
                                         <button
@@ -366,30 +374,54 @@ export function VideoConfigTab({
                                                         <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.common.fieldRequired}</p>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-col gap-1.5">
+                                                <div className="col-span-2 flex flex-col gap-1.5">
                                                     <label className="text-xs font-bold text-slate-700">
                                                         {UI_TEXT.videoConfigTab.timestampLabel}{" "}
                                                         <span className="text-red-500">{UI_TEXT.videoConfigTab.asterisk}</span>
                                                     </label>
-                                                    <input
-                                                        type="number"
-                                                        value={q.timeInVideo}
-                                                        onChange={(e) => {
-                                                            const copy = [...questions];
-                                                            let val = e.target.value;
-                                                            if (val.length > 1 && val.startsWith("0")) {
-                                                                val = val.replace(/^0+/, "");
-                                                            }
-                                                            copy[idx].timeInVideo = val === "" ? 0 : Number(val);
-                                                            setQuestions(copy);
-                                                        }}
-                                                        onFocus={(e) => e.target.select()}
-                                                        className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:ring-2 focus:outline-none ${
-                                                            submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0)
-                                                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
-                                                                : "border-slate-200 focus:border-wine focus:ring-wine/10"
-                                                        }`}
-                                                    />
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            value={questionMinutes}
+                                                            onChange={(e) => {
+                                                                const copy = [...questions];
+                                                                const mins = Math.max(0, parseInt(e.target.value, 10) || 0);
+                                                                copy[idx].timeInVideo = mins * secondsPerMinute + questionSeconds;
+                                                                setQuestions(copy);
+                                                            }}
+                                                            onFocus={(e) => e.target.select()}
+                                                            className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:ring-2 focus:outline-none ${
+                                                                submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0)
+                                                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                                    : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                            }`}
+                                                        />
+                                                        <span className="shrink-0 text-xs font-medium text-slate-500">
+                                                            {UI_TEXT.videoConfigTab.timestampMinutesSuffix}
+                                                        </span>
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            max={maxSecondsValue}
+                                                            value={questionSeconds}
+                                                            onChange={(e) => {
+                                                                const copy = [...questions];
+                                                                const secs = Math.min(maxSecondsValue, Math.max(0, parseInt(e.target.value, 10) || 0));
+                                                                copy[idx].timeInVideo = questionMinutes * secondsPerMinute + secs;
+                                                                setQuestions(copy);
+                                                            }}
+                                                            onFocus={(e) => e.target.select()}
+                                                            className={`w-full rounded-full border bg-white px-4 py-2 text-xs font-semibold text-slate-800 transition duration-150 focus:ring-2 focus:outline-none ${
+                                                                submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0)
+                                                                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                                                                    : "border-slate-200 focus:border-wine focus:ring-wine/10"
+                                                            }`}
+                                                        />
+                                                        <span className="shrink-0 text-xs font-medium text-slate-500">
+                                                            {UI_TEXT.videoConfigTab.timestampSecondsSuffix}
+                                                        </span>
+                                                    </div>
                                                     {submitted && (q.timeInVideo === undefined || q.timeInVideo === null || q.timeInVideo < 0) && (
                                                         <p className="mt-0.5 text-[11px] font-medium text-red-500">{UI_TEXT.videoConfigTab.invalidTimeError}</p>
                                                     )}
