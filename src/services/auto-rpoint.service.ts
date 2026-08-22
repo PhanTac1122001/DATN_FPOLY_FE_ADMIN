@@ -148,6 +148,13 @@ export async function recalculateStudentRPoint(studentId: string, courseId: stri
     return response?.data || response;
 }
 
+export async function recomputeClassRPoints(classId: string, courseId: string): Promise<{ affected: number; skipped: number }> {
+    const response = await httpClient<any>(`/auto-rpoint/class/${classId}/course/${courseId}/recompute`, {
+        method: HttpMethod.POST,
+    });
+    return response?.data || response;
+}
+
 export async function getStudentRPointDetail(studentId: string, courseId: string, classId?: string): Promise<any> {
     const query = classId ? `?classId=${classId}` : "";
     const response = await httpClient<any>(`/auto-rpoint/${studentId}/${courseId}${query}`, {

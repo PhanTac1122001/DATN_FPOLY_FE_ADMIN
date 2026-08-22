@@ -1787,6 +1787,13 @@ export const UI_TEXT = {
         toastResetTitle: "Đã đặt lại",
         toastResetDesc: "Môn học đã quay về công thức R-point mặc định",
         toastResetErrorDesc: "Không đặt lại được công thức",
+        adminOnlyNote: "Chỉ ADMIN mới được đổi công thức R-point. Bạn đang xem ở chế độ chỉ đọc.",
+        recomputeClassBtn: "Tính lại cả lớp",
+        recomputing: "Đang tính lại...",
+        toastRecomputeTitle: "Đã tính lại R-point",
+        toastRecomputeDesc: "Đã tính lại {affected} sinh viên, bỏ qua {skipped} bản đã chốt.",
+        toastRecomputeErrorTitle: "Tính lại thất bại",
+        toastRecomputeErrorDesc: "Không tính lại được R-point cả lớp",
     },
     trainingSystem: {
         title: "Quản lý Hệ đào tạo",
